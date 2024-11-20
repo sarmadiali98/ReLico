@@ -2,7 +2,7 @@
 
 1. Download and unzip the project
 
-2. Open the project using an IDE with the SDK preferably set to JAVA 11 Correto.
+2. Open the project using an IDE with the SDK preferably set to JAVA 11 Corretto.
 
 3. Run the main file located in org/rebecalang/compiler/RebecaCompilerMain.java
 
