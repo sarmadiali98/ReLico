@@ -8,6 +8,6 @@
 
       which runs src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java
 
-         which compile the Rebeca files in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/models
+      which compile the Rebeca files in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/models
 
-        compiles them into Lingua Franca files and stores them in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF
+      compiles them into Lingua Franca files and stores them in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF
