@@ -1,0 +1,22 @@
+target Cpp;
+
+reactor Sender {
+    output receiveMessage_to_Receiver: int;
+    logical action sendMessage;
+    reaction(sendMessage) -> receiveMessage_to_Receiver {=
+        receiveMessage_to_Receiver.set(0);
+    =}
+}
+
+reactor Receiver {
+    input receiveMessage_from_Sender_1: int;
+    reaction(receiveMessage_from_Sender_1) {=
+    =}
+}
+
+main reactor {
+    sender0 = new Sender();
+    receiver0 = new Receiver();
+
+    sender0.receiveMessage_to_Receiver -> receiver0.receiveMessage_from_Sender_1;
+}
