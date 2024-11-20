@@ -6,7 +6,7 @@
 
 3. The main file runs src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/TimedRebecaToLinguaFrancaCompilerFacade.java
 
-  which runs src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java
+      which runs src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java
 
   which compile the Rebeca files in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/models
 
