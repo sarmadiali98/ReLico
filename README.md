@@ -1,15 +1,48 @@
-# Welcom the the Timed Rebeca to Lingua Franca Compiler repository!
+# Timed Rebeca to Lingua Franca Compiler
 
-1. Download and unzip the project
+Welcome to the **Timed Rebeca to Lingua Franca Compiler** repository! This tool translates **Timed Rebeca** models into **Lingua Franca (LF)** code. 
 
-2. Open the project using an IDE with the SDK preferably set to JAVA 11 Corretto.
+The project uses **Spring Framework** and is written in Java. It leverages Maven for dependency management and building. Below are the instructions for installation, usage, and running the program.
 
-3. Run the main file located in org/rebecalang/compiler/RebecaCompilerMain.java
+---
 
-4. The main file runs src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/TimedRebecaToLinguaFrancaCompilerFacade.java
+## Features
 
-      which uses src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java
+1. **Compiles Timed Rebeca Models**: Converts `.rebeca` files into `.lf` files compatible with Lingua Franca.
+2. **Batch Compilation**: Processes multiple Rebeca files from a directory and generates corresponding LF files in the output directory.
+3. **Customizable Output Path**: Allows users to specify the directory where the compiled LF files are stored.
 
-      to compile the Rebeca files in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/models
+---
 
-      to Lingua Franca files and store them in the directory src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF
+## Project Structure
+
+The project follows a standard Maven structure. Here are key directories and files:
+
+- **Main Code**:
+  - `src/main/java/org/rebecalang/compiler/RebecaCompilerMain.java`: The entry point for running the compiler.
+  - `src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/TimedRebecaToLinguaFrancaCompilerFacade.java`: The main logic for handling Timed Rebeca to Lingua Franca translation.
+  - `src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java`: The code generator for Lingua Franca.
+  
+- **Input Models**:
+  - `src/test/resources/org/rebecalang/compiler/modelcompiler/models`: Directory containing `.rebeca` files to compile.
+  
+- **Output LF Code**:
+  - `src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF`: Directory where `.lf` files are generated.
+
+---
+
+## Requirements
+
+- **Java Development Kit (JDK)**: Version 11 or later.
+- **Maven**: For building and managing dependencies.
+- **Operating System**: Tested on macOS Sequoia 15.1.1, but should work on other systems with JDK and Maven installed.
+
+---
+
+## Installation
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://https://github.com/sarmadiali98/org.rebecalang.compiler.git
+   cd org.rebecalang.compiler
+   
