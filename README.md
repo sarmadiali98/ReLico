@@ -1,4 +1,4 @@
-# Timed Rebeca to Lingua Franca Compiler
+# Relico: Timed Rebeca to Lingua Franca Compiler
 
 Welcome to the **Timed Rebeca to Lingua Franca Compiler** repository! This tool translates **Timed Rebeca** models into **Lingua Franca (LF)** code. 
 
@@ -33,7 +33,7 @@ The project follows a standard Maven structure. Here are key directories and fil
 
 ## Requirements
 
-- **Java Development Kit (JDK)**: Version 11 or later.
+- **Java Development Kit (JDK)**: Version 17 or later.
 - **Maven**: For building and managing dependencies.
 - **Operating System**: Tested on macOS Sequoia 15.1.1, but should work on other systems with JDK and Maven installed.
 
@@ -43,8 +43,8 @@ The project follows a standard Maven structure. Here are key directories and fil
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/sarmadiali98/org.rebecalang.compiler.git
-   cd org.rebecalang.compiler
+   git clone https://github.com/sarmadiali98/Relico.git
+   cd Relicor
    ```
 2. **Ensure Java and Maven Are Installed: Verify your installations**:
 
