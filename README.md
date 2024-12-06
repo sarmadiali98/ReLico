@@ -57,3 +57,24 @@ The project follows a standard Maven structure. Here are key directories and fil
    ```bash
    mvn clean install
    ```
+
+---
+   
+# Running the Compiler
+
+The compiler can process `.rebeca` files in the input directory and generate corresponding `.lf` files.
+
+## Steps to Run
+
+1. **Ensure Models Are in the Input Directory**:  
+   Place `.rebeca` files in the following directory:  
+   `src/test/resources/org/rebecalang/compiler/modelcompiler/models`
+
+2. **Run the Compiler**:  
+   Execute the following Maven command to run the main class:  
+   ```bash
+   mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
+   ```
+3. **Check Output**:
+   The compiled `.lf` files will be saved in the following directory:
+   `src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF`
