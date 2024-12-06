@@ -44,7 +44,7 @@ The project follows a standard Maven structure. Here are key directories and fil
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/sarmadiali98/Relico.git
-   cd Relicor
+   cd Relico
    ```
 2. **Ensure Java and Maven Are Installed: Verify your installations**:
 
