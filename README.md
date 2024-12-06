@@ -1,4 +1,4 @@
-# Relico: Timed Rebeca to Lingua Franca Compiler
+# ReLico: Timed Rebeca to Lingua Franca Compiler
 
 Welcome to the **Timed Rebeca to Lingua Franca Compiler** repository! This tool translates **Timed Rebeca** models into **Lingua Franca (LF)** code. 
 
