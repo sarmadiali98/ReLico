@@ -46,13 +46,13 @@ The project follows a standard Maven structure. Here are key directories and fil
    git clone https://https://github.com/sarmadiali98/org.rebecalang.compiler.git
    cd org.rebecalang.compiler
    ```
-2. **Ensure Java and Maven Are Installed: Verify your installations:
+2. **Ensure Java and Maven Are Installed: Verify your installations**:
 
    ```bash
    java -version
    mvn -version
    ```
-3. **Install Dependencies: Use Maven to install dependencies:
+3. **Install Dependencies: Use Maven to install dependencies**:
 
    ```bash
    mvn clean install
