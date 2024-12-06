@@ -67,7 +67,7 @@ The compiler can process `.rebeca` files in the input directory and generate cor
 ## Steps to Run
 
 1. **Ensure Models Are in the Input Directory**:  
-   Place `.rebeca` files in the following directory (Optional, two sample files are already in the following directory):  
+   Place `.rebeca` files in the following directory (Optional; Two sample files already exist in the following directory):  
    `src/test/resources/org/rebecalang/compiler/modelcompiler/models`
 
 2. **Run the Compiler**:  
