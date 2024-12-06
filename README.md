@@ -43,7 +43,7 @@ The project follows a standard Maven structure. Here are key directories and fil
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://https://github.com/sarmadiali98/org.rebecalang.compiler.git
+   git clone https://github.com/sarmadiali98/org.rebecalang.compiler.git
    cd org.rebecalang.compiler
    ```
 2. **Ensure Java and Maven Are Installed: Verify your installations**:
