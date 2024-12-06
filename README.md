@@ -75,6 +75,24 @@ The compiler can process `.rebeca` files in the input directory and generate cor
    ```bash
    mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
    ```
+   The following output should appear on your terminal screen:
+   ```bash
+   Communication Map:
+   Sender -> Receiver : receiveMessage x1
+   Lingua Franca code generated at: /org.rebecalang.compiler-master/src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF/Sender_and_Receiver.lf
+   Compilation successful for file: Sender_and_Receiver.rebeca
+   Communication Map:
+   Switch -> Node : runme x2
+   Lingua Franca code generated at: /org.rebecalang.compiler-master/src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF/Node_and_Switch.lf
+   Compilation successful for file: Node_and_Switch.rebeca
+   All Rebeca model files have been processed.
+   [INFO] ------------------------------------------------------------------------
+   [INFO] BUILD SUCCESS
+   [INFO] ------------------------------------------------------------------------
+   [INFO] Total time:  7.331 s
+   [INFO] Finished at: 2024-12-06T05:57:44
+   [INFO] ------------------------------------------------------------------------
+   ```
 
 3. **Check Output**:
    The compiled `.lf` files will be saved in the following directory:
