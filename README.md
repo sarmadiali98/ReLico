@@ -75,6 +75,43 @@ The compiler can process `.rebeca` files in the input directory and generate cor
    ```bash
    mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
    ```
+
+### Example Usage
+
+#### Input: Rebeca Model
+
+The following `.rebeca` model already exists in the input directory:
+
+```rebeca
+reactiveclass Node(100) {
+    knownrebecs {
+        Switch switch0;
+        Switch switch1;
+    }
+    msgsrv runme(int in0) {
+        // Task logic here
+    }
+}
+
+reactiveclass Switch(100) {
+    knownrebecs {
+        Node node0;
+    }
+    Switch() {
+        self.runme2(0);
+    }
+    msgsrv runme2(int in0) {
+        node0.runme(in0);
+    }
+}
+
+main {
+    Node node0(sw0, sw1):();
+    Switch sw0(node0):();
+    Switch sw1(node0):();
+}
+```
+
 3. **Check Output**:
    The compiled `.lf` files will be saved in the following directory:
    `src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF`
