@@ -82,7 +82,7 @@ The compiler can process `.rebeca` files in the input directory and generate cor
 
 ---
 
-### Notes
+# Notes
 
 - **Work in Progress**: The compiler is still under development. The following limitations currently apply:
   - Delays (`after` keyword) in Timed Rebeca are not yet fully supported.
