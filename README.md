@@ -35,7 +35,7 @@ The project follows a standard Maven structure. Here are key directories and fil
 
 - **Java Development Kit (JDK)**: Version 17 or later.
 - **Maven**: For building and managing dependencies.
-- **Operating System**: Tested on macOS Sequoia 15.1.1, but should work on other systems with JDK and Maven installed.
+- **System Configuration**: Tested on macOS Sequoia 15.1.1 with Java version 21.0.1 and Ubuntu 24.04.1 with Java version 21.0.5.
 
 ---
 
