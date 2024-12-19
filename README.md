@@ -24,10 +24,10 @@ The project follows a standard Maven structure. Here are key directories and fil
   - `src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java`: The code generator for Lingua Franca.
   
 - **Input Models**:
-  - `src/test/resources/org/rebecalang/compiler/modelcompiler/models`: Directory containing `.rebeca` files to compile.
+  - `src/benchmarks`: Directory containing `.rebeca` files to compile.
   
 - **Output LF Code**:
-  - `src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF`: Directory where `.lf` files are generated.
+  - `src/compiledLF`: Directory where `.lf` files are generated.
 
 ---
 
@@ -103,7 +103,6 @@ The compiler can process `.rebeca` files in the input directory and generate cor
 # Notes
 
 - **Work in Progress**: The compiler is still under development. The following limitations currently apply:
-  - Delays (`after` keyword) in Timed Rebeca are not yet fully supported.
   - Circular dependency issues are being actively addressed.
 
 - **Common Issues**:
