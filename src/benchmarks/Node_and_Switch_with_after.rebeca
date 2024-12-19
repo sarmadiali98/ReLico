@@ -1,0 +1,27 @@
+reactiveclass Node(100) {
+    knownrebecs{
+        Switch switch0;
+        Switch switch1;
+    }
+    msgsrv runme(int in0){
+        //do task
+    }
+}
+reactiveclass Switch(100) {
+    knownrebecs{
+        Node node0;
+    }
+    Switch(){
+        self.runme2(0) after (1212);
+    }
+    msgsrv runme2(int in0){
+        node0.runme(in0) after (1212);
+        node0.runme(in0) after (1212);
+    }
+}
+main {
+    Node node0(sw0, sw1):();
+    Switch sw0(node0):();
+    Switch sw1(node0):();
+}
+
