@@ -1,6 +1,8 @@
 package org.rebecalang.compiler.modelcompiler.linguafranca;
 
 import org.rebecalang.compiler.modelcompiler.corerebeca.objectmodel.*;
+import org.rebecalang.compiler.modelcompiler.timedrebeca.objectmodel.TimedRebecaParentSuffixPrimary;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,50 +10,37 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * LinguaFrancaCodeGenerator is responsible for translating Rebeca models into Lingua Franca (LF) code.
+ * LinguaFrancaCodeGenerator with handling after times for both external and internal message sends.
+ * - External after times are recorded and applied in the main reactor line.
+ * - Internal after times are applied at the point of message scheduling inside the reactor code.
  */
 public class LinguaFrancaCodeGenerator {
     private final RebecaModel rebecaModel;
-    // communicationMap tracks: senderClass -> receiverClass -> message -> count
     private Map<String, Map<String, Map<String, Integer>>> communicationMap;
-    // msgsrvSendersMap tracks: receiverClass -> message -> set of senderClasses
     private Map<String, Map<String, Set<String>>> msgsrvSendersMap;
-    // instanceClassMap tracks instanceName -> className
     private final Map<String, String> instanceClassMap = new HashMap<>();
+    private final Map<String, Long> externalAfterTimes = new HashMap<>();
 
-    /**
-     * Constructor to initialize the code generator with a Rebeca model.
-     * @param rebecaModel The Rebeca model to be translated.
-     */
     public LinguaFrancaCodeGenerator(RebecaModel rebecaModel) {
         this.rebecaModel = rebecaModel;
     }
 
-    /**
-     * Generates Lingua Franca (LF) code from the Rebeca model and writes it to the specified output path.
-     * @param outputPath The directory path where the LF code will be written.
-     */
     public void generateCode(String outputPath) {
         StringBuilder code = new StringBuilder();
-        // Add the target language declaration at the top
         code.append("target Cpp;\n\n");
 
-        // First, process the main reactor to populate instanceClassMap
         processMainReactor();
-
-        // Collect communication patterns
         communicationMap = collectCommunicationPatterns();
         msgsrvSendersMap = collectMsgsrvSenders();
 
-        // Debugging: Print the communication map
         System.out.println("Communication Map:");
-        for (Map.Entry<String, Map<String, Map<String, Integer>>> senderEntry : communicationMap.entrySet()) {
+        for (var senderEntry : communicationMap.entrySet()) {
             String senderClass = senderEntry.getKey();
-            Map<String, Map<String, Integer>> receiversMap = senderEntry.getValue();
-            for (Map.Entry<String, Map<String, Integer>> receiverEntry : receiversMap.entrySet()) {
+            var receiversMap = senderEntry.getValue();
+            for (var receiverEntry : receiversMap.entrySet()) {
                 String receiverClass = receiverEntry.getKey();
-                Map<String, Integer> messages = receiverEntry.getValue();
-                for (Map.Entry<String, Integer> messageEntry : messages.entrySet()) {
+                var messages = receiverEntry.getValue();
+                for (var messageEntry : messages.entrySet()) {
                     String message = messageEntry.getKey();
                     int count = messageEntry.getValue();
                     System.out.println(senderClass + " -> " + receiverClass + " : " + message + " x" + count);
@@ -59,37 +48,22 @@ public class LinguaFrancaCodeGenerator {
             }
         }
 
-        // Generate code for each reactive class
-        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode()
-                .getReactiveClassDeclaration();
+        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
         for (ReactiveClassDeclaration reactiveClass : reactiveClasses) {
             String className = reactiveClass.getName();
-            // Start the reactor declaration
             code.append("reactor ").append(className).append(" {\n");
 
-            // Generate inputs and outputs based on communication map
             generateReactorPorts(code, className, communicationMap);
-
-            // Generate reactions for input ports
             generateInputReactions(code, className, communicationMap);
-
-            // Generate state variables with default initialization for integers
             generateStateVariables(code, reactiveClass);
-
-            // Generate constructor reaction
             generateConstructorReaction(code, reactiveClass, className);
-
-            // Generate message servers
             generateMessageServers(code, reactiveClass, communicationMap, msgsrvSendersMap);
 
-            // End of reactor declaration
             code.append("}\n\n");
         }
 
-        // Generate the main reactor with connections
         generateMainReactor(code);
 
-        // Write the generated code to a file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
             writer.write(code.toString());
             System.out.println("Lingua Franca code generated at: " + outputPath);
@@ -99,302 +73,270 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Processes the main reactor to populate instanceClassMap.
+     * Processes the main reactor to map instance names to their corresponding classes.
      */
     private void processMainReactor() {
         MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
-        if (mainDecl == null) {
-            return; // No main block to process
-        }
-
-        // First, collect instance mappings
+        if (mainDecl == null) return;
         for (MainRebecDefinition mainRebecDef : mainDecl.getMainRebecDefinition()) {
             String className = mainRebecDef.getType().getTypeName();
             String instanceName = mainRebecDef.getName();
-
-            // Store the instance and class mapping
             instanceClassMap.put(instanceName, className);
         }
     }
 
     /**
-     * Collects communication patterns between reactive classes.
-     * Maps sender class -> receiver class -> message -> count.
-     * @return The communication map.
+     * Collects communication patterns by mapping senders to receivers and messages.
+     * Only external message sends are recorded.
+     *
+     * @return A map representing communication patterns.
      */
     private Map<String, Map<String, Map<String, Integer>>> collectCommunicationPatterns() {
-        Map<String, Map<String, Map<String, Integer>>> communicationMap = new HashMap<>();
-        // Iterate over reactive classes to find message sends
-        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode()
-                .getReactiveClassDeclaration();
-        for (ReactiveClassDeclaration reactiveClass : reactiveClasses) {
-            String senderClassName = reactiveClass.getName();
-
-            // Collect send statements from message servers and synchronous methods
-            List<MethodDeclaration> methods = new ArrayList<>();
-            methods.addAll(reactiveClass.getMsgsrvs());
-            methods.addAll(reactiveClass.getSynchMethods());
+        Map<String, Map<String, Map<String, Integer>>> commMap = new HashMap<>();
+        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
+        for (ReactiveClassDeclaration rc : reactiveClasses) {
+            String senderClassName = rc.getName();
+            List<MethodDeclaration> methods = new ArrayList<>(rc.getMsgsrvs());
+            methods.addAll(rc.getSynchMethods());
             for (MethodDeclaration method : methods) {
-                collectSendStatements(method.getBlock(), senderClassName, communicationMap);
+                collectSendStatements(method.getBlock(), senderClassName, commMap, senderClassName);
             }
-
-            // Collect send statements from constructors
-            for (ConstructorDeclaration constructor : reactiveClass.getConstructors()) {
-                collectSendStatements(constructor.getBlock(), senderClassName, communicationMap);
+            for (ConstructorDeclaration constructor : rc.getConstructors()) {
+                collectSendStatements(constructor.getBlock(), senderClassName, commMap, senderClassName);
             }
         }
-        return communicationMap;
+        return commMap;
     }
 
     /**
-     * Collects message server senders by analyzing which classes send to which message servers.
-     * Maps receiverClass -> message -> set of senderClasses
-     * @return The message server senders map.
+     * Collects message server senders by mapping receivers and messages to their senders.
+     *
+     * @return A map representing message server senders.
      */
     private Map<String, Map<String, Set<String>>> collectMsgsrvSenders() {
-        Map<String, Map<String, Set<String>>> msgsrvSendersMap = new HashMap<>();
-        // Iterate over reactive classes to find message sends
-        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode()
-                .getReactiveClassDeclaration();
-        for (ReactiveClassDeclaration reactiveClass : reactiveClasses) {
-            String senderClassName = reactiveClass.getName();
-
-            // Collect send statements from message servers and synchronous methods
-            List<MethodDeclaration> methods = new ArrayList<>();
-            methods.addAll(reactiveClass.getMsgsrvs());
-            methods.addAll(reactiveClass.getSynchMethods());
+        Map<String, Map<String, Set<String>>> map = new HashMap<>();
+        List<ReactiveClassDeclaration> reactiveClasses = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
+        for (ReactiveClassDeclaration rc : reactiveClasses) {
+            String senderClassName = rc.getName();
+            List<MethodDeclaration> methods = new ArrayList<>(rc.getMsgsrvs());
+            methods.addAll(rc.getSynchMethods());
             for (MethodDeclaration method : methods) {
-                collectMsgsrvSenders(method.getBlock(), senderClassName, msgsrvSendersMap);
+                collectMsgsrvSenders(method.getBlock(), senderClassName, map, senderClassName);
             }
-
-            // Collect send statements from constructors
-            for (ConstructorDeclaration constructor : reactiveClass.getConstructors()) {
-                collectMsgsrvSenders(constructor.getBlock(), senderClassName, msgsrvSendersMap);
+            for (ConstructorDeclaration constructor : rc.getConstructors()) {
+                collectMsgsrvSenders(constructor.getBlock(), senderClassName, map, senderClassName);
             }
         }
-        return msgsrvSendersMap;
+        return map;
     }
 
     /**
-     * Recursively collects send statements from a given block of statements and updates the communication map.
-     * @param stmt The statement to process.
-     * @param senderClassName The name of the sender class.
-     * @param communicationMap The communication map to update.
+     * Recursively collects send statements, updating communicationMap only for external sends.
+     *
+     * @param stmt              The statement to process.
+     * @param senderClassName   The class name of the sender.
+     * @param commMap           The communication map to update.
+     * @param currentClassName  The current class name for handling "self".
      */
     private void collectSendStatements(Statement stmt, String senderClassName,
-                                       Map<String, Map<String, Map<String, Integer>>> communicationMap) {
+                                       Map<String, Map<String, Map<String, Integer>>> commMap,
+                                       String currentClassName) {
         if (stmt == null) return;
-
-        if (stmt instanceof BlockStatement blockStmt) {
-            for (Statement s : blockStmt.getStatements()) {
-                collectSendStatements(s, senderClassName, communicationMap);
+        if (stmt instanceof BlockStatement bs) {
+            for (Statement s : bs.getStatements()) {
+                collectSendStatements(s, senderClassName, commMap, currentClassName);
             }
-        } else if (stmt instanceof Expression exprStmt) {
-            processExpression(exprStmt, senderClassName, communicationMap);
-        } else if (stmt instanceof ConditionalStatement ifStmt) {
-            collectSendStatements(ifStmt.getStatement(), senderClassName, communicationMap);
-            if (ifStmt.getElseStatement() != null) {
-                collectSendStatements(ifStmt.getElseStatement(), senderClassName, communicationMap);
+        } else if (stmt instanceof Expression expr) {
+            processExpression(expr, senderClassName, commMap, currentClassName);
+        } else if (stmt instanceof ConditionalStatement ifs) {
+            collectSendStatements(ifs.getStatement(), senderClassName, commMap, currentClassName);
+            if (ifs.getElseStatement() != null) {
+                collectSendStatements(ifs.getElseStatement(), senderClassName, commMap, currentClassName);
             }
         }
-        // Handle other statement types here if necessary
     }
 
     /**
-     * Recursively collects send statements from a given block of statements and updates the message server senders map.
-     * @param stmt The statement to process.
-     * @param senderClassName The name of the sender class.
-     * @param msgsrvSendersMap The message server senders map to update.
+     * Recursively collects message server senders.
+     *
+     * @param stmt              The statement to process.
+     * @param senderClassName   The class name of the sender.
+     * @param map               The message server senders map to update.
+     * @param currentClassName  The current class name for handling "self".
      */
     private void collectMsgsrvSenders(Statement stmt, String senderClassName,
-                                      Map<String, Map<String, Set<String>>> msgsrvSendersMap) {
+                                      Map<String, Map<String, Set<String>>> map,
+                                      String currentClassName) {
         if (stmt == null) return;
-
-        if (stmt instanceof BlockStatement blockStmt) {
-            for (Statement s : blockStmt.getStatements()) {
-                collectMsgsrvSenders(s, senderClassName, msgsrvSendersMap);
+        if (stmt instanceof BlockStatement bs) {
+            for (Statement s : bs.getStatements()) {
+                collectMsgsrvSenders(s, senderClassName, map, currentClassName);
             }
-        } else if (stmt instanceof Expression exprStmt) {
-            processMsgsrvSenders(exprStmt, senderClassName, msgsrvSendersMap);
-        } else if (stmt instanceof ConditionalStatement ifStmt) {
-            collectMsgsrvSenders(ifStmt.getStatement(), senderClassName, msgsrvSendersMap);
-            if (ifStmt.getElseStatement() != null) {
-                collectMsgsrvSenders(ifStmt.getElseStatement(), senderClassName, msgsrvSendersMap);
+        } else if (stmt instanceof Expression expr) {
+            processMsgsrvSenders(expr, senderClassName, map, currentClassName);
+        } else if (stmt instanceof ConditionalStatement ifs) {
+            collectMsgsrvSenders(ifs.getStatement(), senderClassName, map, currentClassName);
+            if (ifs.getElseStatement() != null) {
+                collectMsgsrvSenders(ifs.getElseStatement(), senderClassName, map, currentClassName);
             }
         }
-        // Handle other statement types here if necessary
     }
 
     /**
-     * Processes an expression to identify message sends and updates the communication map.
-     * @param expr The expression to process.
-     * @param senderClassName The name of the sender class.
-     * @param communicationMap The communication map to update.
+     * Processes an expression to identify and record external message sends.
+     *
+     * @param expr              The expression to process.
+     * @param senderClassName   The class name of the sender.
+     * @param commMap           The communication map to update.
+     * @param currentClassName  The current class name for handling "self".
      */
     private void processExpression(Expression expr, String senderClassName,
-                                   Map<String, Map<String, Map<String, Integer>>> communicationMap) {
-        if (expr instanceof DotPrimary dotPrimary) {
-            // Left is the receiver (could be an output port or a known rebec)
-            Expression receiverExpr = dotPrimary.getLeft();
-            Expression methodExpr = dotPrimary.getRight();
+                                   Map<String, Map<String, Map<String, Integer>>> commMap,
+                                   String currentClassName) {
+        if (expr instanceof DotPrimary dot) {
+            Expression receiverExpr = dot.getLeft();
+            Expression methodExpr = dot.getRight();
+            if (methodExpr instanceof TermPrimary term) {
+                String methodName = term.getName();
+                ParentSuffixPrimary psp = term.getParentSuffixPrimary();
 
-            if (methodExpr instanceof TermPrimary termPrimary) {
-                String methodName = termPrimary.getName();
-                ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
-
-                if (methodName.equals("set") && psp != null) {
-                    // Detected a 'set' method call on an output port (external message send)
-                    if (receiverExpr instanceof TermPrimary receiverTerm) {
-                        String outputPortName = receiverTerm.getName(); // e.g., runme_to_Node
-                        String[] parts = outputPortName.split("_to_");
+                if ("set".equals(methodName) && psp != null) {
+                    if (receiverExpr instanceof TermPrimary rt) {
+                        String outputPort = rt.getName();
+                        String[] parts = outputPort.split("_to_");
                         if (parts.length == 2) {
                             String message = parts[0];
                             String receiverClassName = parts[1];
-
-                            // Update communication map with count
-                            communicationMap
-                                    .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                                    .computeIfAbsent(receiverClassName, k -> new HashMap<>())
-                                    .merge(message, 1, Integer::sum);
+                            incrementMessageCount(commMap, senderClassName, receiverClassName, message, psp, true);
                         }
                     }
                 } else {
-                    // Potential direct method call to a known rebec's message server (external or internal)
-                    if (receiverExpr instanceof TermPrimary receiverTerm) {
-                        String receiverInstanceName = receiverTerm.getName();
-                        String receiverClassName = getClassNameForInstance(receiverInstanceName);
-
+                    if (receiverExpr instanceof TermPrimary rt) {
+                        String receiverInstance = rt.getName();
+                        String receiverClassName = getClassNameForInstance(receiverInstance, currentClassName);
                         if (receiverClassName != null && !receiverClassName.equals(senderClassName)) {
-                            // External message send
-                            // Assume the methodName corresponds to a message server in the receiver class
-                            communicationMap
-                                    .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                                    .computeIfAbsent(receiverClassName, k -> new HashMap<>())
-                                    .merge(methodName, 1, Integer::sum);
-                        } else if (receiverClassName != null && receiverClassName.equals(senderClassName)) {
-                            // Internal message send (self-send)
-                            communicationMap
-                                    .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                                    .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                                    .merge(methodName, 1, Integer::sum);
+                            incrementMessageCount(commMap, senderClassName, receiverClassName, methodName, psp, true);
                         }
+                        // Internal sends are not recorded in commMap
                     }
                 }
             }
-        } else if (expr instanceof TermPrimary termPrimary) {
-            if (termPrimary.getParentSuffixPrimary() != null) {
-                // Possible self message send (e.g., runme2())
-                String msgsrvName = termPrimary.getName();
-
-                // Update communication map for self-send with count
-                communicationMap
-                        .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                        .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                        .merge(msgsrvName, 1, Integer::sum);
+        } else if (expr instanceof TermPrimary tp) {
+            if (tp.getParentSuffixPrimary() != null) {
+                String msgsrvName = tp.getName();
+                // Internal sends are not recorded in commMap
+                // Thus, do not call incrementMessageCount for internal sends
             }
-        } else if (expr instanceof UnaryExpression unaryExpr) {
-            processExpression(unaryExpr.getExpression(), senderClassName, communicationMap);
-        } else if (expr instanceof BinaryExpression binaryExpr) {
-            processExpression(binaryExpr.getLeft(), senderClassName, communicationMap);
-            processExpression(binaryExpr.getRight(), senderClassName, communicationMap);
+        } else if (expr instanceof UnaryExpression ue) {
+            processExpression(ue.getExpression(), senderClassName, commMap, currentClassName);
+        } else if (expr instanceof BinaryExpression be) {
+            processExpression(be.getLeft(), senderClassName, commMap, currentClassName);
+            processExpression(be.getRight(), senderClassName, commMap, currentClassName);
         }
-        // Handle other expression types here if necessary
     }
 
     /**
-     * Processes an expression to identify message sends and updates the message server senders map.
-     * @param expr The expression to process.
-     * @param senderClassName The name of the sender class.
-     * @param msgsrvSendersMap The message server senders map to update.
+     * Increments the message count in the communication map for external sends only.
+     *
+     * @param commMap          The communication map to update.
+     * @param senderClass      The class name of the sender.
+     * @param receiverClass    The class name of the receiver.
+     * @param message          The message name.
+     * @param psp              The ParentSuffixPrimary containing the after time.
+     * @param external         Indicates if the send is external.
+     */
+    private void incrementMessageCount(Map<String, Map<String, Map<String, Integer>>> commMap,
+                                       String senderClass, String receiverClass, String message,
+                                       ParentSuffixPrimary psp, boolean external) {
+        if (external) {
+            int oldCount = commMap
+                    .computeIfAbsent(senderClass, k -> new HashMap<>())
+                    .computeIfAbsent(receiverClass, k -> new HashMap<>())
+                    .getOrDefault(message, 0);
+            int newCount = oldCount + 1;
+            commMap.get(senderClass).get(receiverClass).put(message, newCount);
+
+            long afterTime = extractAfterTime(psp);
+            if (afterTime > 0) {
+                String key = senderClass + "|" + receiverClass + "|" + message + "|" + newCount;
+                externalAfterTimes.put(key, afterTime);
+            }
+            // Internal sends are not recorded in commMap
+        }
+    }
+
+    /**
+     * Processes an expression to identify and record message server senders.
+     *
+     * @param expr              The expression to process.
+     * @param senderClassName   The class name of the sender.
+     * @param map               The message server senders map to update.
+     * @param currentClassName  The current class name for handling "self".
      */
     private void processMsgsrvSenders(Expression expr, String senderClassName,
-                                      Map<String, Map<String, Set<String>>> msgsrvSendersMap) {
-        if (expr instanceof DotPrimary dotPrimary) {
-            // Left is the receiver (could be an output port or a known rebec)
-            Expression receiverExpr = dotPrimary.getLeft();
-            Expression methodExpr = dotPrimary.getRight();
+                                      Map<String, Map<String, Set<String>>> map,
+                                      String currentClassName) {
+        if (expr instanceof DotPrimary dot) {
+            Expression receiverExpr = dot.getLeft();
+            Expression methodExpr = dot.getRight();
+            if (methodExpr instanceof TermPrimary term) {
+                String methodName = term.getName();
+                ParentSuffixPrimary psp = term.getParentSuffixPrimary();
 
-            if (methodExpr instanceof TermPrimary termPrimary) {
-                String methodName = termPrimary.getName();
-                ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
-
-                if (methodName.equals("set") && psp != null) {
-                    // Detected a 'set' method call on an output port (external message send)
-                    if (receiverExpr instanceof TermPrimary receiverTerm) {
-                        String outputPortName = receiverTerm.getName(); // e.g., runme_to_Node
+                if ("set".equals(methodName) && psp != null) {
+                    if (receiverExpr instanceof TermPrimary rt) {
+                        String outputPortName = rt.getName();
                         String[] parts = outputPortName.split("_to_");
                         if (parts.length == 2) {
                             String message = parts[0];
                             String receiverClassName = parts[1];
-
-                            // Update message server senders map
-                            msgsrvSendersMap
-                                    .computeIfAbsent(receiverClassName, k -> new HashMap<>())
+                            map.computeIfAbsent(receiverClassName, k -> new HashMap<>())
                                     .computeIfAbsent(message, k -> new HashSet<>())
                                     .add(senderClassName);
                         }
                     }
                 } else {
-                    // Potential direct method call to a known rebec's message server (external or internal)
-                    if (receiverExpr instanceof TermPrimary receiverTerm) {
-                        String receiverInstanceName = receiverTerm.getName();
-                        String receiverClassName = getClassNameForInstance(receiverInstanceName);
-
+                    if (receiverExpr instanceof TermPrimary rt) {
+                        String receiverInstance = rt.getName();
+                        String receiverClassName = getClassNameForInstance(receiverInstance, currentClassName);
                         if (receiverClassName != null && !receiverClassName.equals(senderClassName)) {
-                            // External message send
-                            // Assume the methodName corresponds to a message server in the receiver class
-                            msgsrvSendersMap
-                                    .computeIfAbsent(receiverClassName, k -> new HashMap<>())
-                                    .computeIfAbsent(methodName, k -> new HashSet<>())
-                                    .add(senderClassName);
-                        } else if (receiverClassName != null && receiverClassName.equals(senderClassName)) {
-                            // Internal message send (self-send)
-                            msgsrvSendersMap
-                                    .computeIfAbsent(senderClassName, k -> new HashMap<>())
+                            map.computeIfAbsent(receiverClassName, k -> new HashMap<>())
                                     .computeIfAbsent(methodName, k -> new HashSet<>())
                                     .add(senderClassName);
                         }
+                        // Internal message sends are **not** added
                     }
                 }
             }
-        } else if (expr instanceof TermPrimary termPrimary) {
-            if (termPrimary.getParentSuffixPrimary() != null) {
-                // Possible self message send (e.g., runme2())
-                String msgsrvName = termPrimary.getName();
-
-                // Update message server senders map for self-send
-                msgsrvSendersMap
-                        .computeIfAbsent(senderClassName, k -> new HashMap<>())
-                        .computeIfAbsent(msgsrvName, k -> new HashSet<>())
-                        .add(senderClassName);
+        } else if (expr instanceof TermPrimary tp) {
+            if (tp.getParentSuffixPrimary() != null) {
+                String msgsrvName = tp.getName();
+                // Internal sends are not recorded in msgsrvSendersMap
             }
-        } else if (expr instanceof UnaryExpression unaryExpr) {
-            processMsgsrvSenders(unaryExpr.getExpression(), senderClassName, msgsrvSendersMap);
-        } else if (expr instanceof BinaryExpression binaryExpr) {
-            processMsgsrvSenders(binaryExpr.getLeft(), senderClassName, msgsrvSendersMap);
-            processMsgsrvSenders(binaryExpr.getRight(), senderClassName, msgsrvSendersMap);
+        } else if (expr instanceof UnaryExpression ue) {
+            processMsgsrvSenders(ue.getExpression(), senderClassName, map, currentClassName);
+        } else if (expr instanceof BinaryExpression be) {
+            processMsgsrvSenders(be.getLeft(), senderClassName, map, currentClassName);
+            processMsgsrvSenders(be.getRight(), senderClassName, map, currentClassName);
         }
-        // Handle other expression types here if necessary
     }
 
     /**
-     * Generates input and output ports for a given reactor based on communication map.
-     * Only inputs and their reactions are duplicated based on the count.
-     * Outputs are declared once per message per sender class.
-     * @param code The StringBuilder to append code to.
-     * @param className The name of the reactor class.
-     * @param communicationMap The communication map.
+     * Generates reactor ports based on external communication patterns.
+     *
+     * @param code              The StringBuilder to append code to.
+     * @param className         The name of the current reactor class.
+     * @param communicationMap  The communication map containing external sends.
      */
     private void generateReactorPorts(StringBuilder code, String className,
                                       Map<String, Map<String, Map<String, Integer>>> communicationMap) {
-        // Generate inputs
         Set<String> inputSet = new HashSet<>();
-        for (Map.Entry<String, Map<String, Map<String, Integer>>> entry : communicationMap.entrySet()) {
+        for (var entry : communicationMap.entrySet()) {
             String senderClass = entry.getKey();
-            Map<String, Map<String, Integer>> receivers = entry.getValue();
+            var receivers = entry.getValue();
             if (receivers.containsKey(className) && !senderClass.equals(className)) {
-                Map<String, Integer> messages = receivers.get(className);
-                for (Map.Entry<String, Integer> msgEntry : messages.entrySet()) {
+                var messages = receivers.get(className);
+                for (var msgEntry : messages.entrySet()) {
                     String message = msgEntry.getKey();
                     int count = msgEntry.getValue();
                     for (int i = 1; i <= count; i++) {
@@ -408,15 +350,12 @@ public class LinguaFrancaCodeGenerator {
             }
         }
 
-        // Generate outputs
-        // Outputs are declared once per message, regardless of the count
         Set<String> outputSet = new HashSet<>();
-        Map<String, Map<String, Integer>> outgoingMessages = communicationMap.getOrDefault(className,
-                Collections.emptyMap());
-        for (Map.Entry<String, Map<String, Integer>> entry : outgoingMessages.entrySet()) {
-            String receiverClass = entry.getKey();
-            if (!receiverClass.equals(className)) { // Skip outputs to self
-                Map<String, Integer> messages = entry.getValue();
+        var outgoing = communicationMap.getOrDefault(className, Collections.emptyMap());
+        for (var outEntry : outgoing.entrySet()) {
+            String receiverClass = outEntry.getKey();
+            if (!receiverClass.equals(className)) {
+                var messages = outEntry.getValue();
                 for (String message : messages.keySet()) {
                     String outputName = message + "_to_" + receiverClass;
                     if (!outputSet.contains(outputName)) {
@@ -429,52 +368,54 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Generates reactions for each input port with empty bodies.
-     * @param code The StringBuilder to append code to.
-     * @param className The name of the reactor class.
-     * @param communicationMap The communication map.
+     * Generates input reactions based on external communication patterns.
+     *
+     * @param code              The StringBuilder to append code to.
+     * @param className         The name of the current reactor class.
+     * @param communicationMap  The communication map containing external sends.
      */
     private void generateInputReactions(StringBuilder code, String className,
                                         Map<String, Map<String, Map<String, Integer>>> communicationMap) {
-        // Iterate over communicationMap to find inputs for this reactor
-        for (Map.Entry<String, Map<String, Map<String, Integer>>> senderEntry : communicationMap.entrySet()) {
+        Map<String, List<String>> messageToInputs = new HashMap<>();
+
+        for (var senderEntry : communicationMap.entrySet()) {
             String senderClass = senderEntry.getKey();
-            Map<String, Map<String, Integer>> receiversMap = senderEntry.getValue();
+            var receiversMap = senderEntry.getValue();
             if (receiversMap.containsKey(className) && !senderClass.equals(className)) {
-                Map<String, Integer> messages = receiversMap.get(className);
-                for (Map.Entry<String, Integer> msgEntry : messages.entrySet()) {
+                var messages = receiversMap.get(className);
+                for (var msgEntry : messages.entrySet()) {
                     String message = msgEntry.getKey();
                     int count = msgEntry.getValue();
                     for (int i = 1; i <= count; i++) {
                         String inputName = message + "_from_" + senderClass + "_" + i;
-                        code.append("    reaction(").append(inputName).append(") {=\n");
-                        code.append("    =}\n");
+                        messageToInputs.computeIfAbsent(message, k -> new ArrayList<>()).add(inputName);
                     }
                 }
             }
         }
+
+        // Generate a single reaction per message that includes all inputs for that message
+        for (var entry : messageToInputs.entrySet()) {
+            String message = entry.getKey();
+            List<String> inputs = entry.getValue();
+            code.append("    reaction(").append(String.join(", ", inputs)).append(") {=\n");
+            code.append("        //do task\n");
+            code.append("    =}\n");
+        }
     }
 
     /**
-     * Generates state variable declarations for a given reactor.
-     * Integers are initialized with a default value of 0.
-     * @param code The StringBuilder to append code to.
-     * @param reactiveClass The reactor class declaration.
+     * Generates state variables for the reactor.
+     *
+     * @param code          The StringBuilder to append code to.
+     * @param reactiveClass The reactive class declaration.
      */
     private void generateStateVariables(StringBuilder code, ReactiveClassDeclaration reactiveClass) {
         List<FieldDeclaration> stateVars = reactiveClass.getStatevars();
         for (FieldDeclaration fieldDecl : stateVars) {
-            // Get the type
-            Type type = fieldDecl.getType();
-            String lfType = getLinguaFrancaType(type);
-
-            // Get variable declarators
-            List<VariableDeclarator> variableDeclarators = fieldDecl.getVariableDeclarators();
-            for (VariableDeclarator varDecl : variableDeclarators) {
-                String varName = varDecl.getVariableName();
-
-                // Generate state variable declaration with default initialization for integers
-                code.append("    state ").append(varName).append(": ").append(lfType);
+            String lfType = getLinguaFrancaType(fieldDecl.getType());
+            for (VariableDeclarator varDecl : fieldDecl.getVariableDeclarators()) {
+                code.append("    state ").append(varDecl.getVariableName()).append(": ").append(lfType);
                 if (lfType.equals("int")) {
                     code.append(" = 0");
                 }
@@ -484,50 +425,46 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Generates the constructor reaction for a given reactor.
-     * @param code The StringBuilder to append code to.
-     * @param reactiveClass The reactor class declaration.
-     * @param className The name of the reactor class.
+     * Generates constructor reactions, scheduling internal message sends with appropriate after times.
+     *
+     * @param code          The StringBuilder to append code to.
+     * @param reactiveClass The reactive class declaration.
+     * @param className     The name of the current reactor class.
      */
     private void generateConstructorReaction(StringBuilder code, ReactiveClassDeclaration reactiveClass, String className) {
         for (ConstructorDeclaration constructor : reactiveClass.getConstructors()) {
             BlockStatement body = constructor.getBlock();
             if (body != null && !body.getStatements().isEmpty()) {
-                // Exclude variable initialization statements
-                List<Statement> nonInitStatements = excludeVariableInitializations(body.getStatements());
-
-                if (!nonInitStatements.isEmpty()) {
-                    // Collect actions to be scheduled
+                List<Statement> nonInit = excludeVariableInitializations(body.getStatements());
+                if (!nonInit.isEmpty()) {
                     List<String> actions = new ArrayList<>();
-                    List<String> otherStatements = new ArrayList<>();
-                    for (Statement stmt : nonInitStatements) {
-                        String action = translateSelfMessageSend(stmt);
-                        if (action != null) {
-                            actions.add(action);
+                    List<String> others = new ArrayList<>();
+                    for (Statement stmt : nonInit) {
+                        String act = translateSelfMessageSend(stmt, className);
+                        if (act != null) {
+                            actions.add(act);
                         } else {
-                            // Translate other statements
                             Set<String> dummySet = new HashSet<>();
-                            String translatedStmt = translateStatement(stmt, className, dummySet);
-                            if (!translatedStmt.isEmpty()) {
-                                otherStatements.add(translatedStmt);
+                            String tr = translateStatement(stmt, className, dummySet);
+                            if (!tr.isEmpty()) {
+                                others.add(tr);
                             }
                         }
                     }
-
-                    if (!actions.isEmpty() || !otherStatements.isEmpty()) {
+                    if (!actions.isEmpty() || !others.isEmpty()) {
                         code.append("\n    reaction(startup");
                         if (!actions.isEmpty()) {
                             code.append(") -> ");
-                            code.append(String.join(", ", actions));
                         } else {
                             code.append(")");
                         }
                         code.append(" {=\n");
-                        for (String action : actions) {
-                            code.append("        ").append(action).append(".schedule(0ms);\n");
+                        for (String a : actions) {
+                            code.append("        ").append(a).append("\n");
+                            // Debug statements are now inside translateSelfMessageSend
                         }
-                        for (String stmt : otherStatements) {
-                            code.append("        ").append(stmt).append("\n");
+                        for (String o : others) {
+                            code.append("        ").append(o).append("\n");
                         }
                         code.append("    =}\n");
                     }
@@ -537,174 +474,54 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Generates message servers for a given reactor based on communication patterns.
-     * Differentiates between external and internal message servers.
-     * @param code The StringBuilder to append code to.
-     * @param reactiveClass The reactor class declaration.
-     * @param communicationMap The communication map.
-     * @param msgsrvSendersMap The message server senders map.
+     * Translates self message sends in constructors, extracting the after time and scheduling appropriately.
+     *
+     * @param stmt         The statement representing the self message send.
+     * @param className    The current class name.
+     * @return The Lingua Franca scheduling statement, or null if not a self message send.
      */
-    private void generateMessageServers(StringBuilder code, ReactiveClassDeclaration reactiveClass,
-                                        Map<String, Map<String, Map<String, Integer>>> communicationMap,
-                                        Map<String, Map<String, Set<String>>> msgsrvSendersMap) {
-        String className = reactiveClass.getName();
-
-        List<MsgsrvDeclaration> msgSrvs = reactiveClass.getMsgsrvs();
-        for (MsgsrvDeclaration msgSrv : msgSrvs) {
-            String msgSrvName = msgSrv.getName();
-            boolean isExternal = false;
-
-            // Determine if this message server is external by checking if it's called by other classes
-            Set<String> senders = msgsrvSendersMap.getOrDefault(className, Collections.emptyMap())
-                    .getOrDefault(msgSrvName, Collections.emptySet());
-            // If any sender is not the class itself, it's external
-            for (String senderClass : senders) {
-                if (!senderClass.equals(className)) {
-                    isExternal = true;
-                    break;
+    private String translateSelfMessageSend(Statement stmt, String className) {
+        if (stmt instanceof Expression expr) {
+            if (expr instanceof TermPrimary tp) {
+                if (tp.getParentSuffixPrimary() != null) {
+                    String methodName = tp.getName();
+                    long afterTime = extractAfterTime(tp.getParentSuffixPrimary());
+                    if (afterTime > 0) {
+                        //System.out.println("Internal call with after time detected");
+                        return methodName + ".schedule(" + afterTime + "ms);";
+                    } else {
+                        //System.out.println("Internal call without after time detected");
+                        return methodName + ".schedule(0ms);";
+                    }
+                }
+            } else if (expr instanceof DotPrimary dp) {
+                Expression receiver = dp.getLeft();
+                if (receiver instanceof TermPrimary tpr && "self".equals(tpr.getName())) {
+                    Expression methodExpr = dp.getRight();
+                    if (methodExpr instanceof TermPrimary tpMethod && tpMethod.getParentSuffixPrimary() != null) {
+                        String methodName = tpMethod.getName();
+                        long afterTime = extractAfterTime(tpMethod.getParentSuffixPrimary());
+                        if (afterTime > 0) {
+                            //System.out.println("Internal call with after time detected");
+                            return methodName + ".schedule(" + afterTime + "ms);";
+                        } else {
+                            //System.out.println("Internal call without after time detected");
+                            return methodName + ".schedule(0ms);";
+                        }
+                    }
                 }
             }
-
-            if (isExternal) {
-                // External message server: Generate reactions based on input ports
-                int count = communicationMap.getOrDefault(className, Collections.emptyMap())
-                        .getOrDefault(className, Collections.emptyMap())
-                        .getOrDefault(msgSrvName, 0);
-                for (int i = 1; i <= count; i++) {
-                    generateExternalMessageServer(code, msgSrv, className, i);
-                }
-            } else {
-                // Internal message server: Generate reactions that set output ports
-                generateInternalMessageServer(code, msgSrv, className);
-            }
         }
+        return null;
     }
 
     /**
-     * Generates internal message servers as reactions that set output ports.
-     * Tracks affected outputs/actions and includes them in the reaction header.
-     * @param code The StringBuilder to append code to.
-     * @param msgSrv The message server declaration.
-     * @param className The name of the reactor class.
-     */
-    private void generateInternalMessageServer(StringBuilder code, MsgsrvDeclaration msgSrv, String className) {
-        String actionName = msgSrv.getName();
-
-        // **Add Logical Action Declaration**
-        code.append("    logical action ").append(actionName).append(";\n");
-
-        // Track affected outputs/actions
-        Set<String> affectedPorts = new HashSet<>();
-
-        // Translate statements, tracking affected ports
-        List<String> reactionStatements = new ArrayList<>();
-        for (Statement stmt : msgSrv.getBlock().getStatements()) {
-            String translated = translateStatement(stmt, className, affectedPorts);
-            if (!translated.isEmpty()) {
-                reactionStatements.add(translated);
-            }
-        }
-
-        // Generate reaction header with affected ports/actions
-        code.append("    reaction(").append(actionName);
-        if (!affectedPorts.isEmpty()) {
-            code.append(") -> ").append(String.join(", ", affectedPorts));
-        } else {
-            code.append(")");
-        }
-        code.append(" {=\n");
-
-        // Append translated statements
-        for (String stmt : reactionStatements) {
-            code.append("        ").append(stmt).append("\n");
-        }
-        code.append("    =}\n");
-    }
-
-    /**
-     * Generates external message servers as reactions to input ports.
-     * @param code The StringBuilder to append code to.
-     * @param msgSrv The message server declaration.
-     * @param className The name of the reactor class.
-     * @param sendIndex The index of the send operation.
-     */
-    private void generateExternalMessageServer(StringBuilder code, MsgsrvDeclaration msgSrv, String className, int sendIndex) {
-        String msgSrvName = msgSrv.getName();
-
-        // Generate reaction to the corresponding input port with unique suffix
-        String inputName = msgSrvName + "_from_Switch_" + sendIndex;
-
-        // Track affected outputs/actions
-        Set<String> affectedPorts = new HashSet<>();
-
-        // Translate statements, tracking affected ports
-        List<String> reactionStatements = new ArrayList<>();
-        for (Statement stmt : msgSrv.getBlock().getStatements()) {
-            String translatedStmt = translateStatement(stmt, className, affectedPorts);
-            if (!translatedStmt.isEmpty()) {
-                reactionStatements.add(translatedStmt);
-            }
-        }
-
-        // Generate reaction header with affected ports/actions
-        code.append("    reaction(").append(inputName);
-        if (!affectedPorts.isEmpty()) {
-            code.append(") -> ").append(String.join(", ", affectedPorts));
-        } else {
-            code.append(")");
-        }
-        code.append(" {=\n");
-
-        // Append translated statements
-        for (String stmt : reactionStatements) {
-            code.append("        ").append(stmt).append("\n");
-        }
-        code.append("    =}\n");
-    }
-
-    /**
-     * Translates a statement into Lingua Franca code.
-     * Tracks affected outputs/actions by adding them to the affectedPorts set.
-     * @param stmt The statement to translate.
-     * @param className The name of the reactor class.
-     * @param affectedPorts The set to track affected outputs/actions.
-     * @return The translated LF code for the statement.
-     */
-    private String translateStatement(Statement stmt, String className, Set<String> affectedPorts) {
-        if (stmt instanceof BlockStatement blockStmt) {
-            StringBuilder code = new StringBuilder();
-            code.append("{\n");
-            for (Statement s : blockStmt.getStatements()) {
-                String translated = translateStatement(s, className, affectedPorts);
-                if (!translated.isEmpty()) {
-                    code.append("    ").append(translated).append("\n");
-                }
-            }
-            code.append("}");
-            return code.toString();
-        } else if (stmt instanceof Expression exprStmt) {
-            return translateExpression(exprStmt, className, affectedPorts);
-        } else if (stmt instanceof ConditionalStatement ifStmt) {
-            String condition = translateExpression(ifStmt.getCondition(), className, affectedPorts);
-            String thenPart = translateStatement(ifStmt.getStatement(), className, affectedPorts);
-            String elsePart = ifStmt.getElseStatement() != null
-                    ? translateStatement(ifStmt.getElseStatement(), className, affectedPorts) : "";
-            String elseClause = elsePart.isEmpty() ? "" : " else " + elsePart;
-            return "if (" + condition + ") " + thenPart + elseClause;
-        }
-        // Handle other statement types here if necessary
-        return "";
-    }
-
-    /**
-     * Translates an expression into Lingua Franca code.
-     * External message sends are translated as outputPort.set(0);
-     * Internal message sends are translated as action.schedule(0ms);
-     * Tracks affected outputs/actions by adding them to the affectedPorts set.
-     * @param expr The expression to translate.
-     * @param className The name of the reactor class.
-     * @param affectedPorts The set to track affected outputs/actions.
-     * @return The translated LF code for the expression.
+     * Translates an expression into Lingua Franca code, handling message sends.
+     *
+     * @param expr           The expression to translate.
+     * @param className      The name of the current reactor class.
+     * @param affectedPorts A set to collect affected ports.
+     * @return The translated expression as a string.
      */
     private String translateExpression(Expression expr, String className, Set<String> affectedPorts) {
         if (expr instanceof DotPrimary dotPrimary) {
@@ -712,46 +529,38 @@ public class LinguaFrancaCodeGenerator {
             Expression methodExpr = dotPrimary.getRight();
 
             if (methodExpr instanceof TermPrimary termPrimary) {
-                if (termPrimary.getParentSuffixPrimary() != null) {
-                    // Method call
-                    String methodName = termPrimary.getName();
-                    ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
+                // Extract after time if any
+                long afterTime = extractAfterTime(termPrimary.getParentSuffixPrimary());
 
-                    if (methodName.equals("set") && psp != null) {
-                        // Detected a 'set' method call on an output port (external message send)
-                        if (receiverExpr instanceof TermPrimary receiverTerm) {
-                            String outputPortName = receiverTerm.getName(); // e.g., runme_to_Node
-                            String[] parts = outputPortName.split("_to_");
-                            if (parts.length == 2) {
-                                String message = parts[0];
-                                String receiverClassName = parts[1];
+                String methodName = termPrimary.getName();
+                ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
 
-                                // Update communication map with count
-                                communicationMap
-                                        .computeIfAbsent(className, k -> new HashMap<>())
-                                        .computeIfAbsent(receiverClassName, k -> new HashMap<>())
-                                        .merge(message, 1, Integer::sum);
+                if (methodName.equals("set") && psp != null) {
+                    // External message send
+                    if (receiverExpr instanceof TermPrimary receiverTerm) {
+                        String outputPortName = receiverTerm.getName();
+                        return outputPortName + ".set(0);";
+                    }
+                } else {
+                    // Possibly internal or external call
+                    if (receiverExpr instanceof TermPrimary receiverTerm) {
+                        String receiverInstanceName = receiverTerm.getName();
+                        String receiverClassName = getClassNameForInstance(receiverInstanceName, className);
 
-                                // Return the LF code to set the output port
-                                return outputPortName + ".set(0);";
-                            }
-                        }
-                    } else {
-                        // Potential direct method call to a known rebec's message server (external or internal)
-                        if (receiverExpr instanceof TermPrimary receiverTerm) {
-                            String receiverInstanceName = receiverTerm.getName();
-                            String receiverClassName = getClassNameForInstance(receiverInstanceName);
-
-                            if (receiverClassName != null && !receiverClassName.equals(className)) {
-                                // External message send
-                                // Assume the methodName corresponds to a message server in the receiver class
-                                String outputName = methodName + "_to_" + receiverClassName;
-                                affectedPorts.add(outputName);
-                                return outputName + ".set(0);"; // Set to 0 as per requirement
-                            } else if (receiverClassName != null && receiverClassName.equals(className)) {
-                                // Internal message send (self-send)
-                                String actionName = methodName;
-                                affectedPorts.add(actionName);
+                        if (receiverClassName != null && !receiverClassName.equals(className)) {
+                            // External message send
+                            String outputName = methodName + "_to_" + receiverClassName;
+                            affectedPorts.add(outputName);
+                            return outputName + ".set(0);";
+                        } else if (receiverClassName != null && receiverClassName.equals(className)) {
+                            // Internal message send
+                            String actionName = methodName;
+                            affectedPorts.add(actionName);
+                            if (afterTime > 0) {
+                                //System.out.println("Internal call with after time detected");
+                                return actionName + ".schedule(" + afterTime + "ms);";
+                            } else {
+                                //System.out.println("Internal call without after time detected");
                                 return actionName + ".schedule(0ms);";
                             }
                         }
@@ -759,27 +568,23 @@ public class LinguaFrancaCodeGenerator {
                 }
             }
 
-            // Not a method call
             String receiver = translateExpression(receiverExpr, className, affectedPorts);
             String methodCall = translateExpression(methodExpr, className, affectedPorts);
             return receiver + "." + methodCall;
         } else if (expr instanceof TermPrimary termPrimary) {
-            if (termPrimary.getParentSuffixPrimary() != null) {
-                // Method call
+            ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
+            long afterTime = extractAfterTime(psp);
+            if (psp != null) {
                 String methodName = termPrimary.getName();
-                ParentSuffixPrimary psp = termPrimary.getParentSuffixPrimary();
-                List<String> argList = new ArrayList<>();
-                for (Expression arg : psp.getArguments()) {
-                    argList.add(translateExpression(arg, className, affectedPorts));
+                affectedPorts.add(methodName);
+                if (afterTime > 0) {
+                    //System.out.println("Internal call with after time detected");
+                    return methodName + ".schedule(" + afterTime + "ms);";
+                } else {
+                    //System.out.println("Internal call without after time detected");
+                    return methodName + ".schedule(0ms);";
                 }
-                String args = String.join(", ", argList);
-
-                // Internal message send: schedule logical action
-                String actionName = methodName;
-                affectedPorts.add(actionName);
-                return actionName + ".schedule(0ms);";
             } else {
-                // Variable or constant
                 return termPrimary.getName();
             }
         } else if (expr instanceof Literal literal) {
@@ -790,119 +595,120 @@ public class LinguaFrancaCodeGenerator {
             String operator = binExpr.getOperator();
             return "(" + left + " " + operator + " " + right + ")";
         }
-        // Handle other expression types here if necessary
         return "";
     }
 
     /**
-     * Translates a self message send statement to the action name.
-     * @param stmt The statement to translate.
-     * @return The action name if it's a self message send; otherwise, null.
+     * Generates message servers for the reactor.
+     *
+     * @param code              The StringBuilder to append code to.
+     * @param reactiveClass     The reactive class declaration.
+     * @param communicationMap  The communication map containing external sends.
+     * @param msgsrvSendersMap  The message server senders map.
      */
-    private String translateSelfMessageSend(Statement stmt) {
-        if (stmt instanceof Expression expr) {
-            if (expr instanceof TermPrimary termPrimary) {
-                if (termPrimary.getParentSuffixPrimary() != null) {
-                    // Self message send like `runme2()`
-                    return termPrimary.getName();
-                }
-            } else if (expr instanceof DotPrimary dotPrimary) {
-                // Handle expressions like `self.runme2()`
-                Expression receiverExpr = dotPrimary.getLeft();
-                if (receiverExpr instanceof TermPrimary termPrimaryReceiver) {
-                    if (termPrimaryReceiver.getName().equals("self")) {
-                        Expression methodExpr = dotPrimary.getRight();
-                        if (methodExpr instanceof TermPrimary termPrimaryMethod) {
-                            if (termPrimaryMethod.getParentSuffixPrimary() != null) {
-                                return termPrimaryMethod.getName();
-                            }
-                        }
-                    }
+    private void generateMessageServers(StringBuilder code, ReactiveClassDeclaration reactiveClass,
+                                        Map<String, Map<String, Map<String, Integer>>> communicationMap,
+                                        Map<String, Map<String, Set<String>>> msgsrvSendersMap) {
+        String className = reactiveClass.getName();
+        for (MsgsrvDeclaration msgSrv : reactiveClass.getMsgsrvs()) {
+            String msgName = msgSrv.getName();
+            boolean isExternal = false;
+            Set<String> senders = msgsrvSendersMap.getOrDefault(className, Collections.emptyMap())
+                    .getOrDefault(msgName, Collections.emptySet());
+            for (String sc : senders) {
+                if (!sc.equals(className)) {
+                    isExternal = true;
+                    break;
                 }
             }
-        }
-        return null;
-    }
 
-    /**
-     * Maps instance names to class names by analyzing known rebecs.
-     * @param instanceName The instance name to map.
-     * @return The class name if found; otherwise, null.
-     */
-    private String getClassNameForInstance(String instanceName) {
-        // Iterate through all reactive classes
-        for (ReactiveClassDeclaration reactiveClass : rebecaModel.getRebecaCode()
-                .getReactiveClassDeclaration()) {
-            // Iterate through known rebecs of each class
-            List<FieldDeclaration> knownRebecs = reactiveClass.getKnownRebecs();
-            if (knownRebecs != null) {
-                for (FieldDeclaration fieldDecl : knownRebecs) {
-                    List<VariableDeclarator> vars = fieldDecl.getVariableDeclarators();
-                    for (VariableDeclarator var : vars) {
-                        if (var.getVariableName().equals(instanceName)) {
-                            return fieldDecl.getType().getTypeName();
-                        }
-                    }
-                }
+            if (isExternal) {
+                // External message server; already handled by generateInputReactions.
+                // No need to generate additional code.
+            } else {
+                // Internal message server
+                generateInternalMessageServer(code, msgSrv, className);
             }
         }
-        // If not found, return null
-        return null;
     }
 
     /**
-     * Maps Rebeca types to Lingua Franca types.
-     * @param type The Rebeca type.
-     * @return The corresponding Lingua Franca type.
+     * Generates internal message server reactions.
+     *
+     * @param code      The StringBuilder to append code to.
+     * @param msgSrv    The message server declaration.
+     * @param className The name of the current reactor class.
      */
-    private String getLinguaFrancaType(Type type) {
-        if (type == null) {
-            return "void"; // or handle error
+    private void generateInternalMessageServer(StringBuilder code, MsgsrvDeclaration msgSrv, String className) {
+        String actionName = msgSrv.getName();
+        code.append("    logical action ").append(actionName).append(";\n");
+        Set<String> affectedPorts = new HashSet<>();
+        List<String> stmts = new ArrayList<>();
+        for (Statement stmt : msgSrv.getBlock().getStatements()) {
+            String t = translateStatement(stmt, className, affectedPorts);
+            if (!t.isEmpty()) {
+                stmts.add(t);
+            }
         }
-        String typeName = type.getTypeName();
-        return switch (typeName) {
-            case "int" -> "int";
-            case "boolean" -> "bool";
-            case "double" -> "double";
-            case "String" -> "string"; // if supported
-            // Add other type mappings as needed
-            default -> typeName; // For user-defined types
-        };
+        code.append("    reaction(").append(actionName);
+        if (!affectedPorts.isEmpty()) {
+            code.append(") -> ").append(String.join(", ", affectedPorts));
+        } else {
+            code.append(")");
+        }
+        code.append(" {=\n");
+        for (String s : stmts) {
+            code.append("        ").append(s).append("\n");
+        }
+        code.append("    =}\n");
     }
 
     /**
-     * Excludes variable initialization statements from a list of statements.
-     * Currently assumes no variable initializations in constructors.
-     * @param statements The list of statements.
-     * @return The list excluding variable initialization statements.
+     * Translates statements to Lingua Franca code, handling internal message sends.
+     *
+     * @param stmt          The statement to translate.
+     * @param className     The name of the current reactor class.
+     * @param affectedPorts A set to collect affected ports.
+     * @return The translated statement as a string.
      */
-    private List<Statement> excludeVariableInitializations(List<Statement> statements) {
-        // Implement logic to exclude variable initialization statements
-        // For simplicity, we assume no variable initializations in constructors
-        return statements;
+    private String translateStatement(Statement stmt, String className, Set<String> affectedPorts) {
+        if (stmt instanceof BlockStatement bs) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\n");
+            for (Statement s : bs.getStatements()) {
+                String t = translateStatement(s, className, affectedPorts);
+                if (!t.isEmpty()) {
+                    sb.append("    ").append(t).append("\n");
+                }
+            }
+            sb.append("}");
+            return sb.toString();
+        } else if (stmt instanceof Expression expr) {
+            return translateExpression(expr, className, affectedPorts);
+        } else if (stmt instanceof ConditionalStatement ifs) {
+            String cond = translateExpression(ifs.getCondition(), className, affectedPorts);
+            String thenPart = translateStatement(ifs.getStatement(), className, affectedPorts);
+            String elsePart = ifs.getElseStatement() != null ? translateStatement(ifs.getElseStatement(), className, affectedPorts) : "";
+            String elseClause = elsePart.isEmpty() ? "" : " else " + elsePart;
+            return "if (" + cond + ") " + thenPart + elseClause;
+        }
+        return "";
     }
 
     /**
-     * Generates the main reactor with reactor instantiations and connections.
-     * Only inputs and their reactions are duplicated based on the count.
-     * Outputs remain singular.
+     * Generates the main reactor, establishing connections between reactors based on communicationMap.
+     *
      * @param code The StringBuilder to append code to.
      */
     private void generateMainReactor(StringBuilder code) {
         MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
-        if (mainDecl == null) {
-            return; // No main block to process
-        }
+        if (mainDecl == null) return;
 
         code.append("main reactor {\n");
 
-        // First, instantiate the reactors
         for (MainRebecDefinition mainRebecDef : mainDecl.getMainRebecDefinition()) {
             String className = mainRebecDef.getType().getTypeName();
             String instanceName = mainRebecDef.getName();
-
-            // Generate reactor instantiation
-            // Pass known rebecs as constructor arguments if any
             List<Expression> args = mainRebecDef.getArguments();
             if (args != null && !args.isEmpty()) {
                 List<String> argList = new ArrayList<>();
@@ -922,49 +728,40 @@ public class LinguaFrancaCodeGenerator {
 
         code.append("\n");
 
-        // Now, generate connections based on communicationMap
-        for (Map.Entry<String, Map<String, Map<String, Integer>>> senderEntry : communicationMap.entrySet()) {
+        for (var senderEntry : communicationMap.entrySet()) {
             String senderClass = senderEntry.getKey();
-            Map<String, Map<String, Integer>> receiversMap = senderEntry.getValue();
-
-            // Find all sender instances of senderClass
+            var receiversMap = senderEntry.getValue();
             List<String> senderInstances = instanceClassMap.entrySet().stream()
-                    .filter(entry -> entry.getValue().equals(senderClass))
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
+                    .filter(e -> e.getValue().equals(senderClass))
+                    .map(Map.Entry::getKey).collect(Collectors.toList());
 
-            for (Map.Entry<String, Map<String, Integer>> receiverEntry : receiversMap.entrySet()) {
+            for (var receiverEntry : receiversMap.entrySet()) {
                 String receiverClass = receiverEntry.getKey();
-                Map<String, Integer> messages = receiverEntry.getValue();
+                var messages = receiverEntry.getValue();
 
-                // Find all receiver instances of receiverClass
                 List<String> receiverInstances = instanceClassMap.entrySet().stream()
-                        .filter(entry -> entry.getValue().equals(receiverClass))
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList());
+                        .filter(e -> e.getValue().equals(receiverClass))
+                        .map(Map.Entry::getKey).collect(Collectors.toList());
 
-                for (Map.Entry<String, Integer> msgEntry : messages.entrySet()) {
+                for (var msgEntry : messages.entrySet()) {
                     String message = msgEntry.getKey();
                     int count = msgEntry.getValue();
 
                     for (int i = 1; i <= count; i++) {
-                        // Assign sender_instance in round-robin fashion
                         String senderInstance = senderInstances.get((i - 1) % senderInstances.size());
-
-                        // Assign receiver_instance in round-robin fashion (if multiple)
                         String receiverInstance = receiverInstances.get((i - 1) % receiverInstances.size());
-
-                        // Construct input port name with unique index
                         String inputPort = message + "_from_" + senderClass + "_" + i;
-
-                        // Output port remains singular per sender class
                         String outputPort = message + "_to_" + receiverClass;
 
-                        String uniqueConnection = senderInstance + "." + outputPort + " -> " + receiverInstance + "." + inputPort + ";";
+                        String uniqueConnection = senderInstance + "." + outputPort + " -> " + receiverInstance + "." + inputPort;
+                        Long afterTime = externalAfterTimes.get(senderClass + "|" + receiverClass + "|" + message + "|" + i);
 
-                        // Prevent duplicate connections
                         if (!code.toString().contains(uniqueConnection)) {
-                            code.append("    ").append(uniqueConnection).append("\n");
+                            code.append("    ").append(uniqueConnection);
+                            if (afterTime != null && afterTime > 0) {
+                                code.append(" after ").append(afterTime).append("ms");
+                            }
+                            code.append(";\n");
                         }
                     }
                 }
@@ -975,43 +772,89 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Helper method to extract instance name from an expression.
-     * @param expr The expression to extract from.
-     * @return The instance name if found; otherwise, null.
+     * Extracts the after time from the ParentSuffixPrimary.
+     *
+     * @param psp The ParentSuffixPrimary containing the after expression.
+     * @return The extracted after time in milliseconds, or 0 if not present or invalid.
      */
-    private String getInstanceNameFromExpression(Expression expr) {
-        if (expr instanceof TermPrimary termPrimary) {
-            return termPrimary.getName();
+    private long extractAfterTime(ParentSuffixPrimary psp) {
+        if (psp instanceof TimedRebecaParentSuffixPrimary timedPsp) {
+            Expression afterExpr = timedPsp.getAfterExpression();
+            if (afterExpr instanceof Literal lit) {
+                try {
+                    return Long.parseLong(lit.getLiteralValue());
+                } catch (NumberFormatException ignore) {}
+            }
         }
-        // Handle other expression types here if necessary
+        return 0;
+    }
+
+    /**
+     * Retrieves the class name for a given instance name, handling the "self" keyword.
+     *
+     * @param instanceName      The name of the instance to look up.
+     * @param currentClassName  The name of the current class (reactor) being processed.
+     * @return The class name corresponding to the instance, or null if not found.
+     */
+    private String getClassNameForInstance(String instanceName, String currentClassName) {
+        if ("self".equals(instanceName)) {
+            return currentClassName;
+        }
+        for (ReactiveClassDeclaration rc : rebecaModel.getRebecaCode().getReactiveClassDeclaration()) {
+            List<FieldDeclaration> knownRebecs = rc.getKnownRebecs();
+            if (knownRebecs != null) {
+                for (FieldDeclaration fd : knownRebecs) {
+                    for (VariableDeclarator var : fd.getVariableDeclarators()) {
+                        if (var.getVariableName().equals(instanceName)) {
+                            return fd.getType().getTypeName();
+                        }
+                    }
+                }
+            }
+        }
         return null;
     }
 
     /**
-     * Helper method to get class name of a reactor instance.
-     * @param instanceName The instance name.
-     * @return The class name if found; otherwise, an empty string.
+     * Retrieves the instance name from an expression.
+     *
+     * @param expr The expression to extract the instance name from.
+     * @return The instance name, or null if not applicable.
      */
-    private String classNameOfInstance(String instanceName) {
-        return instanceClassMap.getOrDefault(instanceName, "");
+    private String getInstanceNameFromExpression(Expression expr) {
+        if (expr instanceof TermPrimary tp) {
+            return tp.getName();
+        }
+        return null;
     }
 
     /**
-     * Helper method to get messages between two reactors based on the communication map.
-     * @param senderInstance The sender instance name.
-     * @param receiverInstance The receiver instance name.
-     * @return A set of messages between the reactors.
+     * Maps Rebeca types to Lingua Franca types.
+     *
+     * @param type The Rebeca type.
+     * @return The corresponding Lingua Franca type as a string.
      */
-    private Set<String> getMessagesBetweenReactors(String senderInstance, String receiverInstance) {
-        // We need to map instance names to class names
-        String senderClass = instanceClassMap.get(senderInstance);
-        String receiverClass = instanceClassMap.get(receiverInstance);
+    private String getLinguaFrancaType(Type type) {
+        if (type == null) return "void";
+        String typeName = type.getTypeName();
+        return switch (typeName) {
+            case "int" -> "int";
+            case "boolean" -> "bool";
+            case "double" -> "double";
+            case "String" -> "string";
+            default -> typeName;
+        };
+    }
 
-        if (senderClass == null || receiverClass == null) {
-            return Collections.emptySet();
-        }
-
-        Map<String, Map<String, Integer>> senderMap = communicationMap.getOrDefault(senderClass, Collections.emptyMap());
-        return senderMap.getOrDefault(receiverClass, Collections.emptyMap()).keySet();
+    /**
+     * Excludes variable initializations from the list of statements.
+     * Currently, it returns all statements. Implement logic if needed.
+     *
+     * @param statements The list of statements.
+     * @return The filtered list of statements.
+     */
+    private List<Statement> excludeVariableInitializations(List<Statement> statements) {
+        // Implement logic to exclude variable initializations if needed.
+        return statements;
     }
 }
