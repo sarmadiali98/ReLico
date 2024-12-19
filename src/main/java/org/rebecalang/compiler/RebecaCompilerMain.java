@@ -16,11 +16,11 @@ public class RebecaCompilerMain {
         ExceptionContainer exceptionContainer = context.getBean(ExceptionContainer.class);
 
         // Define the directory containing Rebeca model files
-        String modelDirectoryPath = "src/test/resources/org/rebecalang/compiler/modelcompiler/models";
+        String modelDirectoryPath = "src/benchmarks";
         File modelDirectory = new File(modelDirectoryPath);
 
         // Define the output directory where LF code will be generated
-        String outputDirectoryPath = "src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF";
+        String outputDirectoryPath = "src/CompiledLF";
         File outputDirectory = new File(outputDirectoryPath);
 
         // Create the output directory if it doesn't exist
