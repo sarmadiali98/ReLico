@@ -322,6 +322,19 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
+     * Helper class to hold action details.
+     */
+    private static class ActionDetail {
+        String actionName;
+        String scheduleStatement;
+
+        ActionDetail(String actionName, String scheduleStatement) {
+            this.actionName = actionName;
+            this.scheduleStatement = scheduleStatement;
+        }
+    }
+
+    /**
      * Generates reactor ports based on external communication patterns.
      *
      * @param code              The StringBuilder to append code to.
@@ -437,12 +450,12 @@ public class LinguaFrancaCodeGenerator {
             if (body != null && !body.getStatements().isEmpty()) {
                 List<Statement> nonInit = excludeVariableInitializations(body.getStatements());
                 if (!nonInit.isEmpty()) {
-                    List<String> actions = new ArrayList<>();
+                    List<ActionDetail> actions = new ArrayList<>();
                     List<String> others = new ArrayList<>();
                     for (Statement stmt : nonInit) {
-                        String act = translateSelfMessageSend(stmt, className);
-                        if (act != null) {
-                            actions.add(act);
+                        ActionDetail actionDetail = translateSelfMessageSend(stmt, className);
+                        if (actionDetail != null) {
+                            actions.add(actionDetail);
                         } else {
                             Set<String> dummySet = new HashSet<>();
                             String tr = translateStatement(stmt, className, dummySet);
@@ -454,14 +467,17 @@ public class LinguaFrancaCodeGenerator {
                     if (!actions.isEmpty() || !others.isEmpty()) {
                         code.append("\n    reaction(startup");
                         if (!actions.isEmpty()) {
-                            code.append(") -> ");
+                            // Collect action names separated by commas if multiple
+                            String actionNames = actions.stream()
+                                    .map(ad -> ad.actionName)
+                                    .collect(Collectors.joining(", "));
+                            code.append(") -> ").append(actionNames);
                         } else {
                             code.append(")");
                         }
                         code.append(" {=\n");
-                        for (String a : actions) {
-                            code.append("        ").append(a).append("\n");
-                            // Debug statements are now inside translateSelfMessageSend
+                        for (ActionDetail ad : actions) {
+                            code.append("        ").append(ad.scheduleStatement).append("\n");
                         }
                         for (String o : others) {
                             code.append("        ").append(o).append("\n");
@@ -478,21 +494,16 @@ public class LinguaFrancaCodeGenerator {
      *
      * @param stmt         The statement representing the self message send.
      * @param className    The current class name.
-     * @return The Lingua Franca scheduling statement, or null if not a self message send.
+     * @return An ActionDetail containing the action name and schedule statement, or null if not a self message send.
      */
-    private String translateSelfMessageSend(Statement stmt, String className) {
+    private ActionDetail translateSelfMessageSend(Statement stmt, String className) {
         if (stmt instanceof Expression expr) {
             if (expr instanceof TermPrimary tp) {
                 if (tp.getParentSuffixPrimary() != null) {
                     String methodName = tp.getName();
                     long afterTime = extractAfterTime(tp.getParentSuffixPrimary());
-                    if (afterTime > 0) {
-                        //System.out.println("Internal call with after time detected");
-                        return methodName + ".schedule(" + afterTime + "ms);";
-                    } else {
-                        //System.out.println("Internal call without after time detected");
-                        return methodName + ".schedule(0ms);";
-                    }
+                    String schedule = methodName + ".schedule(" + afterTime + "ms);";
+                    return new ActionDetail(methodName, schedule);
                 }
             } else if (expr instanceof DotPrimary dp) {
                 Expression receiver = dp.getLeft();
@@ -501,13 +512,8 @@ public class LinguaFrancaCodeGenerator {
                     if (methodExpr instanceof TermPrimary tpMethod && tpMethod.getParentSuffixPrimary() != null) {
                         String methodName = tpMethod.getName();
                         long afterTime = extractAfterTime(tpMethod.getParentSuffixPrimary());
-                        if (afterTime > 0) {
-                            //System.out.println("Internal call with after time detected");
-                            return methodName + ".schedule(" + afterTime + "ms);";
-                        } else {
-                            //System.out.println("Internal call without after time detected");
-                            return methodName + ".schedule(0ms);";
-                        }
+                        String schedule = methodName + ".schedule(" + afterTime + "ms);";
+                        return new ActionDetail(methodName, schedule);
                     }
                 }
             }
