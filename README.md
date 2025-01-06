@@ -24,10 +24,10 @@ The project follows a standard Maven structure. Here are key directories and fil
   - `src/main/java/org/rebecalang/compiler/modelcompiler/linguafranca/LinguaFrancaCodeGenerator.java`: The code generator for Lingua Franca.
   
 - **Input Models**:
-  - `src/benchmarks`: Directory containing `.rebeca` files to compile.
+  - `benchmarks`: Directory containing `.rebeca` files to compile.
   
 - **Output LF Code**:
-  - `src/compiledLF`: Directory where `.lf` files are generated.
+  - `compiledLF`: Directory where `.lf` files are generated.
 
 ---
 
@@ -76,27 +76,164 @@ The compiler can process `.rebeca` files in the input directory and generate cor
    mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
    ```
    The following output should appear based on your `.rebeca` code:
-   ```bash
-   Communication Map:
-   Sender -> Receiver : receiveMessage x1
-   Lingua Franca code generated at: /org.rebecalang.compiler-master/src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF/Sender_and_Receiver.lf
-   Compilation successful for file: Sender_and_Receiver.rebeca
-   Communication Map:
-   Switch -> Node : runme x2
-   Lingua Franca code generated at: /org.rebecalang.compiler-master/src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF/Node_and_Switch.lf
-   Compilation successful for file: Node_and_Switch.rebeca
-   All Rebeca model files have been processed.
-   [INFO] ------------------------------------------------------------------------
-   [INFO] BUILD SUCCESS
-   [INFO] ------------------------------------------------------------------------
-   [INFO] Total time:  7.331 s
-   [INFO] Finished at: 2024-12-06T05:57:44
-   [INFO] ------------------------------------------------------------------------
+```bash
+[INFO] 
+[INFO] ----------------------< org.rebecalang:compiler >-----------------------
+[INFO] Building compiler 2.25
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- exec:3.5.0:java (default-cli) @ compiler ---
+=== Rebeca Structure Map ===
+
+1) Rebecs and their known rebecs:
+   - node0 (Reactive Class: Node) knows: [sw0]
+   - sw0 (Reactive Class: Switch) knows: [r0]
+   - r0 (Reactive Class: Router) knows: []
+
+2) Declared message servers and calls made by each rebec:
+   Reactive Class: Switch
+      Instance: sw0
+         Declares msgSrv: internalrcvMsg
+         Declares msgSrv: rcvMsg
+         Declares msgSrv: rcvMsg2
+         Calls made by sw0:
+            -> EXTERNAL call to blah() in rebec 'r0'
+            -> INTERNAL call to internalrcvMsg()
+         Call counts:
+            internalrcvMsg: 1 times
+            blah: 1 times
+   Reactive Class: Node
+      Instance: node0
+         Declares msgSrv: sendMsg
+         Declares msgSrv: sendMsg2
+         Declares msgSrv: constructorOfNode
+         Calls made by node0:
+            -> INTERNAL call to sendMsg()
+            -> INTERNAL call to sendMsg2()
+            -> EXTERNAL call to rcvMsg() in rebec 'sw0'
+            -> EXTERNAL call to rcvMsg2() in rebec 'sw0'
+            -> EXTERNAL call to rcvMsg() in rebec 'sw0'
+            -> EXTERNAL call to rcvMsg2() in rebec 'sw0'
+         Call counts:
+            sendMsg: 1 times
+            sendMsg2: 1 times
+            rcvMsg: 2 times
+            rcvMsg2: 2 times
+   Reactive Class: Router
+      Instance: r0
+         Declares msgSrv: blah
+         (No calls made.)
+
+========================================
+
+Compilation successful for file: node_sw.rebeca
+=== Rebeca Structure Map ===
+
+1) Rebecs and their known rebecs:
+   - receiver0 (Reactive Class: Receiver) knows: []
+   - sender0 (Reactive Class: Sender) knows: [receiver0]
+
+2) Declared message servers and calls made by each rebec:
+   Reactive Class: Sender
+      Instance: sender0
+         Declares msgSrv: sendMessage
+         Calls made by sender0:
+            -> EXTERNAL call to receiveMessage() in rebec 'receiver0'
+         Call counts:
+            receiveMessage: 1 times
+   Reactive Class: Receiver
+      Instance: receiver0
+         Declares msgSrv: receiveMessage
+         (No calls made.)
+
+========================================
+
+Compilation successful for file: Sender_and_Receiver.rebeca
+=== Rebeca Structure Map ===
+
+1) Rebecs and their known rebecs:
+   - node0 (Reactive Class: Node) knows: [node1]
+   - node1 (Reactive Class: Node) knows: [node0]
+
+2) Declared message servers and calls made by each rebec:
+   Reactive Class: Node
+      Instance: node0
+         Declares msgSrv: sendMsg
+         Declares msgSrv: rcvMsg
+         Declares msgSrv: constructorOfNode
+         Calls made by node0:
+            -> INTERNAL call to sendMsg()
+            -> EXTERNAL call to rcvMsg() in rebec 'node1'
+            -> INTERNAL call to sendMsg()
+         Call counts:
+            sendMsg: 2 times
+            rcvMsg: 1 times
+      Instance: node1
+         Declares msgSrv: sendMsg
+         Declares msgSrv: rcvMsg
+         Declares msgSrv: constructorOfNode
+         Calls made by node1:
+            -> INTERNAL call to sendMsg()
+            -> EXTERNAL call to rcvMsg() in rebec 'node0'
+            -> INTERNAL call to sendMsg()
+         Call counts:
+            sendMsg: 2 times
+            rcvMsg: 1 times
+
+========================================
+
+Compilation successful for file: pingpong.rebeca
+=== Rebeca Structure Map ===
+
+1) Rebecs and their known rebecs:
+   - node0 (Reactive Class: Node) knows: [sw0, sw1]
+   - sw1 (Reactive Class: Switch) knows: [node0]
+   - sw0 (Reactive Class: Switch) knows: [node0]
+
+2) Declared message servers and calls made by each rebec:
+   Reactive Class: Switch
+      Instance: sw1
+         Declares msgSrv: runme2
+         Declares msgSrv: constructorOfSwitch
+         Calls made by sw1:
+            -> INTERNAL call to runme2()
+            -> EXTERNAL call to runme() in rebec 'node0'
+            -> EXTERNAL call to runme() in rebec 'node0'
+         Call counts:
+            runme2: 1 times
+            runme: 2 times
+      Instance: sw0
+         Declares msgSrv: runme2
+         Declares msgSrv: constructorOfSwitch
+         Calls made by sw0:
+            -> INTERNAL call to runme2()
+            -> EXTERNAL call to runme() in rebec 'node0'
+            -> EXTERNAL call to runme() in rebec 'node0'
+         Call counts:
+            runme2: 1 times
+            runme: 2 times
+   Reactive Class: Node
+      Instance: node0
+         Declares msgSrv: runme
+         (No calls made.)
+
+========================================
+
+Compilation successful for file: Node_and_Switch.rebeca
+All Rebeca model files have been processed.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.606 s
+[INFO] Finished at: 2025-01-07T01:54:56+03:30
+[INFO] ------------------------------------------------------------------------
+
    ```
 
 3. **Check Output**:
    The compiled `.lf` files will be saved in the following directory:
-   `src/test/resources/org/rebecalang/compiler/modelcompiler/compiledLF`
+   `compiledLF`
 
 ---
 
@@ -104,6 +241,8 @@ The compiler can process `.rebeca` files in the input directory and generate cor
 
 - **Work in Progress**: The compiler is still under development. The following limitations currently apply:
   - Circular dependency issues are being actively addressed.
+  - Timing constraints concerning the usage of the after keyword are being addressed.
+  - Support for conditional statements and loops are being addressed.
 
 - **Common Issues**:
   1. **Maven Not Installed**: Ensure Maven is installed on your system. You can install Maven using a package manager:
