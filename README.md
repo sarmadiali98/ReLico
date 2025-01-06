@@ -184,43 +184,7 @@ Compilation successful for file: Sender_and_Receiver.rebeca
 ========================================
 
 Compilation successful for file: pingpong.rebeca
-=== Rebeca Structure Map ===
 
-1) Rebecs and their known rebecs:
-   - node0 (Reactive Class: Node) knows: [sw0, sw1]
-   - sw1 (Reactive Class: Switch) knows: [node0]
-   - sw0 (Reactive Class: Switch) knows: [node0]
-
-2) Declared message servers and calls made by each rebec:
-   Reactive Class: Switch
-      Instance: sw1
-         Declares msgSrv: runme2
-         Declares msgSrv: constructorOfSwitch
-         Calls made by sw1:
-            -> INTERNAL call to runme2()
-            -> EXTERNAL call to runme() in rebec 'node0'
-            -> EXTERNAL call to runme() in rebec 'node0'
-         Call counts:
-            runme2: 1 times
-            runme: 2 times
-      Instance: sw0
-         Declares msgSrv: runme2
-         Declares msgSrv: constructorOfSwitch
-         Calls made by sw0:
-            -> INTERNAL call to runme2()
-            -> EXTERNAL call to runme() in rebec 'node0'
-            -> EXTERNAL call to runme() in rebec 'node0'
-         Call counts:
-            runme2: 1 times
-            runme: 2 times
-   Reactive Class: Node
-      Instance: node0
-         Declares msgSrv: runme
-         (No calls made.)
-
-========================================
-
-Compilation successful for file: Node_and_Switch.rebeca
 All Rebeca model files have been processed.
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
