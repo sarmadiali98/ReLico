@@ -16,7 +16,6 @@ reactiveclass Switch(100) {
     }
     msgsrv runme2(int in0){
         node0.runme(in0);
-        node0.runme(in0);
     }
 }
 main {
