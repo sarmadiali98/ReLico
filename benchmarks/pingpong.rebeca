@@ -1,0 +1,31 @@
+reactiveclass Node(100) {
+    knownrebecs {
+        Node next;
+    }
+    statevars {
+        int id;
+        boolean ke;
+        boolean ka;
+        int kkkkk;
+    }
+    Node(int _id, boolean _ke) {
+        id = _id;
+        ke = _ke;
+        self.sendMsg(1, false);
+    }
+    msgsrv sendMsg(int msg, boolean blush) {
+        msg = 2*msg+84;
+        blush = !blush;
+        next.rcvMsg(msg, true);
+        self.sendMsg(msg, blush) after(1);
+    }
+    msgsrv rcvMsg(int msg, boolean isvalid) {
+        kkkkk = msg + 3 * kkkkk;
+        ka = !isvalid;
+    }
+}
+
+main {
+    Node node0(node1):(0, false);
+    Node node1(node0):(1, true);
+}
