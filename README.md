@@ -67,7 +67,7 @@ The compiler can process `.rebeca` files in the input directory and generate cor
 ## Steps to Run
 
 1. **Ensure Models Are in the Input Directory**:  
-   Place `.rebeca` files in the following directory (Optional; Two sample files already exist in the following directory):  
+   Place `.rebeca` files in the following directory (Optional; Some sample files already exist in the following directory):  
    `src/test/resources/org/rebecalang/compiler/modelcompiler/models`
 
 2. **Run the Compiler**:  
@@ -75,9 +75,8 @@ The compiler can process `.rebeca` files in the input directory and generate cor
    ```bash
    mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
    ```
-   The following output should appear based on your `.rebeca` code:
+   The following output will appear based on your `.rebeca` files:
 ```bash
-[INFO] 
 [INFO] ----------------------< org.rebecalang:compiler >-----------------------
 [INFO] Building compiler 2.25
 [INFO]   from pom.xml
