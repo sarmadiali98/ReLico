@@ -400,7 +400,7 @@ public class LinguaFrancaCodeGenerator {
 
             // Add connections for external calls
             //System.out.println("DEBUG: Generating connections");
-            lfCode.append(generateConnectionStatements(callsByInstance, instanceToClass, constructorInfoMap, externalCallsByClass));
+            lfCode.append(generateConnectionStatements(callsByInstance, instanceToClass));
             lfCode.append("}\n\n");
         }
 
@@ -420,30 +420,33 @@ public class LinguaFrancaCodeGenerator {
     // -----------------------------------------------------------------------
     private String generateConnectionStatements(
             Map<String, List<CallDetail>> callsByInstance,
-            Map<String, String> instanceToClass,
-            Map<String, ConstructorInfo> constructorInfoMap,
-            Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass
+            Map<String, String> instanceToClass
     ) {
         StringBuilder sb = new StringBuilder();
-        for (var entry : externalCallsByClass.entrySet()) {
-            String calleeClass = entry.getKey();
-            for (var entry1 : entry.getValue().entrySet()) {
-                String calleeInst = entry1.getKey();
-                for (var entry2 : entry1.getValue().entrySet()) {
-                    String msgName = entry2.getKey();
-                    List<ExternalCall> calls = entry2.getValue();
-                    if (calls.isEmpty()) continue;
-                    String callerInst = calls.get(0).getCallerInstance();
-                    String outPort = msgName + "_to_" + calleeInst + "_from_" + callerInst + "_out";
-                    String inPort = msgName + "_to_" + calleeInst + "_from_" + callerInst + "_in";
-                    sb.append("    ")
-                            .append(callerInst).append(".").append(outPort)
-                            .append(" -> ")
-                            .append(calleeInst).append(".").append(inPort)
-                            .append(";\n");
+        Set<String> uniqueConnections = new HashSet<>(); // Track unique connections
+
+        for (Map.Entry<String, List<CallDetail>> callerEntry : callsByInstance.entrySet()) {
+            String callerInstance = callerEntry.getKey();
+            for (CallDetail callDetail : callerEntry.getValue()) {
+                if (!callDetail.isInternal) {
+                    String calleeInstance = callDetail.externalTargetInstance;
+                    String msgName = callDetail.msgName;
+
+                    String outPort = msgName + "_to_" + calleeInstance + "_from_" + callerInstance + "_out";
+                    String inPort = msgName + "_to_" + calleeInstance + "_from_" + callerInstance + "_in";
+                    String connection = callerInstance + "." + outPort + " -> " + calleeInstance + "." + inPort;
+
+                    // Add to unique connections set
+                    uniqueConnections.add(connection);
                 }
             }
         }
+
+        // Append the unique connections
+        for (String connection : uniqueConnections) {
+            sb.append("    ").append(connection).append(";\n");
+        }
+
         return sb.toString();
     }
 
