@@ -1,0 +1,37 @@
+reactiveclass TestArith(100) {
+    statevars {
+        int a;
+        int b;
+        boolean c;
+    }
+
+    TestArith() {
+        a = 10;
+        b = 5;
+        c = true;
+        a += 5;
+        b -= 2;
+        a *= 2;
+        b /= 2;
+        a = a % 3;
+        c = !c;
+        c = a < 5;
+        c = a > 5;
+        c = a <= 5;
+        c = a >= 5;
+        c = a == 5;
+        c = a != 5;
+        c = c && true;
+        c = c || false;
+
+        self.send();
+    }
+
+    msgsrv send() {
+      //  no-op
+    }
+}
+
+main {
+    TestArith test():();
+}

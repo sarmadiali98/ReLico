@@ -1,0 +1,26 @@
+reactiveclass Node(100) {
+    statevars {
+        int counter;
+    }
+    Node() {
+        counter = 0;
+        self.processData(10); // Internal call
+    }
+    msgsrv processData(int value) {
+        counter += value;
+    }
+}
+
+reactiveclass Switch(100) {
+    knownrebecs {
+        Node node;
+    }
+    Switch() {
+        node.processData(5); // External call
+    }
+}
+
+main{
+    Node node0():();
+    Switch switch0(node0):();
+}
