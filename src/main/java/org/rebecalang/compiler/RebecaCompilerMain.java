@@ -45,16 +45,24 @@ public class RebecaCompilerMain {
         File[] rebecaFiles = modelDirectory.listFiles(rebecaFilter);
 
         if (rebecaFiles == null || rebecaFiles.length == 0) {
-            System.out.println("No Rebeca model files found in directory: " + modelDirectoryPath);
+            System.err.println("No Rebeca model files found in directory: " + modelDirectoryPath);
             return;
         }
 
         // Iterate over each Rebeca file and compile it
         for (File rebecaFile : rebecaFiles) {
             String inputFilePath = rebecaFile.getAbsolutePath();
+            String originalFileName = rebecaFile.getName();
+            String outputFileName;
+            // Check if the file name starts with a number
+            if (originalFileName.matches("^\\d.*")) {
+                System.out.println("Warning: Rebeca file '" + originalFileName + "' starts with a number. Prepending '_' to the generated LF file name.");
+                outputFileName = "_" + originalFileName.substring(0, originalFileName.lastIndexOf('.')) + ".lf";
+            } else {
+                outputFileName = originalFileName.substring(0, originalFileName.lastIndexOf('.')) + ".lf";
+            }
 
-            // Derive the output file name by replacing the .rebeca extension with .lf
-            String outputFileName = rebecaFile.getName().substring(0, rebecaFile.getName().lastIndexOf('.')) + ".lf";
+
             String outputFilePath = new File(outputDirectory, outputFileName).getAbsolutePath();
 
             // Set the input file and output path for the compiler
@@ -65,16 +73,17 @@ public class RebecaCompilerMain {
                 compiler.compile();
 
                 if (exceptionContainer.getExceptions().isEmpty()) {
-                    System.out.println("Compilation successful for file: " + rebecaFile.getName());
+                    System.out.println("\nCompilation successful for file: " + rebecaFile.getName());
                 } else {
-                    System.out.println("Compilation had errors for file: " + rebecaFile.getName());
+                    System.out.println("\nCompilation had errors for file: " + rebecaFile.getName());
                     // Clear exceptions after handling
                     exceptionContainer.clear();
                 }
             } catch (Exception e) {
-                System.err.println("Compilation failed for file: " + rebecaFile.getName() + " with error: " + e.getMessage());
+                System.err.println("\nCompilation failed for file: " + rebecaFile.getName() + " with error: " + e.getMessage());
                 //e.printStackTrace();
             }
+            System.out.println("\n========================================\n");
         }
 
         System.out.println("All Rebeca model files have been processed.");
