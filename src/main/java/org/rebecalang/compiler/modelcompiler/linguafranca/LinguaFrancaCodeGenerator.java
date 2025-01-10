@@ -23,14 +23,12 @@ public class LinguaFrancaCodeGenerator {
 
         // 2) Gather all Rebeca classes
         classes = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
-        //System.out.println("DEBUG: Found " + classes.size() + " reactive classes.");
 
         // 3) Precompute constructor + statevar info
         Map<String, ConstructorInfo> constructorInfoMap = new HashMap<>();
         for (ReactiveClassDeclaration rc : classes) {
             ConstructorInfo cInfo = buildConstructorInfo(rc);
             constructorInfoMap.put(rc.getName(), cInfo);
-            //System.out.println("DEBUG: Built ConstructorInfo for class " + rc.getName());
         }
 
         // 4) Collect Internal Message Servers
@@ -57,25 +55,42 @@ public class LinguaFrancaCodeGenerator {
             String className = rc.getName();
             ConstructorInfo cInfo = constructorInfoMap.get(className);
 
-            // For each external msgsrv in the class => create a struct
-            for (String msgsrvName : cInfo.externalMsgsrvsToParams.keySet()) {
-                List<FormalParameterDeclaration> params = cInfo.externalMsgsrvsToParams.get(msgsrvName);
-                lfCode.append("    struct ")
-                        .append(className).append("_").append(msgsrvName)
-                        .append(" {\n");
-                if (params.isEmpty()) {
-                    // If no parameters => default_arg
-                    lfCode.append("        int default_arg;\n");
-                } else {
-                    for (FormalParameterDeclaration param : params) {
-                        lfCode.append("        ")
-                                .append(mapRebecaTypeToLF(param.getType().getTypeName()))
-                                .append(" ")
-                                .append(param.getName())
-                                .append(";\n");
+            // For each msgsrv in the class => create a struct if it's used in an external call
+            for (String msgsrvName : cInfo.msgsrvToParams.keySet()) {
+                // Skip if it is constructor
+                if (msgsrvName.startsWith("constructorOf"))
+                    continue;
+                boolean isUsedExternally = false;
+                for (List<CallDetail> callDetails : callsByInstance.values()) {
+                    for (CallDetail cd : callDetails) {
+                        if (!cd.isInternal && cd.msgName.equals(msgsrvName)) {
+                            isUsedExternally = true;
+                            break;
+                        }
                     }
+                    if (isUsedExternally)
+                        break;
                 }
-                lfCode.append("    };\n");
+
+                if (isUsedExternally) {
+                    List<FormalParameterDeclaration> params = cInfo.msgsrvToParams.get(msgsrvName);
+                    lfCode.append("    struct ")
+                            .append(className).append("_").append(msgsrvName)
+                            .append(" {\n");
+                    if (params.isEmpty()) {
+                        // If no parameters => default_arg
+                        lfCode.append("        int default_arg;\n");
+                    } else {
+                        for (FormalParameterDeclaration param : params) {
+                            lfCode.append("        ")
+                                    .append(mapRebecaTypeToLF(param.getType().getTypeName()))
+                                    .append(" ")
+                                    .append(param.getName())
+                                    .append(";\n");
+                        }
+                    }
+                    lfCode.append("    };\n");
+                }
             }
         }
         lfCode.append("=}\n\n");
@@ -84,12 +99,10 @@ public class LinguaFrancaCodeGenerator {
         Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass =
                 groupExternalCallsByClass(callsByInstance, instanceToClass, constructorInfoMap);
 
-        //System.out.println("DEBUG: externalCallsByClass: " + externalCallsByClass);
 
         // 7) Generate the reactors (one per reactive class)
         for (ReactiveClassDeclaration rc : classes) {
             String className = rc.getName();
-            //System.out.println("\n\nDEBUG: Starting reactor generation for " + className);
             ConstructorInfo cInfo = constructorInfoMap.get(className);
 
             lfCode.append("reactor ").append(className);
@@ -115,6 +128,7 @@ public class LinguaFrancaCodeGenerator {
             // We'll store input ports in a map: msgsrvName -> list of portNames
             Map<String, List<String>> inputsByMsgsrv = new HashMap<>();
 
+
             // Instead of only checking externalCallsByClass.get(className),
             // we iterate over ALL entries and create outputs if we're the caller,
             // inputs if we're the callee. This allows a once-callee to also be a caller.
@@ -128,9 +142,8 @@ public class LinguaFrancaCodeGenerator {
                                         + ec.getTargetInstance() + "_from_" + ec.getCallerInstance()
                                         + "_out";
                                 if (!alreadyGeneratedPorts.contains(portName)) {
-                                    //System.out.println("DEBUG: Creating output port "
-                                            //+ portName + " in class " + className);
                                     alreadyGeneratedPorts.add(portName);
+
                                     lfCode.append("    output ")
                                             .append(portName)
                                             .append(": ")
@@ -144,8 +157,6 @@ public class LinguaFrancaCodeGenerator {
                                         + ec.getTargetInstance() + "_from_" + ec.getCallerInstance()
                                         + "_in";
                                 if (!alreadyGeneratedPorts.contains(portName)) {
-                                    //System.out.println("DEBUG: Creating input port "
-                                            //+ portName + " in class " + className);
                                     alreadyGeneratedPorts.add(portName);
                                     lfCode.append("    input ")
                                             .append(portName)
@@ -161,7 +172,6 @@ public class LinguaFrancaCodeGenerator {
                     }
                 }
             }
-
             // For non-constructor-based statevars => "state foo: bool"
             for (StateVar sv : cInfo.regularStateVars) {
                 lfCode.append("    state ")
@@ -204,8 +214,6 @@ public class LinguaFrancaCodeGenerator {
                 // Only generate for the matching msgsrv
                 for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
                     if (msgsrv.getName().equals(msgsrvName)) {
-                        //System.out.println("DEBUG: Generating msgsrv body for INTERNAL "
-                                //+ msgsrvName + " in class " + className);
                         body.append(
                                 generateMsgsrvBody(
                                         msgsrv.getBlock(),
@@ -252,7 +260,6 @@ public class LinguaFrancaCodeGenerator {
                 constructor = rc.getConstructors().get(0);
             }
             if (constructor != null) {
-                //System.out.println("DEBUG: Generating startup reaction for class " + className);
                 Set<String> scheduledActions = new LinkedHashSet<>();
                 Set<String> externalPortsToEmit = new LinkedHashSet<>();
 
@@ -321,15 +328,9 @@ public class LinguaFrancaCodeGenerator {
                         );
                     }
 
-                    //System.out.println("DEBUG: Generating EXTERNAL reaction for "
-                            //+ externalMsgsrvName + " port=" + portName
-                            //+ " in class " + className);
-
                     lfCode.append("    reaction(").append(portName).append(") {=\n");
 
                     if (externalMsgDecl != null && externalMsgDecl.getBlock() != null) {
-                        //System.out.println("DEBUG: Found Rebeca block for external msgsrv "
-                                //+ externalMsgsrvName + " in class " + className);
                         Set<String> scheduledActions = new LinkedHashSet<>();
                         Set<String> externalPortsToEmit = new LinkedHashSet<>();
 
@@ -348,9 +349,6 @@ public class LinguaFrancaCodeGenerator {
                                 externalParamMapping // pass param->(*port.get()).param
                         );
                         lfCode.append(externalBody);
-                    } else {
-                        //System.out.println("DEBUG: No code block found for external msgsrv "
-                                //+ externalMsgsrvName + " in class " + className);
                     }
 
                     lfCode.append("    =}\n");
@@ -399,7 +397,6 @@ public class LinguaFrancaCodeGenerator {
             }
 
             // Add connections for external calls
-            //System.out.println("DEBUG: Generating connections");
             lfCode.append(generateConnectionStatements(callsByInstance, instanceToClass));
             lfCode.append("}\n\n");
         }
@@ -468,9 +465,6 @@ public class LinguaFrancaCodeGenerator {
                     String calleeInst = cd.externalTargetInstance;
                     String calleeClass = instanceToClass.getOrDefault(calleeInst, "");
                     String methodName = cd.msgName;
-                    //System.out.println("DEBUG: Grouping external call: " + methodName
-                            //+ " from " + callerClass + " to " + calleeClass
-                            //+ " instance " + calleeInst );
 
                     ExternalCall ec = new ExternalCall(
                             inst, callerClass,
@@ -478,13 +472,12 @@ public class LinguaFrancaCodeGenerator {
                             methodName
                     );
 
-                    // Derive LF type from callee's external msgsrv
+                    // Derive LF type from callee's  msgsrv
                     ConstructorInfo calleeCInfo = constructorInfoMap.get(calleeClass);
-                    if (calleeCInfo != null &&
-                            calleeCInfo.externalMsgsrvsToParams.containsKey(methodName)) {
+                    if (calleeCInfo != null) {
                         List<FormalParameterDeclaration> params =
-                                calleeCInfo.externalMsgsrvsToParams.get(methodName);
-                        if (params.isEmpty()) {
+                                calleeCInfo.msgsrvToParams.get(methodName);
+                        if (params == null || params.isEmpty()) {
                             ec.setLfType("int");
                         } else {
                             ec.setLfType(calleeClass + "_" + methodName);
@@ -492,6 +485,7 @@ public class LinguaFrancaCodeGenerator {
                     } else {
                         ec.setLfType("int"); // fallback
                     }
+                    ec.setExternal(true);
 
                     result.putIfAbsent(calleeClass, new HashMap<>());
                     result.get(calleeClass).putIfAbsent(calleeInst, new HashMap<>());
@@ -510,6 +504,7 @@ public class LinguaFrancaCodeGenerator {
         private final String calleeClass;
         private final String msgsrvName;
         private String lfType;
+        private boolean isExternal;
 
         public ExternalCall(String callerInstance, String callerClass,
                             String targetInstance, String calleeClass,
@@ -520,13 +515,42 @@ public class LinguaFrancaCodeGenerator {
             this.calleeClass = calleeClass;
             this.msgsrvName = msgsrvName;
         }
-        public String getCallerInstance() { return callerInstance; }
-        public String getCallerClass() { return callerClass; }
-        public String getTargetInstance() { return targetInstance; }
-        public String getCalleeClass() { return calleeClass; }
-        public String getMsgsrvName() { return msgsrvName; }
-        public String getLfType() { return lfType; }
-        public void setLfType(String lfType) { this.lfType = lfType; }
+
+        public String getCallerInstance() {
+            return callerInstance;
+        }
+
+        public String getCallerClass() {
+            return callerClass;
+        }
+
+        public String getTargetInstance() {
+            return targetInstance;
+        }
+
+        public String getCalleeClass() {
+            return calleeClass;
+        }
+
+        public String getMsgsrvName() {
+            return msgsrvName;
+        }
+
+        public String getLfType() {
+            return lfType;
+        }
+
+        public void setLfType(String lfType) {
+            this.lfType = lfType;
+        }
+
+        public boolean isExternal() {
+            return isExternal;
+        }
+
+        public void setExternal(boolean external) {
+            isExternal = external;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -767,7 +791,7 @@ public class LinguaFrancaCodeGenerator {
                                     && externalCallsByClass.get(cd.calleeClass).get(cd.externalTargetInstance).containsKey(methodName)) {
 
                                 String calleeClass = instanceToClass.get(cd.externalTargetInstance);
-                                String structName  = calleeClass + "_" + methodName;
+                                String structName = calleeClass + "_" + methodName;
 
                                 // param list from cd.arguments
                                 List<String> paramVals = new ArrayList<>();
@@ -847,7 +871,21 @@ public class LinguaFrancaCodeGenerator {
             String op = be.getOperator();
             String left = transformExpression(be.getLeft(), msgsrvName, cInfo, externalParamMapping);
             String right = transformExpression(be.getRight(), msgsrvName, cInfo, externalParamMapping);
-            return left + " " + op + " " + right;
+
+            // Handle compound assignment
+            switch (op) {
+                case "+=":
+                    return left + " = " + left + " + " + right;
+                case "-=":
+                    return left + " = " + left + " - " + right;
+                case "*=":
+                    return left + " = " + left + " * " + right;
+                case "/=":
+                    return left + " = " + left + " / " + right;
+                default:
+                    // Handle regular binary operators
+                    return left + " " + op + " " + right;
+            }
         }
         if (expr instanceof Literal lit) {
             return lit.getLiteralValue();
@@ -871,8 +909,9 @@ public class LinguaFrancaCodeGenerator {
             return rawName;
         }
         if (expr instanceof UnaryExpression ue) {
-            return ue.getOperator()
-                    + transformExpression(ue.getExpression(), msgsrvName, cInfo, externalParamMapping);
+            String op = ue.getOperator();
+            String operand = transformExpression(ue.getExpression(), msgsrvName, cInfo, externalParamMapping);
+            return op + operand;
         }
         return "";
     }
@@ -963,8 +1002,20 @@ public class LinguaFrancaCodeGenerator {
         }
 
         // Distinguish external vs internal
+        Set<String> internalCalls = new HashSet<>();
+        String cName = rc.getName();
+        if (constructor != null) {
+            analyzeBlockForInternalCalls(constructor.getBlock(), cName, internalCalls);
+        }
         for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-            if (!isInternal(msgsrv, rc, constructor)) {
+            analyzeBlockForInternalCalls(msgsrv.getBlock(), cName, internalCalls);
+        }
+        for (MethodDeclaration md : rc.getSynchMethods()) {
+            analyzeBlockForInternalCalls(md.getBlock(), cName, internalCalls);
+        }
+        for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
+            boolean isInternal = internalCalls.contains(msgsrv.getName());
+            if (!isInternal) {
                 cInfo.externalMsgsrvsToParams.put(msgsrv.getName(), msgsrv.getFormalParameters());
             }
         }
@@ -1463,6 +1514,5 @@ public class LinguaFrancaCodeGenerator {
                 }
             }
         }
-        System.out.println("\n========================================\n");
     }
 }
