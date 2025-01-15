@@ -1,5 +1,6 @@
 package org.rebecalang.compiler.modelcompiler.linguafranca;
 
+import lombok.Getter;
 import org.rebecalang.compiler.modelcompiler.corerebeca.objectmodel.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -12,11 +13,11 @@ public class LinguaFrancaCodeGenerator {
     private List<ReactiveClassDeclaration> classes;
 
     // -----------------------------------------------------------------------
-    // NEW: We'll store a small class for pending external calls
+    // We'll store a small class for pending external calls
     // -----------------------------------------------------------------------
     private static class PendingExternalCall {
-        String outPort;   // e.g. runme_to_node0_from_sw0_out
-        String argString; // e.g. Node_runme{in0_for_runme2 + 2}
+        String outPort;
+        String argString;
         int index;
         @Override
         public boolean equals(Object o) {
@@ -56,16 +57,16 @@ public class LinguaFrancaCodeGenerator {
         // 4) Collect Internal Message Servers
         Map<String, Set<String>> internalMsgsrvs = findInternalMsgServers(constructorInfoMap);
 
-        // (D) callsByInstance
+        // callsByInstance
         Map<String, List<CallDetail>> callsByInstance = new HashMap<>();
         Map<String, String> instanceToClass = buildInstanceToClassMap();
         for (String inst : instanceToClass.keySet()) {
             callsByInstance.put(inst, new ArrayList<>());
         }
 
-        // (E) class->list of known rebecs
+        // class->list of known rebecs
         Map<String, List<String>> classToKnownRebecs = buildClassToKnownRebecsMap();
-        // (F) instance->list of known rebecs
+        // instance->list of known rebecs
         Map<String, List<String>> instanceKnownRebecs = buildInstanceKnownRebecsMap(instanceToClass);
 
         // Parse all code blocks to discover calls (internal/external)
@@ -255,11 +256,11 @@ public class LinguaFrancaCodeGenerator {
                                 externalCallsByClass,
                                 null, // externalParamMapping
                                 new HashSet<>(), // externalPortsAlreadySet
-                                pendingCalls // NEW
+                                pendingCalls
                         );
                         body.append(partialBody);
 
-                        // Now we generate a single set(...) line for each unique call
+                        // Now we generate a single set(...) line for each call
                         for (PendingExternalCall pc : pendingCalls) {
                             body.append("        ")
                                     .append(pc.outPort)
@@ -409,7 +410,7 @@ public class LinguaFrancaCodeGenerator {
                         lfCode.append(externalBody);
                     }
 
-                    // Now we generate the unique .set(...) lines
+                    // Now we generate the .set(...) lines
                     for (PendingExternalCall pc : pendingCalls) {
                         lfCode.append("        ")
                                 .append(pc.outPort)
@@ -480,8 +481,8 @@ public class LinguaFrancaCodeGenerator {
     }
 
     // -----------------------------------------------------------------------
-    // NEW: parseMsgsrvBlockCollectingCalls - parse the code block and store external calls
-    // in pendingCalls, then return any textual code needed (for internal calls, assignments, etc.)
+    // parse the code block and store external calls in pendingCalls
+    // then return any textual code needed (for internal calls, assignments, etc.)
     // -----------------------------------------------------------------------
     private String parseMsgsrvBlockCollectingCalls(
             Statement stmt,
@@ -497,7 +498,7 @@ public class LinguaFrancaCodeGenerator {
             Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass,
             Map<String, String> externalParamMapping,
             Set<String> externalPortsAlreadySet,
-            Set<PendingExternalCall> pendingCalls // <--- store external calls here
+            Set<PendingExternalCall> pendingCalls // external calls
     ) {
         StringBuilder lfCode = new StringBuilder();
         if (stmt == null) return lfCode.toString();
@@ -566,7 +567,7 @@ public class LinguaFrancaCodeGenerator {
     }
 
     // -----------------------------------------------------------------------
-    // NEW: processExpressionCollectingCalls - we do the *inlined code* for assignments/ internal,
+    // we do the inlined code for assignments/ internal,
     // but push external calls into pendingCalls
     // -----------------------------------------------------------------------
     private String processExpressionCollectingCalls(
@@ -593,7 +594,7 @@ public class LinguaFrancaCodeGenerator {
             String rightStr = transformExpression(be.getRight(), currentMsgsrvName, cInfo, externalParamMapping);
 
             // Skip initialization of constructor parameters in the startup reaction.
-            if (currentMsgsrvName.equals("") && be.getLeft() instanceof TermPrimary leftTerm) {
+            if (currentMsgsrvName.isEmpty() && be.getLeft() instanceof TermPrimary leftTerm) {
                 boolean isParamBased = false;
                 for (ConstructorParam cp : cInfo.params) {
                     if (cp.stateVarName.equals(leftTerm.getName())) {
@@ -762,13 +763,14 @@ public class LinguaFrancaCodeGenerator {
         return code.toString();
     }
 
-    /**
-     * Converts the given Expression to a string.
-     * - If it’s a binary expression, we recursively combine left, operator, and right.
-     * - If it’s a literal, return the literal value.
-     * - If it’s a term primary, possibly rename if it matches a msgsrv param.
-     * - If it’s unary, prepend the operator to the stringified operand.
-     */
+    // -----------------------------------------------------------------------
+    // Converts the given Expression to a string.
+    // - If it’s a binary expression, we recursively combine left, operator, and right.
+    // - If it’s a literal, return the literal value.
+    // - If it’s a term primary, possibly rename if it matches a msgsrv param.
+    // - If it’s unary, prepend the operator to the stringified operand.
+    // -----------------------------------------------------------------------
+
     private String transformExpression(
             Expression expr,
             String msgsrvName,
@@ -786,13 +788,13 @@ public class LinguaFrancaCodeGenerator {
             String right = transformExpression(be.getRight(), msgsrvName, cInfo, externalParamMapping);
 
             // For compound assignments, you might do extra logic:
-            switch (op) {
-                case "+=": return left + " = " + left + " + " + right;
-                case "-=": return left + " = " + left + " - " + right;
-                case "*=": return left + " = " + left + " * " + right;
-                case "/=": return left + " = " + left + " / " + right;
-                default:   return left + " " + op + " " + right;
-            }
+            return switch (op) {
+                case "+=" -> left + " = " + left + " + " + right;
+                case "-=" -> left + " = " + left + " - " + right;
+                case "*=" -> left + " = " + left + " * " + right;
+                case "/=" -> left + " = " + left + " / " + right;
+                default -> left + " " + op + " " + right;
+            };
         }
 
         // Handle simple literals like 2, 10, "true", etc.
@@ -811,8 +813,7 @@ public class LinguaFrancaCodeGenerator {
             }
 
             // 2) Possibly rename if it's a msgsrv param
-            String renamed = renameIfParam(rawName, msgsrvName, cInfo);
-            return renamed;
+            return renameIfParam(rawName, msgsrvName, cInfo);
         }
 
         // Handle unary expressions like "-x", "!flag", etc.
@@ -826,11 +827,16 @@ public class LinguaFrancaCodeGenerator {
         return "";
     }
 
-    /**
-     * Renames a parameter if it matches a msgsrv’s formal parameter,
-     * so that "msg" becomes "msg_for_sendMsg" (for example).
-     */
-    private String renameIfParam(String rawName, String msgsrvName, ConstructorInfo cInfo) {
+    // -----------------------------------------------------------------------
+    //Renames a parameter if it matches a msgsrv’s formal parameter,
+    // so that "msg" becomes "msg_for_sendMsg" (for example).
+    // -----------------------------------------------------------------------
+
+    private String renameIfParam(
+            String rawName,
+            String msgsrvName,
+            ConstructorInfo cInfo
+    ) {
         if (msgsrvName == null || msgsrvName.isEmpty()) {
             return rawName;
         }
@@ -926,11 +932,17 @@ public class LinguaFrancaCodeGenerator {
     }
 
     private static class ExternalCall {
+        @Getter
         private final String callerInstance;
+        @Getter
         private final String callerClass;
+        @Getter
         private final String targetInstance;
+        @Getter
         private final String calleeClass;
+        @Getter
         private final String msgsrvName;
+        @Getter
         private String lfType;
         private boolean isExternal;
 
@@ -944,24 +956,6 @@ public class LinguaFrancaCodeGenerator {
             this.msgsrvName = msgsrvName;
         }
 
-        public String getCallerInstance() {
-            return callerInstance;
-        }
-        public String getCallerClass() {
-            return callerClass;
-        }
-        public String getTargetInstance() {
-            return targetInstance;
-        }
-        public String getCalleeClass() {
-            return calleeClass;
-        }
-        public String getMsgsrvName() {
-            return msgsrvName;
-        }
-        public String getLfType() {
-            return lfType;
-        }
         public void setLfType(String lfType) {
             this.lfType = lfType;
         }
@@ -1053,7 +1047,11 @@ public class LinguaFrancaCodeGenerator {
         return cInfo;
     }
 
-    private boolean isInternal(MsgsrvDeclaration msgsrv, ReactiveClassDeclaration rc, ConstructorDeclaration constructor) {
+    private boolean isInternal(
+            MsgsrvDeclaration msgsrv,
+            ReactiveClassDeclaration rc,
+            ConstructorDeclaration constructor
+    ) {
         Set<String> internalCalls = new HashSet<>();
         String cName = rc.getName();
         if (constructor != null) {
@@ -1066,7 +1064,10 @@ public class LinguaFrancaCodeGenerator {
         return internalCalls.contains(msgsrv.getName());
     }
 
-    private void parseConstructorBlockForAssignments(Statement stmt, Map<String, String> paramToStateVar) {
+    private void parseConstructorBlockForAssignments(
+            Statement stmt,
+            Map<String, String> paramToStateVar
+    ) {
         if (stmt == null) return;
         if (stmt instanceof BlockStatement block) {
             for (Statement s : block.getStatements()) {
@@ -1091,9 +1092,8 @@ public class LinguaFrancaCodeGenerator {
     private String mapRebecaTypeToLF(String rebType) {
         return switch (rebType) {
             case "boolean" -> "bool";
-            case "int" -> "int";
+            case "int", "byte" -> "int";
             case "double" -> "double";
-            case "String" -> "string";
             default -> rebType;
         };
     }
@@ -1101,14 +1101,16 @@ public class LinguaFrancaCodeGenerator {
     private String getDefaultValueForType(String lfType) {
         return switch (lfType) {
             case "bool" -> "false";
-            case "int" -> "0";
             case "double" -> "0.0";
             case "string" -> "\"\"";
             default -> "0";
         };
     }
 
-    private String expressionToString(Expression expr, String lfType, String fallback) {
+    private String expressionToString(
+            Expression expr,
+            String lfType,
+            String fallback) {
         if (expr == null) {
             return fallback;
         }
@@ -1289,7 +1291,11 @@ public class LinguaFrancaCodeGenerator {
         return internalMsgsrvs;
     }
 
-    private void analyzeBlockForInternalCalls(Statement stmt, String currentClass, Set<String> internalCalls) {
+    private void analyzeBlockForInternalCalls(
+            Statement stmt,
+            String currentClass,
+            Set<String> internalCalls
+    ) {
         if (stmt == null) return;
         if (stmt instanceof BlockStatement block) {
             for (Statement s : block.getStatements()) {
@@ -1305,7 +1311,11 @@ public class LinguaFrancaCodeGenerator {
         }
     }
 
-    private void analyzeExpressionForInternalCalls(Expression expr, String currentClass, Set<String> internalCalls) {
+    private void analyzeExpressionForInternalCalls(
+            Expression expr,
+            String currentClass,
+            Set<String> internalCalls
+    ) {
         if (expr == null) return;
         if (expr instanceof DotPrimary dot) {
             Expression left = dot.getLeft();
@@ -1440,7 +1450,7 @@ public class LinguaFrancaCodeGenerator {
                                 List<String> knownRebecsForCaller =
                                         instanceKnownRebecs.getOrDefault(caller, Collections.emptyList());
                                 int idx = knowns.indexOf(leftTerm.getName());
-                                String targetInstance = "";
+                                String targetInstance;
                                 if (idx >= 0 && idx < knownRebecsForCaller.size()) {
                                     targetInstance = knownRebecsForCaller.get(idx);
                                     String calleeClass = instanceToClass.get(targetInstance);
