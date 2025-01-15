@@ -17,13 +17,14 @@ public class LinguaFrancaCodeGenerator {
     private static class PendingExternalCall {
         String outPort;   // e.g. runme_to_node0_from_sw0_out
         String argString; // e.g. Node_runme{in0_for_runme2 + 2}
-
+        int index;
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof PendingExternalCall that)) return false;
             return Objects.equals(this.outPort, that.outPort) &&
-                    Objects.equals(this.argString, that.argString);
+                    Objects.equals(this.argString, that.argString) &&
+                    Objects.equals(this.index, that.index);
         }
 
         @Override
@@ -678,6 +679,7 @@ public class LinguaFrancaCodeGenerator {
                             }
                         }
                     }
+                    int globalindex = 0;
 
                     for (CallDetail cd : callDetails) {
                         if (!cd.isInternal) {
@@ -713,7 +715,10 @@ public class LinguaFrancaCodeGenerator {
                             PendingExternalCall pc = new PendingExternalCall();
                             pc.outPort = outPort;
                             pc.argString = callExpr.toString();
+                            pc.index = globalindex;
+                            globalindex++;
                             pendingCalls.add(pc);
+
 
                             // Also track the port so the reaction's "->" signature includes it
                             externalPortsToEmit.add(outPort);
