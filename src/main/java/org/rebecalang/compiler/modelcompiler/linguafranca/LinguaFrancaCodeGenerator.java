@@ -241,7 +241,7 @@ public class LinguaFrancaCodeGenerator {
                 for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
                     if (msgsrv.getName().equals(msgsrvName)) {
                         // NEW: we call our new method that collects external calls, then returns them
-                        Set<PendingExternalCall> pendingCalls = new HashSet<>();
+                        Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
                         String partialBody = parseMsgsrvBlockCollectingCalls(
                                 msgsrv.getBlock(),
                                 className,
@@ -302,7 +302,7 @@ public class LinguaFrancaCodeGenerator {
                 Set<String> externalPortsToEmit = new LinkedHashSet<>();
 
                 // We'll do the same approach for constructor if it calls external methods
-                Set<PendingExternalCall> pendingCalls = new HashSet<>();
+                Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
                 String startupCode = parseMsgsrvBlockCollectingCalls(
                         constructor.getBlock(),
                         className,
@@ -386,7 +386,7 @@ public class LinguaFrancaCodeGenerator {
                     lfCode.append("    reaction(").append(portName).append(") {=\n");
 
                     // same approach: parse block & gather calls
-                    Set<PendingExternalCall> pendingCalls = new HashSet<>();
+                    Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
                     if (externalMsgDecl != null && externalMsgDecl.getBlock() != null) {
                         Set<String> scheduledActions = new LinkedHashSet<>();
                         Set<String> externalPortsToEmit = new LinkedHashSet<>();
