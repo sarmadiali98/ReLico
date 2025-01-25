@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class LinguaFrancaCodeGenerator {
-
     private final RebecaModel rebecaModel;
     private List<ReactiveClassDeclaration> classes;
 
@@ -39,11 +38,11 @@ public class LinguaFrancaCodeGenerator {
         String type;
     }
 
-    /**
-     * CallDetail: an invocation of a methodName (msgSrv) either internally (self.foo)
-     * or externally (knownRebec.foo). If external, externalTargetInstance is the name
-     * of the instance being invoked.
-     */
+    // -----------------------------------------------------------------------
+    // CallDetail: an invocation of a methodName (msgSrv) either internally (self.foo)
+    // or externally (knownRebec.foo). If external, externalTargetInstance is the name
+    // of the instance being invoked.
+    // -----------------------------------------------------------------------
     private static class CallDetail {
         final String msgName;
         final boolean isInternal;
@@ -52,7 +51,6 @@ public class LinguaFrancaCodeGenerator {
         List<Expression> arguments = new ArrayList<>();
         String calleeClass;            // for external calls
         String afterDelayMs;
-
         CallDetail(String msgName, boolean isInternal, String externalTargetInstance) {
             this.msgName = msgName;
             this.isInternal = isInternal;
@@ -60,10 +58,10 @@ public class LinguaFrancaCodeGenerator {
         }
     }
 
-    /**
-     * Identify which msgsrvs in each class are considered "internal"
-     * based on the fact that they get called via `self.msgsrvName(...)`.
-     */
+    // -----------------------------------------------------------------------
+    // Identify which msgsrvs in each class are considered "internal"
+    // based on the fact that they get called via `self.msgsrvName(...)`.
+    // -----------------------------------------------------------------------
     private Map<String, Set<String>> findInternalMsgServers(Map<String, ConstructorInfo> constructorInfoMap) {
         Map<String, Set<String>> internalMsgsrvs = new HashMap<>();
 
@@ -116,11 +114,10 @@ public class LinguaFrancaCodeGenerator {
         return internalMsgsrvs;
     }
 
-
-    /**
-     * Holds the lines of code generated for a reaction, plus the sets
-     * of actions or ports used (so we can put them in the reaction signature).
-     */
+    // -----------------------------------------------------------------------
+    // Holds the lines of code generated for a reaction, plus the sets
+    // of actions or ports used (so we can put them in the reaction signature).
+    // -----------------------------------------------------------------------
     private static class ReactionContent {
         String code = "";
         Set<String> scheduledActions = new LinkedHashSet<>();
@@ -551,14 +548,10 @@ public class LinguaFrancaCodeGenerator {
         return rc;
     }
 
-
-
     // -----------------------------------------------------------------------
     // parseBlockStatementInline => walk Rebeca statements in order, building code lines
+    // Transforms Rebeca statements into lines of LF code placed in the reaction body.
     // -----------------------------------------------------------------------
-    /**
-     * Transforms Rebeca statements into lines of LF code placed in the reaction body.
-     */
     private String parseBlockStatementInline(
             Statement stmt,
             String className,
@@ -667,7 +660,6 @@ public class LinguaFrancaCodeGenerator {
         }
         return sb.toString();
     }
-
 
     // -----------------------------------------------------------------------
     // processExpressionInline => produce code lines for assignment, internal calls, or external calls
@@ -1371,10 +1363,6 @@ public class LinguaFrancaCodeGenerator {
 
     // quick helper to retrieve constructor info for some callee class
     private ConstructorInfo cInfoFor(String cls, Map<String,String> inst2cls) {
-        // not the best signature, but let's assume we have a global map in real code
-        // we can do a loop or store a global. For brevity, let's do a quick search in the fields:
-        // Actually let's keep a field "Map<String, ConstructorInfo>" as a member so, we can do: constructorInfoMap.get(cls)
-        // ... But let's do a hack here:
         for (ReactiveClassDeclaration rcd : classes) {
             if (rcd.getName().equals(cls)) {
                 return buildConstructorInfo(rcd); // or cached
@@ -1401,6 +1389,7 @@ public class LinguaFrancaCodeGenerator {
 
         printStructureMap(instanceToClass, instanceKnownRebecs, classToMsgServers, callsByInstance);
     }
+
     private Map<String, Set<String>> collectMessageServers() {
         Map<String, Set<String>> result = new HashMap<>();
         for (ReactiveClassDeclaration rc : classes) {
@@ -1418,6 +1407,7 @@ public class LinguaFrancaCodeGenerator {
         }
         return result;
     }
+
     // -----------------------------------------------------------------------
     // Print final structure for debugging
     // -----------------------------------------------------------------------
