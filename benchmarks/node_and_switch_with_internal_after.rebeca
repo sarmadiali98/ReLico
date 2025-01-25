@@ -1,0 +1,11 @@
+reactiveclass Node(100) {
+    Node(){
+        self.runme() after (1);
+    }
+    msgsrv runme(){
+        //do task
+    }
+}
+main{
+    Node node0():();
+}
