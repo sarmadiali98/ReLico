@@ -1,7 +1,8 @@
 package org.rebecalang.compiler.modelcompiler.linguafranca;
 
-import lombok.Getter;
 import org.rebecalang.compiler.modelcompiler.corerebeca.objectmodel.*;
+import org.rebecalang.compiler.modelcompiler.timedrebeca.objectmodel.TimedRebecaParentSuffixPrimary;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,106 +10,185 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class LinguaFrancaCodeGenerator {
+
     private final RebecaModel rebecaModel;
     private List<ReactiveClassDeclaration> classes;
 
     // -----------------------------------------------------------------------
-    // We'll store a small class for pending external calls
+    // Helper Data Classes
     // -----------------------------------------------------------------------
-    private static class PendingExternalCall {
-        String outPort;
-        String argString;
-        int index;
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof PendingExternalCall that)) return false;
-            return Objects.equals(this.outPort, that.outPort) &&
-                    Objects.equals(this.argString, that.argString) &&
-                    Objects.equals(this.index, that.index);
-        }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(outPort, argString);
+    private static class ConstructorInfo {
+        List<ConstructorParam> params = new ArrayList<>();
+        List<StateVar> regularStateVars = new ArrayList<>();
+        // For each msgsrv name => list of formal parameters
+        Map<String, List<FormalParameterDeclaration>> msgsrvToParams = new HashMap<>();
+        // Subset of msgsrvToParams that are "external" from Rebeca's perspective
+        Map<String, List<FormalParameterDeclaration>> externalMsgsrvsToParams = new HashMap<>();
+    }
+
+    private static class ConstructorParam {
+        String paramName;     // formal param name
+        String stateVarName;  // name of the actual state var
+        String type;
+        String defaultValue;
+    }
+
+    private static class StateVar {
+        String name;
+        String type;
+    }
+
+    /**
+     * CallDetail: an invocation of a methodName (msgSrv) either internally (self.foo)
+     * or externally (knownRebec.foo). If external, externalTargetInstance is the name
+     * of the instance being invoked.
+     */
+    private static class CallDetail {
+        final String msgName;
+        final boolean isInternal;
+        final String externalTargetInstance;
+        String callerMsgsrvName;       // which msgSrv or constructor made this call
+        List<Expression> arguments = new ArrayList<>();
+        String calleeClass;            // for external calls
+        String afterDelayMs;
+
+        CallDetail(String msgName, boolean isInternal, String externalTargetInstance) {
+            this.msgName = msgName;
+            this.isInternal = isInternal;
+            this.externalTargetInstance = externalTargetInstance;
         }
+    }
+
+    /**
+     * Identify which msgsrvs in each class are considered "internal"
+     * based on the fact that they get called via `self.msgsrvName(...)`.
+     */
+    private Map<String, Set<String>> findInternalMsgServers(Map<String, ConstructorInfo> constructorInfoMap) {
+        Map<String, Set<String>> internalMsgsrvs = new HashMap<>();
+
+        // For each reactive class
+        for (ReactiveClassDeclaration rc : classes) {
+            String cName = rc.getName();
+
+            // We'll collect any msgsrvs that appear in "self.xyz(...)" calls
+            Set<String> internalCalls = new HashSet<>();
+
+            // 1) If there's a constructor, analyze it
+            for (ConstructorDeclaration cd : rc.getConstructors()) {
+                analyzeBlockForInternalCalls(cd.getBlock(), cName, internalCalls);
+            }
+            // 2) Analyze each msgsrv block
+            for (MsgsrvDeclaration msgs : rc.getMsgsrvs()) {
+                analyzeBlockForInternalCalls(msgs.getBlock(), cName, internalCalls);
+            }
+            // 3) Analyze each synchronous method block
+            for (MethodDeclaration md : rc.getSynchMethods()) {
+                analyzeBlockForInternalCalls(md.getBlock(), cName, internalCalls);
+            }
+
+            // Next, gather all possible msgsrvs (including the pseudo "constructorOf<Class>")
+            Set<String> allMsgsrvs = new HashSet<>();
+            if (!rc.getConstructors().isEmpty()) {
+                allMsgsrvs.add("constructorOf" + cName);
+            }
+            for (MsgsrvDeclaration m : rc.getMsgsrvs()) {
+                allMsgsrvs.add(m.getName());
+            }
+            // If your code also treats synch methods like msgsrvs, include them here:
+            for (MethodDeclaration syn : rc.getSynchMethods()) {
+                allMsgsrvs.add(syn.getName());
+            }
+
+            // Now filter out which of those are "internal" by seeing if they appear in `internalCalls`
+            // Also, we often treat the constructorOfX as implicitly "internal"
+            Set<String> internalServerNames = new HashSet<>();
+            for (String m : allMsgsrvs) {
+                // If you want the constructor always to be considered internal:
+                boolean isConstructor = m.startsWith("constructorOf");
+                if (internalCalls.contains(m) || isConstructor) {
+                    internalServerNames.add(m);
+                }
+            }
+
+            internalMsgsrvs.put(cName, internalServerNames);
+        }
+        return internalMsgsrvs;
+    }
+
+
+    /**
+     * Holds the lines of code generated for a reaction, plus the sets
+     * of actions or ports used (so we can put them in the reaction signature).
+     */
+    private static class ReactionContent {
+        String code = "";
+        Set<String> scheduledActions = new LinkedHashSet<>();
+        Set<String> usedPorts = new LinkedHashSet<>();
     }
 
     public LinguaFrancaCodeGenerator(RebecaModel rebecaModel) {
         this.rebecaModel = rebecaModel;
     }
 
+    // -----------------------------------------------------------------------
+    // Public method: main entry
+    // -----------------------------------------------------------------------
     public void generateCode(String outputPath) {
-        StringBuilder lfCode = new StringBuilder();
 
-        // 1) "target Cpp;"
+        StringBuilder lfCode = new StringBuilder();
         lfCode.append("target Cpp;\n\n");
 
-        // 2) Gather all Rebeca classes
+        // 1) Gather classes
         classes = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
 
-        // 3) Precompute constructor + statevar info
+        // 2) Build constructor info (which state vars are from constructor params, etc.)
         Map<String, ConstructorInfo> constructorInfoMap = new HashMap<>();
         for (ReactiveClassDeclaration rc : classes) {
             ConstructorInfo cInfo = buildConstructorInfo(rc);
             constructorInfoMap.put(rc.getName(), cInfo);
         }
 
-        // 4) Collect Internal Message Servers
+        // 3) Find internal vs. external msgSrvs
         Map<String, Set<String>> internalMsgsrvs = findInternalMsgServers(constructorInfoMap);
 
-        // callsByInstance
-        Map<String, List<CallDetail>> callsByInstance = new HashMap<>();
+        // 4) instance->class map, known rebecs, etc.
         Map<String, String> instanceToClass = buildInstanceToClassMap();
+        Map<String, List<String>> classToKnownRebecs = buildClassToKnownRebecsMap();
+        Map<String, List<String>> instanceKnownRebecs = buildInstanceKnownRebecsMap(instanceToClass);
+
+        // 5) Analyze all calls => callsByInstance
+        Map<String, List<CallDetail>> callsByInstance = new HashMap<>();
         for (String inst : instanceToClass.keySet()) {
             callsByInstance.put(inst, new ArrayList<>());
         }
-
-        // class->list of known rebecs
-        Map<String, List<String>> classToKnownRebecs = buildClassToKnownRebecsMap();
-        // instance->list of known rebecs
-        Map<String, List<String>> instanceKnownRebecs = buildInstanceKnownRebecsMap(instanceToClass);
-
-        // Parse all code blocks to discover calls (internal/external)
         analyzeAllCalls(instanceToClass, callsByInstance, classToKnownRebecs, instanceKnownRebecs);
 
-        // 5) Generate structs (for external msgsrvs)
+        // 6) Generate struct definitions for external calls
         lfCode.append("public preamble {=\n");
         for (ReactiveClassDeclaration rc : classes) {
             String className = rc.getName();
             ConstructorInfo cInfo = constructorInfoMap.get(className);
 
-            // For each msgsrv in the class => create a struct if it's used in an external call
+            // For each msgsrv, if used externally => define a struct
             for (String msgsrvName : cInfo.msgsrvToParams.keySet()) {
-                // Skip if it is constructor
-                if (msgsrvName.startsWith("constructorOf"))
+                if (msgsrvName.startsWith("constructorOf")) {
                     continue;
-                boolean isUsedExternally = false;
-                for (List<CallDetail> callDetails : callsByInstance.values()) {
-                    for (CallDetail cd : callDetails) {
-                        if (!cd.isInternal && cd.msgName.equals(msgsrvName)) {
-                            isUsedExternally = true;
-                            break;
-                        }
-                    }
-                    if (isUsedExternally)
-                        break;
                 }
-
+                boolean isUsedExternally = isMsgsrvExternallyUsed(msgsrvName, className, callsByInstance, instanceToClass);
                 if (isUsedExternally) {
                     List<FormalParameterDeclaration> params = cInfo.msgsrvToParams.get(msgsrvName);
                     lfCode.append("    struct ")
                             .append(className).append("_").append(msgsrvName)
                             .append(" {\n");
                     if (params.isEmpty()) {
-                        // If no parameters => default_arg
                         lfCode.append("        int default_arg;\n");
                     } else {
-                        for (FormalParameterDeclaration param : params) {
+                        for (FormalParameterDeclaration p : params) {
                             lfCode.append("        ")
-                                    .append(mapRebecaTypeToLF(param.getType().getTypeName()))
+                                    .append(mapRebecaTypeToLF(p.getType().getTypeName()))
                                     .append(" ")
-                                    .append(param.getName())
+                                    .append(p.getName())
                                     .append(";\n");
                         }
                     }
@@ -118,307 +198,181 @@ public class LinguaFrancaCodeGenerator {
         }
         lfCode.append("=}\n\n");
 
-        // 6) Group external calls by class + generate I/O declarations
-        Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass =
-                groupExternalCallsByClass(callsByInstance, instanceToClass, constructorInfoMap);
-
-
-        // 7) Generate the reactors (one per reactive class)
+        // 7) Generate one LF reactor per Rebeca class
         for (ReactiveClassDeclaration rc : classes) {
             String className = rc.getName();
             ConstructorInfo cInfo = constructorInfoMap.get(className);
 
             lfCode.append("reactor ").append(className);
 
-            // If we have constructor-based statevars => they become parameters
+            // If constructor has parameters => make them reactor parameters
             if (!cInfo.params.isEmpty()) {
                 lfCode.append("(");
                 for (int i = 0; i < cInfo.params.size(); i++) {
                     if (i > 0) lfCode.append(", ");
-                    ConstructorParam param = cInfo.params.get(i);
-                    lfCode.append(param.stateVarName)
+                    ConstructorParam cp = cInfo.params.get(i);
+                    lfCode.append(cp.stateVarName)
                             .append(": ")
-                            .append(param.type)
+                            .append(cp.type)
                             .append(" = ")
-                            .append(param.defaultValue);
+                            .append(cp.defaultValue);
                 }
                 lfCode.append(")");
             }
             lfCode.append(" {\n");
 
-            // We'll track which ports have already been created in this reactor
-            Set<String> alreadyGeneratedPorts = new HashSet<>();
-            // We'll store input ports in a map: msgsrvName -> list of portNames
-            Map<String, List<String>> inputsByMsgsrv = new HashMap<>();
-
-            // Instead of only checking externalCallsByClass.get(className),
-            // we iterate over ALL entries and create outputs if we're the caller,
-            // inputs if we're the callee. This allows a once-callee to also be a caller.
-            for (Map<String, Map<String, List<ExternalCall>>> mapPerInstance : externalCallsByClass.values()) {
-                for (Map<String, List<ExternalCall>> mapPerMsgName : mapPerInstance.values()) {
-                    for (List<ExternalCall> relevantCalls : mapPerMsgName.values()) {
-                        for (ExternalCall ec : relevantCalls) {
-                            // If this class is the caller => output port
-                            if (ec.getCallerClass().equals(className)) {
-                                String portName = ec.getMsgsrvName() + "_to_"
-                                        + ec.getTargetInstance() + "_from_" + ec.getCallerInstance()
-                                        + "_out";
-                                if (!alreadyGeneratedPorts.contains(portName)) {
-                                    alreadyGeneratedPorts.add(portName);
-
-                                    lfCode.append("    output ")
-                                            .append(portName)
-                                            .append(": ")
-                                            .append(ec.getLfType())
-                                            .append(";\n");
-                                }
-                            }
-                            // If this class is the callee => input port
-                            if (ec.getCalleeClass().equals(className)) {
-                                String portName = ec.getMsgsrvName() + "_to_"
-                                        + ec.getTargetInstance() + "_from_" + ec.getCallerInstance()
-                                        + "_in";
-                                if (!alreadyGeneratedPorts.contains(portName)) {
-                                    alreadyGeneratedPorts.add(portName);
-                                    lfCode.append("    input ")
-                                            .append(portName)
-                                            .append(": ")
-                                            .append(ec.getLfType())
-                                            .append(";\n");
-                                }
-                                // Group this input port under its msgsrvName
-                                inputsByMsgsrv.computeIfAbsent(ec.getMsgsrvName(), k -> new ArrayList<>())
-                                        .add(portName);
-                            }
+            // --- Step A: create I/O ports for external calls ---
+            Set<String> declaredPorts = new LinkedHashSet<>();
+            // (a) Outputs: for calls *made by* any instance of this class
+            for (Map.Entry<String, List<CallDetail>> entry : callsByInstance.entrySet()) {
+                String callerInstance = entry.getKey();
+                String callerClass = instanceToClass.get(callerInstance);
+                if (!callerClass.equals(className)) {
+                    continue; // not relevant to this class
+                }
+                // calls from this instance => create out ports
+                for (CallDetail cd : entry.getValue()) {
+                    if (!cd.isInternal) {
+                        // external call => need an out port
+                        String calleeInst = cd.externalTargetInstance;
+                        String outPortName = cd.msgName + "_to_" + calleeInst + "_from_" + callerInstance + "_out";
+                        if (!declaredPorts.contains(outPortName)) {
+                            declaredPorts.add(outPortName);
+                            // figure out struct name / type
+                            String calleeClass = instanceToClass.get(calleeInst);
+                            List<FormalParameterDeclaration> fps = constructorInfoMap.get(calleeClass)
+                                    .msgsrvToParams
+                                    .getOrDefault(cd.msgName, Collections.emptyList());
+                            String lfType = (fps.isEmpty()) ? "int" : (calleeClass + "_" + cd.msgName);
+                            lfCode.append("    output ").append(outPortName).append(": ").append(lfType).append(";\n");
                         }
                     }
                 }
             }
-            // For non-constructor-based statevars => "state foo: bool"
+
+            // (b) Inputs: for calls *received by* this class’s instances
+            //    i.e., if some other instance calls <thisClassInstance>.<msgName>
+            //    we need "input <msgName>_to_<thisInstance>_from_<thatInstance>_in"
+            Map<String,Set<String>> inputsByMsgsrv = new HashMap<>();
+            for (List<CallDetail> callList : callsByInstance.values()) {
+                for (CallDetail cd : callList) {
+                    if (!cd.isInternal && instanceToClass.get(cd.externalTargetInstance).equals(className)) {
+                        // we are the callee
+                        String callerInst = findCallerInstanceFor(cd, callsByInstance);
+                        if (callerInst == null) {
+                            callerInst = "unknownCaller"; // fallback
+                        }
+                        String portName = cd.msgName + "_to_" + cd.externalTargetInstance
+                                + "_from_" + callerInst
+                                + "_in";
+                        if (!declaredPorts.contains(portName)) {
+                            declaredPorts.add(portName);
+                            // figure out struct type
+                            List<FormalParameterDeclaration> fps = cInfo.msgsrvToParams.getOrDefault(cd.msgName, Collections.emptyList());
+                            String lfType = (fps.isEmpty()) ? "int" : (className + "_" + cd.msgName);
+                            lfCode.append("    input ").append(portName).append(": ").append(lfType).append(";\n");
+                        }
+                        // keep track so we can generate a reaction for that msgsrv
+                        inputsByMsgsrv.computeIfAbsent(cd.msgName, k -> new LinkedHashSet<>())
+                                .add(portName);
+                    }
+                }
+            }
+
+            // --- Step B: State variables ---
+            //  - normal ones
             for (StateVar sv : cInfo.regularStateVars) {
-                lfCode.append("    state ")
-                        .append(sv.name)
-                        .append(": ")
-                        .append(sv.type)
-                        .append("\n");
+                lfCode.append("    state ").append(sv.name)
+                        .append(": ").append(sv.type).append("\n");
             }
-
-            // For each internal msgsrv => create state variables for formal params
+            //  - param placeholders for internal msgSrv calls
             Set<String> internalServers = internalMsgsrvs.getOrDefault(className, Collections.emptySet());
-            for (String msgsrvName : internalServers) {
-                if (msgsrvName.startsWith("constructorOf")) continue;
-                for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-                    if (msgsrv.getName().equals(msgsrvName)) {
-                        for (FormalParameterDeclaration param : msgsrv.getFormalParameters()) {
-                            lfCode.append("    state ")
-                                    .append(param.getName())
-                                    .append("_for_")
-                                    .append(msgsrvName)
-                                    .append(": ")
-                                    .append(mapRebecaTypeToLF(param.getType().getTypeName()))
-                                    .append("\n");
-                        }
+            for (String m : internalServers) {
+                if (m.startsWith("constructorOf")) continue;
+                MsgsrvDeclaration md = findMsgsrv(rc, m);
+                if (md != null) {
+                    for (FormalParameterDeclaration fp : md.getFormalParameters()) {
+                        lfCode.append("    state ")
+                                .append(fp.getName())
+                                .append("_for_").append(m)
+                                .append(": ")
+                                .append(mapRebecaTypeToLF(fp.getType().getTypeName()))
+                                .append("\n");
                     }
                 }
             }
 
-            // Generate a reactor-level "logical action" + "reaction" for each internal msgsrv
-            for (String msgsrvName : internalServers) {
-                if (msgsrvName.startsWith("constructorOf")) continue; // skip constructor-of
-
-                lfCode.append("    logical action ").append(msgsrvName).append(";\n");
-
-                // We gather lines from the Rebeca code => scheduled actions, external outputs
-                Set<String> scheduledActions = new LinkedHashSet<>();
-                Set<String> externalPortsToEmit = new LinkedHashSet<>();
-
-                // Instead of generating .set(...) calls on the fly, we will parse
-                // & collect them in a local set of PendingExternalCall
-                // then generate them once at the end.
-                // We'll do that in a custom method below.
-
-                StringBuilder body = new StringBuilder();
-                for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-                    if (msgsrv.getName().equals(msgsrvName)) {
-                        // NEW: we call our new method that collects external calls, then returns them
-                        Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
-                        String partialBody = parseMsgsrvBlockCollectingCalls(
-                                msgsrv.getBlock(),
-                                className,
-                                cInfo,
-                                internalMsgsrvs,
-                                scheduledActions,
-                                externalPortsToEmit,
-                                classes,
-                                instanceToClass,
-                                callsByInstance,
-                                msgsrvName,
-                                externalCallsByClass,
-                                null, // externalParamMapping
-                                new HashSet<>(), // externalPortsAlreadySet
-                                pendingCalls
-                        );
-                        body.append(partialBody);
-
-                        // Now we generate a single set(...) line for each call
-                        for (PendingExternalCall pc : pendingCalls) {
-                            body.append("        ")
-                                    .append(pc.outPort)
-                                    .append(".set(")
-                                    .append(pc.argString)
-                                    .append(");\n");
-                        }
-                    }
+            // --- Step C: create logical actions for internal msgSrvs ---
+            for (String m : internalServers) {
+                if (!m.startsWith("constructorOf")) {
+                    lfCode.append("    logical action ").append(m).append(";\n");
                 }
+            }
 
-                // Build the reaction signature -> includes scheduled actions + external outputs
-                lfCode.append("    reaction(").append(msgsrvName).append(")");
-                if (!scheduledActions.isEmpty() || !externalPortsToEmit.isEmpty()) {
+            // --- Step D: Generate Reaction for each internal msgsrv ---
+            for (String m : internalServers) {
+                if (m.startsWith("constructorOf")) continue;
+                ReactionContent rContent = generateMsgsrvReactionBody(rc, m, className, cInfo, instanceToClass, callsByInstance);
+                lfCode.append("    reaction(").append(m).append(")");
+                // combine scheduledActions + usedPorts into arrow signature
+                if (!rContent.scheduledActions.isEmpty() || !rContent.usedPorts.isEmpty()) {
                     lfCode.append(" -> ");
-                    boolean first = true;
-                    for (String sa : scheduledActions) {
-                        if (!first) lfCode.append(", ");
-                        lfCode.append(sa);
-                        first = false;
-                    }
-                    for (String port : externalPortsToEmit) {
-                        if (!first) lfCode.append(", ");
-                        lfCode.append(port);
-                        first = false;
+                    List<String> outputs = new ArrayList<>();
+                    outputs.addAll(rContent.scheduledActions);
+                    outputs.addAll(rContent.usedPorts);
+                    for (int i = 0; i < outputs.size(); i++) {
+                        if (i>0) lfCode.append(", ");
+                        lfCode.append(outputs.get(i));
                     }
                 }
                 lfCode.append(" {=\n");
-                lfCode.append(body);
+                lfCode.append(rContent.code);
                 lfCode.append("    =}\n");
             }
 
-            // Handle constructor => "reaction(startup)"
-            ConstructorDeclaration constructor = null;
-            if (!rc.getConstructors().isEmpty()) {
-                constructor = rc.getConstructors().get(0);
-            }
-            if (constructor != null) {
-                Set<String> scheduledActions = new LinkedHashSet<>();
-                Set<String> externalPortsToEmit = new LinkedHashSet<>();
-
-                // We'll do the same approach for constructor if it calls external methods
-                Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
-                String startupCode = parseMsgsrvBlockCollectingCalls(
-                        constructor.getBlock(),
-                        className,
-                        cInfo,
-                        internalMsgsrvs,
-                        scheduledActions,
-                        externalPortsToEmit,
-                        classes,
-                        instanceToClass,
-                        callsByInstance,
-                        "",  // constructor has no specific msgsrv name
-                        externalCallsByClass,
-                        null,
-                        new HashSet<>(),
-                        pendingCalls
+            // --- Step E: If there's a constructor => reaction(startup) with inline code ---
+            ConstructorDeclaration theConstructor = rc.getConstructors().isEmpty() ? null : rc.getConstructors().get(0);
+            if (theConstructor != null) {
+                ReactionContent rContent = generateConstructorReactionBody(
+                        theConstructor.getBlock(),
+                        className, cInfo, internalMsgsrvs,
+                        instanceToClass, callsByInstance
                 );
-
-                // Now generate .set(...) lines for constructor calls
-                StringBuilder finalStartupCode = new StringBuilder(startupCode);
-                for (PendingExternalCall pc : pendingCalls) {
-                    finalStartupCode.append("        ")
-                            .append(pc.outPort)
-                            .append(".set(")
-                            .append(pc.argString)
-                            .append(");\n");
-                }
-
-                if (!finalStartupCode.toString().trim().isEmpty()) {
+                if (!rContent.code.isEmpty()) {
                     lfCode.append("    reaction(startup)");
-                    if (!scheduledActions.isEmpty() || !externalPortsToEmit.isEmpty()) {
+                    if (!rContent.scheduledActions.isEmpty() || !rContent.usedPorts.isEmpty()) {
                         lfCode.append(" -> ");
-                        boolean first = true;
-                        for (String sa : scheduledActions) {
-                            if (!first) lfCode.append(", ");
-                            lfCode.append(sa);
-                            first = false;
-                        }
-                        for (String port : externalPortsToEmit) {
-                            if (!first) lfCode.append(", ");
-                            lfCode.append(port);
-                            first = false;
+                        List<String> outputs = new ArrayList<>();
+                        outputs.addAll(rContent.scheduledActions);
+                        outputs.addAll(rContent.usedPorts);
+                        for (int i = 0; i < outputs.size(); i++) {
+                            if (i>0) lfCode.append(", ");
+                            lfCode.append(outputs.get(i));
                         }
                     }
                     lfCode.append(" {=\n");
-                    lfCode.append(finalStartupCode);
+                    lfCode.append(rContent.code);
                     lfCode.append("    =}\n");
                 }
             }
 
-            // === Create ONE reaction PER input port, with external param logic
-            for (Map.Entry<String, List<String>> entry : inputsByMsgsrv.entrySet()) {
+            // --- Step F: External msgSrvs => one reaction per input port ---
+            for (Map.Entry<String,Set<String>> entry : inputsByMsgsrv.entrySet()) {
                 String externalMsgsrvName = entry.getKey();
-                List<String> inputPorts = entry.getValue();
-                if (inputPorts.isEmpty()) continue;
+                Set<String> portNames = entry.getValue();
+                if (portNames.isEmpty()) continue;
 
-                // De-duplicate in case the same portName appears multiple times
-                Set<String> uniquePorts = new LinkedHashSet<>(inputPorts);
-
-                // We'll find the external msgsrv block in rc.getMsgsrvs().
-                List<FormalParameterDeclaration> extParams =
-                        cInfo.externalMsgsrvsToParams.getOrDefault(externalMsgsrvName, Collections.emptyList());
-
-                MsgsrvDeclaration externalMsgDecl = null;
-                for (MsgsrvDeclaration mdecl : rc.getMsgsrvs()) {
-                    if (mdecl.getName().equals(externalMsgsrvName)) {
-                        externalMsgDecl = mdecl;
-                        break;
-                    }
-                }
-
-                for (String portName : uniquePorts) {
-                    // param->"(*portName.get()).param"
-                    Map<String, String> externalParamMapping = new HashMap<>();
-                    for (FormalParameterDeclaration fp : extParams) {
-                        externalParamMapping.put(
-                                fp.getName(),
-                                "(*" + portName + ".get())." + fp.getName()
-                        );
-                    }
-
+                // find that message declaration
+                MsgsrvDeclaration mDecl = findMsgsrv(rc, externalMsgsrvName);
+                for (String portName : portNames) {
                     lfCode.append("    reaction(").append(portName).append(") {=\n");
 
-                    // same approach: parse block & gather calls
-                    Set<PendingExternalCall> pendingCalls = new LinkedHashSet<>();
-                    if (externalMsgDecl != null && externalMsgDecl.getBlock() != null) {
-                        Set<String> scheduledActions = new LinkedHashSet<>();
-                        Set<String> externalPortsToEmit = new LinkedHashSet<>();
-
-                        String externalBody = parseMsgsrvBlockCollectingCalls(
-                                externalMsgDecl.getBlock(),
-                                className,
-                                cInfo,
-                                internalMsgsrvs,
-                                scheduledActions,
-                                externalPortsToEmit,
-                                classes,
-                                instanceToClass,
-                                callsByInstance,
-                                externalMsgsrvName,
-                                externalCallsByClass,
-                                externalParamMapping,
-                                new HashSet<>(),
-                                pendingCalls
+                    if (mDecl != null && mDecl.getBlock() != null) {
+                        ReactionContent rContent = generateExternalMsgsrvReactionBody(
+                                mDecl, portName, className, cInfo, instanceToClass, callsByInstance
                         );
-                        lfCode.append(externalBody);
+                        lfCode.append(rContent.code);
                     }
-
-                    // Now we generate the .set(...) lines
-                    for (PendingExternalCall pc : pendingCalls) {
-                        lfCode.append("        ")
-                                .append(pc.outPort)
-                                .append(".set(")
-                                .append(pc.argString)
-                                .append(");\n");
-                    }
-
                     lfCode.append("    =}\n");
                 }
             }
@@ -426,15 +380,15 @@ public class LinguaFrancaCodeGenerator {
             lfCode.append("}\n\n");
         }
 
-        // 8) Translate main block => "main reactor { ... }"
+        // 8) main reactor
         MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
         if (mainDecl != null) {
             lfCode.append("main reactor {\n");
 
             // Instantiate each rebec
-            for (MainRebecDefinition mainDef : mainDecl.getMainRebecDefinition()) {
-                String instName = mainDef.getName();
-                String clsName = mainDef.getType().getTypeName();
+            for (MainRebecDefinition md : mainDecl.getMainRebecDefinition()) {
+                String instName = md.getName();
+                String clsName = md.getType().getTypeName();
                 ConstructorInfo cInfo = constructorInfoMap.get(clsName);
 
                 lfCode.append("    ")
@@ -442,20 +396,17 @@ public class LinguaFrancaCodeGenerator {
                         .append(" = new ")
                         .append(clsName);
 
-                List<Expression> constructorArgs = mainDef.getArguments();
+                List<Expression> cArgs = md.getArguments();
                 if (!cInfo.params.isEmpty()) {
                     lfCode.append("(");
                     for (int i = 0; i < cInfo.params.size(); i++) {
-                        ConstructorParam p = cInfo.params.get(i);
-                        String paramValue = p.defaultValue;
-                        if (constructorArgs != null && i < constructorArgs.size()) {
-                            Expression expr = constructorArgs.get(i);
-                            paramValue = expressionToString(expr, p.type, p.defaultValue);
+                        if (i>0) lfCode.append(", ");
+                        ConstructorParam cp = cInfo.params.get(i);
+                        String paramVal = cp.defaultValue;
+                        if (cArgs!=null && i<cArgs.size()) {
+                            paramVal = expressionToString(cArgs.get(i), cp.type, cp.defaultValue);
                         }
-                        if (i > 0) lfCode.append(", ");
-                        lfCode.append(p.stateVarName)
-                                .append(" = ")
-                                .append(paramValue);
+                        lfCode.append(cp.stateVarName).append(" = ").append(paramVal);
                     }
                     lfCode.append(")");
                 } else {
@@ -464,12 +415,12 @@ public class LinguaFrancaCodeGenerator {
                 lfCode.append(";\n");
             }
 
-            // Add connections for external calls
+            // Create connections for external calls
             lfCode.append(generateConnectionStatements(callsByInstance, instanceToClass));
             lfCode.append("}\n\n");
         }
 
-        // 9) Write LF code to file
+        // 9) Write to file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
             writer.write(lfCode.toString());
         } catch (IOException e) {
@@ -481,685 +432,955 @@ public class LinguaFrancaCodeGenerator {
     }
 
     // -----------------------------------------------------------------------
-    // parse the code block and store external calls in pendingCalls
-    // then return any textual code needed (for internal calls, assignments, etc.)
+    // Check if a msgsrv is actually used externally (i.e. some other rebec calls it)
     // -----------------------------------------------------------------------
-    private String parseMsgsrvBlockCollectingCalls(
+    private boolean isMsgsrvExternallyUsed(
+            String msgsrvName,
+            String className,
+            Map<String, List<CallDetail>> callsByInstance,
+            Map<String, String> instanceToClass
+    ) {
+        for (List<CallDetail> callList : callsByInstance.values()) {
+            for (CallDetail cd : callList) {
+                if (!cd.isInternal && cd.msgName.equals(msgsrvName)) {
+                    // see if the target class is className
+                    String tgtCls = instanceToClass.get(cd.externalTargetInstance);
+                    if (className.equals(tgtCls)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // -----------------------------------------------------------------------
+    // Reaction generation for an internal msgSrv
+    // -----------------------------------------------------------------------
+    private ReactionContent generateMsgsrvReactionBody(
+            ReactiveClassDeclaration rc,
+            String msgsrvName,
+            String className,
+            ConstructorInfo cInfo,
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance
+    ) {
+        ReactionContent rContent = new ReactionContent();
+        MsgsrvDeclaration found = findMsgsrv(rc, msgsrvName);
+        if (found == null || found.getBlock()==null) {
+            return rContent;
+        }
+        // parse block inline
+        rContent.code = parseBlockStatementInline(
+                found.getBlock(),
+                className,
+                msgsrvName,
+                cInfo,
+                instanceToClass,
+                callsByInstance,
+                rContent.scheduledActions,
+                rContent.usedPorts,
+                /* externalParamMapping = */null
+        );
+        return rContent;
+    }
+
+    // -----------------------------------------------------------------------
+    // Reaction generation for the constructor => reaction(startup)
+    // -----------------------------------------------------------------------
+    private ReactionContent generateConstructorReactionBody(
+            Statement constructorBody,
+            String className,
+            ConstructorInfo cInfo,
+            Map<String, Set<String>> internalMsgsrvs,
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance
+    ) {
+        ReactionContent rc = new ReactionContent();
+        if (constructorBody == null) return rc;
+
+        rc.code = parseBlockStatementInline(
+                constructorBody,
+                className,
+                /* no msgsrv => use empty string */ "",
+                cInfo,
+                instanceToClass,
+                callsByInstance,
+                rc.scheduledActions,
+                rc.usedPorts,
+                null
+        );
+        return rc;
+    }
+
+    // -----------------------------------------------------------------------
+    // Reaction generation for an external msgsrv triggered by some input port
+    // We pass the portName to allow param references like "(*portName.get()).x"
+    // -----------------------------------------------------------------------
+    private ReactionContent generateExternalMsgsrvReactionBody(
+            MsgsrvDeclaration externalMsgSrvDecl,
+            String portName,
+            String className,
+            ConstructorInfo cInfo,
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance
+    ) {
+        ReactionContent rc = new ReactionContent();
+        if (externalMsgSrvDecl == null || externalMsgSrvDecl.getBlock()==null) {
+            return rc;
+        }
+
+        // Build "externalParamMapping": formalParamName -> "(*portName.get()).paramName"
+        Map<String,String> externalParamMapping = new HashMap<>();
+        List<FormalParameterDeclaration> fps = cInfo.msgsrvToParams.getOrDefault(externalMsgSrvDecl.getName(), Collections.emptyList());
+        for (FormalParameterDeclaration fp : fps) {
+            externalParamMapping.put(fp.getName(), "(*" + portName + ".get())." + fp.getName());
+        }
+
+        rc.code = parseBlockStatementInline(
+                externalMsgSrvDecl.getBlock(),
+                className,
+                externalMsgSrvDecl.getName(),
+                cInfo,
+                instanceToClass,
+                callsByInstance,
+                rc.scheduledActions,
+                rc.usedPorts,
+                externalParamMapping
+        );
+        return rc;
+    }
+
+
+
+    // -----------------------------------------------------------------------
+    // parseBlockStatementInline => walk Rebeca statements in order, building code lines
+    // -----------------------------------------------------------------------
+    /**
+     * Transforms Rebeca statements into lines of LF code placed in the reaction body.
+     */
+    private String parseBlockStatementInline(
             Statement stmt,
             String className,
+            String currentMsgsrvName,
             ConstructorInfo cInfo,
-            Map<String, Set<String>> internalMsgsrvs,
-            Set<String> scheduledActions,
-            Set<String> externalPortsToEmit,
-            List<ReactiveClassDeclaration> classes,
             Map<String, String> instanceToClass,
             Map<String, List<CallDetail>> callsByInstance,
-            String currentMsgsrvName,
-            Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass,
-            Map<String, String> externalParamMapping,
-            Set<String> externalPortsAlreadySet,
-            Set<PendingExternalCall> pendingCalls // external calls
-    ) {
-        StringBuilder lfCode = new StringBuilder();
-        if (stmt == null) return lfCode.toString();
-
-        if (stmt instanceof BlockStatement block) {
-            for (Statement s : block.getStatements()) {
-                lfCode.append(
-                        parseMsgsrvBlockCollectingCalls(
-                                s, className, cInfo,
-                                internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                                classes, instanceToClass, callsByInstance,
-                                currentMsgsrvName, externalCallsByClass,
-                                externalParamMapping,
-                                externalPortsAlreadySet,
-                                pendingCalls
-                        )
-                );
-            }
-        } else if (stmt instanceof ConditionalStatement cs) {
-            lfCode.append(
-                    parseMsgsrvBlockCollectingCalls(
-                            cs.getStatement(), className, cInfo,
-                            internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                            classes, instanceToClass, callsByInstance,
-                            currentMsgsrvName, externalCallsByClass,
-                            externalParamMapping,
-                            externalPortsAlreadySet,
-                            pendingCalls
-                    )
-            );
-            if (cs.getElseStatement() != null) {
-                lfCode.append(
-                        parseMsgsrvBlockCollectingCalls(
-                                cs.getElseStatement(), className, cInfo,
-                                internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                                classes, instanceToClass, callsByInstance,
-                                currentMsgsrvName, externalCallsByClass,
-                                externalParamMapping,
-                                externalPortsAlreadySet,
-                                pendingCalls
-                        )
-                );
-            }
-        } else if (stmt instanceof Expression expr) {
-            // We'll do internal calls & assignments in-lining, but for external calls
-            // we just store them in pendingCalls
-            lfCode.append(
-                    processExpressionCollectingCalls(
-                            expr,
-                            className,
-                            cInfo,
-                            internalMsgsrvs,
-                            scheduledActions,
-                            externalPortsToEmit,
-                            instanceToClass,
-                            callsByInstance,
-                            currentMsgsrvName,
-                            externalParamMapping,
-                            externalCallsByClass,
-                            externalPortsAlreadySet,
-                            pendingCalls
-                    )
-            );
-        }
-        return lfCode.toString();
-    }
-
-    // -----------------------------------------------------------------------
-    // we do the inlined code for assignments/ internal,
-    // but push external calls into pendingCalls
-    // -----------------------------------------------------------------------
-    private String processExpressionCollectingCalls(
-            Expression expr,
-            String className,
-            ConstructorInfo cInfo,
-            Map<String, Set<String>> internalMsgsrvs,
             Set<String> scheduledActions,
-            Set<String> externalPortsToEmit,
-            Map<String, String> instanceToClass,
-            Map<String, List<CallDetail>> callsByInstance,
-            String currentMsgsrvName,
-            Map<String, String> externalParamMapping,
-            Map<String, Map<String, Map<String, List<ExternalCall>>>> externalCallsByClass,
-            Set<String> externalPortsAlreadySet,
-            Set<PendingExternalCall> pendingCalls
-    ) {
-        StringBuilder code = new StringBuilder();
-        if (expr == null) return code.toString();
-
-        if (expr instanceof BinaryExpression be && "=".equals(be.getOperator())) {
-            // normal assignment
-            String leftStr = transformExpression(be.getLeft(), currentMsgsrvName, cInfo, externalParamMapping);
-            String rightStr = transformExpression(be.getRight(), currentMsgsrvName, cInfo, externalParamMapping);
-
-            // Skip initialization of constructor parameters in the startup reaction.
-            if (currentMsgsrvName.isEmpty() && be.getLeft() instanceof TermPrimary leftTerm) {
-                boolean isParamBased = false;
-                for (ConstructorParam cp : cInfo.params) {
-                    if (cp.stateVarName.equals(leftTerm.getName())) {
-                        isParamBased = true;
-                        break;
-                    }
-                }
-                if (isParamBased) {
-                    return code.toString();
-                }
-            }
-
-            code.append("        ").append(leftStr).append(" = ").append(rightStr).append(";\n");
-
-        } else if (expr instanceof DotPrimary dot) {
-            Expression left = dot.getLeft();
-            Expression right = dot.getRight();
-
-            // Recursively parse sub-expressions first (they might contain assignments)
-            code.append(processExpressionCollectingCalls(
-                    left, className, cInfo,
-                    internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                    instanceToClass, callsByInstance,
-                    currentMsgsrvName,
-                    externalParamMapping,
-                    externalCallsByClass,
-                    externalPortsAlreadySet,
-                    pendingCalls
-            ));
-            code.append(processExpressionCollectingCalls(
-                    right, className, cInfo,
-                    internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                    instanceToClass, callsByInstance,
-                    currentMsgsrvName,
-                    externalParamMapping,
-                    externalCallsByClass,
-                    externalPortsAlreadySet,
-                    pendingCalls
-            ));
-
-            if (right instanceof TermPrimary methodTerm && left instanceof TermPrimary leftTerm) {
-                String methodName = methodTerm.getName();
-                ParentSuffixPrimary psp = methodTerm.getParentSuffixPrimary();
-                List<Expression> arguments = (psp == null) ? Collections.emptyList() : psp.getArguments();
-
-                if ("self".equals(leftTerm.getName())) {
-                    // Internal => schedule(0ms) + param state sets
-                    if (internalMsgsrvs.getOrDefault(className, Collections.emptySet()).contains(methodName)) {
-                        if (cInfo.msgsrvToParams.containsKey(methodName)) {
-                            List<FormalParameterDeclaration> params = cInfo.msgsrvToParams.get(methodName);
-                            for (int i = 0; i < params.size(); i++) {
-                                FormalParameterDeclaration fp = params.get(i);
-                                String paramName = fp.getName();
-                                String paramType = mapRebecaTypeToLF(fp.getType().getTypeName());
-
-                                String targetVar = renameIfParam(paramName, methodName, cInfo);
-                                String argStr = (i < arguments.size())
-                                        ? transformExpression(arguments.get(i), currentMsgsrvName, cInfo, externalParamMapping)
-                                        : getDefaultValueForType(paramType);
-
-                                code.append("        ")
-                                        .append(targetVar)
-                                        .append(" = ")
-                                        .append(argStr)
-                                        .append(";\n");
-                            }
-                        }
-                        code.append("        ").append(methodName).append(".schedule(0ms);\n");
-                        scheduledActions.add(methodName);
-                    }
-                } else {
-                    // External call
-                    String instanceName = "";
-                    List<CallDetail> callDetails = new ArrayList<>();
-                    // same logic that finds relevant calls
-                    for (Map.Entry<String, List<CallDetail>> e : callsByInstance.entrySet()) {
-                        if (!instanceToClass.get(e.getKey()).equals(className)) continue;
-                        for (CallDetail cd : e.getValue()) {
-                            if (cd.msgName.equals(methodName)
-                                    && (currentMsgsrvName.isEmpty() || cd.callerMsgsrvName.equals(currentMsgsrvName))) {
-                                callDetails.add(cd);
-                                instanceName = e.getKey();
-                            }
-                        }
-                    }
-                    int globalindex = 0;
-
-                    for (CallDetail cd : callDetails) {
-                        if (!cd.isInternal) {
-                            // outPort name
-                            String outPort = methodName + "_to_"
-                                    + cd.externalTargetInstance + "_from_"
-                                    + instanceToClass.entrySet().stream()
-                                    .filter(ev -> ev.getValue().equals(className))
-                                    .filter(ev -> callsByInstance.get(ev.getKey()).contains(cd))
-                                    .findFirst().get().getKey()
-                                    + "_out";
-
-                            // struct name
-                            String calleeClass = instanceToClass.get(cd.externalTargetInstance);
-                            String structName = calleeClass + "_" + methodName;
-
-                            // param list
-                            List<String> paramVals = new ArrayList<>();
-                            for (Expression argExp : cd.arguments) {
-                                String argStr = transformExpression(argExp, currentMsgsrvName, cInfo, externalParamMapping);
-                                paramVals.add(argStr);
-                            }
-                            // Build "Node_runme{in0_for_runme2 + 2}" for example
-                            StringBuilder callExpr = new StringBuilder();
-                            callExpr.append(structName).append("{");
-                            for (int i = 0; i < paramVals.size(); i++) {
-                                if (i > 0) callExpr.append(", ");
-                                callExpr.append(paramVals.get(i));
-                            }
-                            callExpr.append("}");
-
-                            // Instead of code.append(...".set(...)"), we store in pendingCalls
-                            PendingExternalCall pc = new PendingExternalCall();
-                            pc.outPort = outPort;
-                            pc.argString = callExpr.toString();
-                            pc.index = globalindex;
-                            globalindex++;
-                            pendingCalls.add(pc);
-
-
-                            // Also track the port so the reaction's "->" signature includes it
-                            externalPortsToEmit.add(outPort);
-                        }
-                    }
-                }
-            }
-        } else if (expr instanceof UnaryExpression ue) {
-            code.append(processExpressionCollectingCalls(
-                    ue.getExpression(), className, cInfo,
-                    internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                    instanceToClass, callsByInstance,
-                    currentMsgsrvName,
-                    externalParamMapping,
-                    externalCallsByClass,
-                    externalPortsAlreadySet,
-                    pendingCalls
-            ));
-        } else if (expr instanceof BinaryExpression be) {
-            code.append(processExpressionCollectingCalls(
-                    be.getLeft(), className, cInfo,
-                    internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                    instanceToClass, callsByInstance,
-                    currentMsgsrvName,
-                    externalParamMapping,
-                    externalCallsByClass,
-                    externalPortsAlreadySet,
-                    pendingCalls
-            ));
-            code.append(processExpressionCollectingCalls(
-                    be.getRight(), className, cInfo,
-                    internalMsgsrvs, scheduledActions, externalPortsToEmit,
-                    instanceToClass, callsByInstance,
-                    currentMsgsrvName,
-                    externalParamMapping,
-                    externalCallsByClass,
-                    externalPortsAlreadySet,
-                    pendingCalls
-            ));
-        }
-        return code.toString();
-    }
-
-    // -----------------------------------------------------------------------
-    // Converts the given Expression to a string.
-    // - If it’s a binary expression, we recursively combine left, operator, and right.
-    // - If it’s a literal, return the literal value.
-    // - If it’s a term primary, possibly rename if it matches a msgsrv param.
-    // - If it’s unary, prepend the operator to the stringified operand.
-    // -----------------------------------------------------------------------
-
-    private String transformExpression(
-            Expression expr,
-            String msgsrvName,
-            ConstructorInfo cInfo,
+            Set<String> usedPorts,
             Map<String, String> externalParamMapping
     ) {
-        if (expr == null) {
-            return ""; // or some default
-        }
+        if (stmt == null) return "";
+        StringBuilder sb = new StringBuilder();
 
-        // Handle binary expressions like (in0 + 2)
-        if (expr instanceof BinaryExpression be) {
-            String op = be.getOperator();
-            String left = transformExpression(be.getLeft(), msgsrvName, cInfo, externalParamMapping);
-            String right = transformExpression(be.getRight(), msgsrvName, cInfo, externalParamMapping);
-
-            // For compound assignments, you might do extra logic:
-            return switch (op) {
-                case "+=" -> left + " = " + left + " + " + right;
-                case "-=" -> left + " = " + left + " - " + right;
-                case "*=" -> left + " = " + left + " * " + right;
-                case "/=" -> left + " = " + left + " / " + right;
-                default -> left + " " + op + " " + right;
-            };
-        }
-
-        // Handle simple literals like 2, 10, "true", etc.
-        if (expr instanceof Literal lit) {
-            return lit.getLiteralValue();
-        }
-
-        // Handle a single identifier or variable reference
-        if (expr instanceof TermPrimary tp) {
-            String rawName = tp.getName();
-
-            // 1) Check if there's an external param mapping
-            if (externalParamMapping != null && externalParamMapping.containsKey(rawName)) {
-                // e.g. "in0" => "(*portName.get()).in0"
-                return externalParamMapping.get(rawName);
+        if (stmt instanceof BlockStatement bs) {
+            // (existing logic for block statements)
+            for (Statement sub : bs.getStatements()) {
+                sb.append(parseBlockStatementInline(
+                        sub, className, currentMsgsrvName, cInfo,
+                        instanceToClass, callsByInstance,
+                        scheduledActions, usedPorts, externalParamMapping
+                ));
             }
 
-            // 2) Possibly rename if it's a msgsrv param
-            return renameIfParam(rawName, msgsrvName, cInfo);
-        }
+        } else if (stmt instanceof ConditionalStatement cs) {
+            // (existing logic for if/else)
+            String condStr = transformExpression(cs.getCondition(), currentMsgsrvName, cInfo, externalParamMapping);
+            sb.append("        if (").append(condStr).append(") {\n");
+            sb.append(parseBlockStatementInline(
+                    cs.getStatement(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts, externalParamMapping
+            ));
+            sb.append("        }");
+            if (cs.getElseStatement() != null) {
+                sb.append(" else {\n");
+                sb.append(parseBlockStatementInline(
+                        cs.getElseStatement(),
+                        className, currentMsgsrvName, cInfo,
+                        instanceToClass, callsByInstance,
+                        scheduledActions, usedPorts, externalParamMapping
+                ));
+                sb.append("        }");
+            }
+            sb.append("\n");
 
-        // Handle unary expressions like "-x", "!flag", etc.
-        if (expr instanceof UnaryExpression ue) {
-            String op = ue.getOperator();
-            String operand = transformExpression(ue.getExpression(), msgsrvName, cInfo, externalParamMapping);
-            return op + operand;
-        }
+        } else if (stmt instanceof ForStatement fs) {
+            // NEW LOGIC for for-loops
+            String initPart = fs.getForInitializer().toString();
 
-        // If none of the above, return empty or a fallback
-        return "";
+            String condStr = "";
+            if (fs.getCondition() != null) {
+                condStr = transformExpression(fs.getCondition(), currentMsgsrvName, cInfo, externalParamMapping);
+            }
+
+            // parse updates
+            String updatePart = fs.getForIncrement().toString();
+
+            // produce the 'for(...)' line
+            sb.append("        for (")
+                    .append(initPart).append("; ")
+                    .append(condStr).append("; ")
+                    .append(updatePart).append(") {\n");
+
+            // parse the loop body
+            sb.append(parseBlockStatementInline(
+                    fs.getStatement(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts,
+                    externalParamMapping
+            ));
+            sb.append("        }\n");
+
+        } else if (stmt instanceof WhileStatement ws) {
+            // Example for while
+            String condStr = transformExpression(ws.getCondition(), currentMsgsrvName, cInfo, externalParamMapping);
+            sb.append("        while (").append(condStr).append(") {\n");
+            sb.append(parseBlockStatementInline(
+                    ws.getStatement(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts,
+                    externalParamMapping
+            ));
+            sb.append("        }\n");
+
+        } else if (stmt instanceof Expression expr) {
+            // (existing logic for expression statements)
+            sb.append(
+                    processExpressionInline(
+                            expr,
+                            className, currentMsgsrvName, cInfo,
+                            instanceToClass, callsByInstance,
+                            scheduledActions, usedPorts,
+                            externalParamMapping
+                    )
+            );
+
+        } else {
+            // fallback for unhandled statement types
+            sb.append("        // Unhandled statement type: ")
+                    .append(stmt.getClass().getSimpleName())
+                    .append("\n");
+        }
+        return sb.toString();
     }
 
-    // -----------------------------------------------------------------------
-    //Renames a parameter if it matches a msgsrv’s formal parameter,
-    // so that "msg" becomes "msg_for_sendMsg" (for example).
-    // -----------------------------------------------------------------------
 
-    private String renameIfParam(
-            String rawName,
-            String msgsrvName,
-            ConstructorInfo cInfo
+    // -----------------------------------------------------------------------
+    // processExpressionInline => produce code lines for assignment, internal calls, or external calls
+    // in the exact order we see them in Rebeca code
+    // -----------------------------------------------------------------------
+    private String processExpressionInline(
+            Expression expr,
+            String className,
+            String currentMsgsrvName,
+            ConstructorInfo cInfo,
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance,
+            Set<String> scheduledActions,
+            Set<String> usedPorts,
+            Map<String, String> externalParamMapping
     ) {
-        if (msgsrvName == null || msgsrvName.isEmpty()) {
-            return rawName;
-        }
-        List<FormalParameterDeclaration> params = cInfo.msgsrvToParams.get(msgsrvName);
-        if (params == null) {
-            return rawName;
-        }
-        for (FormalParameterDeclaration p : params) {
-            if (rawName.equals(p.getName())) {
-                return p.getName() + "_for_" + msgsrvName;
+        if (expr == null) return "";
+
+        StringBuilder sb = new StringBuilder();
+
+        if (expr instanceof BinaryExpression be) {
+            // Handle assignment or other binary ops
+            if ("=".equals(be.getOperator())) {
+                String leftStr  = transformExpression(be.getLeft(),
+                        currentMsgsrvName, cInfo, externalParamMapping);
+                String rightStr = transformExpression(be.getRight(),
+                        currentMsgsrvName, cInfo, externalParamMapping);
+                sb.append("        ").append(leftStr).append(" = ").append(rightStr).append(";\n");
+            } else {
+                // Recurse on subexpressions
+                sb.append(processExpressionInline(be.getLeft(),
+                        className, currentMsgsrvName, cInfo,
+                        instanceToClass, callsByInstance,
+                        scheduledActions, usedPorts, externalParamMapping));
+                sb.append(processExpressionInline(be.getRight(),
+                        className, currentMsgsrvName, cInfo,
+                        instanceToClass, callsByInstance,
+                        scheduledActions, usedPorts, externalParamMapping));
             }
+
+        } else if (expr instanceof DotPrimary dot) {
+            // Recurse first
+            sb.append(processExpressionInline(dot.getLeft(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts, externalParamMapping));
+            sb.append(processExpressionInline(dot.getRight(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts, externalParamMapping));
+
+            // Check if it's a method call
+            if (dot.getRight() instanceof TermPrimary methodTerm) {
+                String methodName = methodTerm.getName();
+                ParentSuffixPrimary psp = methodTerm.getParentSuffixPrimary();
+                List<Expression> argList = (psp == null) ? Collections.emptyList() : psp.getArguments();
+
+                // 1) INTERNAL CALL: self.method(...)
+                if (dot.getLeft() instanceof TermPrimary leftTerm && "self".equals(leftTerm.getName())) {
+
+                    // Find the matching CallDetail for the current msgsrv
+                    for (Map.Entry<String, List<CallDetail>> e : callsByInstance.entrySet()) {
+                        String callerInstance = e.getKey();
+                        String callerClass    = instanceToClass.get(callerInstance);
+                        if (!callerClass.equals(className)) {
+                            continue;
+                        }
+                        for (CallDetail cd : e.getValue()) {
+                            if (cd.isInternal && cd.msgName.equals(methodName)
+                                    && currentMsgsrvName.equals(cd.callerMsgsrvName)) {
+
+                                // A) Assign parameters
+                                List<FormalParameterDeclaration> fps =
+                                        cInfo.msgsrvToParams.getOrDefault(methodName, Collections.emptyList());
+                                for (int i = 0; i < fps.size(); i++) {
+                                    FormalParameterDeclaration fpd = fps.get(i);
+                                    String paramName = fpd.getName() + "_for_" + methodName;
+                                    String paramVal  = (i < argList.size())
+                                            ? transformExpression(argList.get(i), currentMsgsrvName, cInfo, externalParamMapping)
+                                            : getDefaultValueForType(mapRebecaTypeToLF(fpd.getType().getTypeName()));
+                                    sb.append("        ")
+                                            .append(paramName)
+                                            .append(" = ")
+                                            .append(paramVal)
+                                            .append(";\n");
+                                }
+
+                                // B) Schedule the action with delay (if any)
+                                String scheduleTime = (cd.afterDelayMs != null && !cd.afterDelayMs.isEmpty())
+                                        ? cd.afterDelayMs + "ms"
+                                        : "0ms";
+                                sb.append("        ")
+                                        .append(methodName)
+                                        .append(".schedule(")
+                                        .append(scheduleTime)
+                                        .append(");\n");
+
+                                scheduledActions.add(methodName);
+                            }
+                        }
+                    }
+
+                    // 2) EXTERNAL CALL: knownRebec.method(...)
+                } else if (dot.getLeft() instanceof TermPrimary knownField) {
+                    // Generate .set(...) lines for external calls
+                    for (Map.Entry<String, List<CallDetail>> e : callsByInstance.entrySet()) {
+                        String callerInstance = e.getKey();
+                        String callerClass    = instanceToClass.get(callerInstance);
+                        if (!callerClass.equals(className)) {
+                            continue;
+                        }
+                        for (CallDetail cd : e.getValue()) {
+                            if (!cd.isInternal && cd.msgName.equals(methodName)
+                                    && currentMsgsrvName.equals(cd.callerMsgsrvName)) {
+
+                                // We won't do the 'after(...)' delay here for external calls.
+                                // That belongs in the main reactor with "-> ... after Xms".
+                                String outPort = methodName + "_to_"
+                                        + cd.externalTargetInstance + "_from_"
+                                        + callerInstance + "_out";
+
+                                // Figure out struct type
+                                String calleeCls = cd.calleeClass;
+                                List<FormalParameterDeclaration> fps =
+                                        (calleeCls == null)
+                                                ? Collections.emptyList()
+                                                : cInfoFor(calleeCls, instanceToClass)
+                                                .msgsrvToParams
+                                                .getOrDefault(methodName, Collections.emptyList());
+
+                                String structType = (fps.isEmpty())
+                                        ? "int"
+                                        : (calleeCls + "_" + methodName);
+
+                                // Build struct initializer
+                                StringBuilder structInit = new StringBuilder();
+                                structInit.append(structType).append("{");
+                                for (int i = 0; i < argList.size(); i++) {
+                                    if (i > 0) structInit.append(", ");
+                                    String exprStr = transformExpression(argList.get(i),
+                                            currentMsgsrvName, cInfo, externalParamMapping);
+                                    structInit.append(exprStr);
+                                }
+                                structInit.append("}");
+
+                                // Output the .set(...) line
+                                sb.append("        ")
+                                        .append(outPort)
+                                        .append(".set(")
+                                        .append(structInit)
+                                        .append(");\n");
+
+                                usedPorts.add(outPort);
+                            }
+                        }
+                    }
+                }
+            }
+
+        } else if (expr instanceof UnaryExpression ue) {
+            sb.append(processExpressionInline(ue.getExpression(),
+                    className, currentMsgsrvName, cInfo,
+                    instanceToClass, callsByInstance,
+                    scheduledActions, usedPorts, externalParamMapping));
+
+        } else if (expr instanceof Literal) {
+            // No action needed for a literal alone
+
+        } else if (expr instanceof TermPrimary) {
+            // Single identifier statement => no-op
         }
-        return rawName;
+
+        return sb.toString();
     }
 
+    // -----------------------------------------------------------------------
+    // Utility: find which instance actually invoked a given CallDetail (heuristic)
+    // If we can't find it, returns null.
+    // -----------------------------------------------------------------------
+    private String findCallerInstanceFor(CallDetail cd, Map<String, List<CallDetail>> callsByInstance) {
+        for (Map.Entry<String, List<CallDetail>> e : callsByInstance.entrySet()) {
+            List<CallDetail> list = e.getValue();
+            if (list.contains(cd)) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
 
     // -----------------------------------------------------------------------
-    // Add connections in main
+    // lookup the msgsrv in a class's list
+    // -----------------------------------------------------------------------
+    private MsgsrvDeclaration findMsgsrv(ReactiveClassDeclaration rc, String msgsrvName) {
+        for (MsgsrvDeclaration m : rc.getMsgsrvs()) {
+            if (m.getName().equals(msgsrvName)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    // -----------------------------------------------------------------------
+    // Build the "a.out -> b.in" lines in main
     // -----------------------------------------------------------------------
     private String generateConnectionStatements(
             Map<String, List<CallDetail>> callsByInstance,
             Map<String, String> instanceToClass
     ) {
         StringBuilder sb = new StringBuilder();
-        Set<String> uniqueConnections = new HashSet<>();
+        Set<String> uniqueConnections = new LinkedHashSet<>();
 
         for (Map.Entry<String, List<CallDetail>> callerEntry : callsByInstance.entrySet()) {
-            String callerInstance = callerEntry.getKey();
-            for (CallDetail callDetail : callerEntry.getValue()) {
-                if (!callDetail.isInternal) {
-                    String calleeInstance = callDetail.externalTargetInstance;
-                    String msgName = callDetail.msgName;
+            String callerInst = callerEntry.getKey();
+            for (CallDetail cd : callerEntry.getValue()) {
+                // Only for external calls
+                if (!cd.isInternal) {
+                    String calleeInst = cd.externalTargetInstance;
+                    String msg = cd.msgName;
+                    String outPort = msg + "_to_" + calleeInst + "_from_" + callerInst + "_out";
+                    String inPort  = msg + "_to_" + calleeInst + "_from_" + callerInst + "_in";
 
-                    String outPort = msgName + "_to_" + calleeInstance + "_from_" + callerInstance + "_out";
-                    String inPort = msgName + "_to_" + calleeInstance + "_from_" + callerInstance + "_in";
-                    String connection = callerInstance + "." + outPort + " -> " + calleeInstance + "." + inPort;
+                    // Base connection line
+                    String connection = callerInst + "." + outPort
+                            + " -> "
+                            + calleeInst + "." + inPort;
+
+                    // If there's an after(...) delay, place it in the main reactor connection
+                    if (cd.afterDelayMs != null && !cd.afterDelayMs.isEmpty()) {
+                        connection += " after " + cd.afterDelayMs + "ms";
+                    }
 
                     uniqueConnections.add(connection);
                 }
             }
         }
 
-        for (String connection : uniqueConnections) {
-            sb.append("    ").append(connection).append(";\n");
+        // Output each unique connection
+        for (String c : uniqueConnections) {
+            sb.append("    ").append(c).append(";\n");
         }
         return sb.toString();
     }
 
     // -----------------------------------------------------------------------
-    // Group external calls by class
-    // -----------------------------------------------------------------------
-    private Map<String, Map<String, Map<String, List<ExternalCall>>>> groupExternalCallsByClass(
-            Map<String, List<CallDetail>> callsByInstance,
-            Map<String, String> instanceToClass,
-            Map<String, ConstructorInfo> constructorInfoMap
-    ) {
-        Map<String, Map<String, Map<String, List<ExternalCall>>>> result = new HashMap<>();
-
-        for (String inst : callsByInstance.keySet()) {
-            String callerClass = instanceToClass.get(inst);
-            for (CallDetail cd : callsByInstance.get(inst)) {
-                if (!cd.isInternal) {
-                    String calleeInst = cd.externalTargetInstance;
-                    String calleeClass = instanceToClass.getOrDefault(calleeInst, "");
-                    String methodName = cd.msgName;
-
-                    ExternalCall ec = new ExternalCall(
-                            inst, callerClass,
-                            calleeInst, calleeClass,
-                            methodName
-                    );
-                    ConstructorInfo calleeCInfo = constructorInfoMap.get(calleeClass);
-                    if (calleeCInfo != null) {
-                        List<FormalParameterDeclaration> params = calleeCInfo.msgsrvToParams.get(methodName);
-                        if (params == null || params.isEmpty()) {
-                            ec.setLfType("int");
-                        } else {
-                            ec.setLfType(calleeClass + "_" + methodName);
-                        }
-                    } else {
-                        ec.setLfType("int"); // fallback
-                    }
-                    ec.setExternal(true);
-
-                    result.putIfAbsent(calleeClass, new HashMap<>());
-                    result.get(calleeClass).putIfAbsent(calleeInst, new HashMap<>());
-                    result.get(calleeClass).get(calleeInst).putIfAbsent(methodName, new ArrayList<>());
-                    result.get(calleeClass).get(calleeInst).get(methodName).add(ec);
-                }
-            }
-        }
-        return result;
-    }
-
-    private static class ExternalCall {
-        @Getter
-        private final String callerInstance;
-        @Getter
-        private final String callerClass;
-        @Getter
-        private final String targetInstance;
-        @Getter
-        private final String calleeClass;
-        @Getter
-        private final String msgsrvName;
-        @Getter
-        private String lfType;
-        private boolean isExternal;
-
-        public ExternalCall(String callerInstance, String callerClass,
-                            String targetInstance, String calleeClass,
-                            String msgsrvName) {
-            this.callerInstance = callerInstance;
-            this.callerClass = callerClass;
-            this.targetInstance = targetInstance;
-            this.calleeClass = calleeClass;
-            this.msgsrvName = msgsrvName;
-        }
-
-        public void setLfType(String lfType) {
-            this.lfType = lfType;
-        }
-        public boolean isExternal() {
-            return isExternal;
-        }
-        public void setExternal(boolean external) {
-            isExternal = external;
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // Data classes, constructor analysis, etc.
+    // Build constructor info for a class
     // -----------------------------------------------------------------------
     private ConstructorInfo buildConstructorInfo(ReactiveClassDeclaration rc) {
         ConstructorInfo cInfo = new ConstructorInfo();
-        List<FieldDeclaration> statevars = rc.getStatevars();
-        Map<String, String> statevarNameToType = new HashMap<>();
-        if (statevars != null) {
-            for (FieldDeclaration fd : statevars) {
+        // gather all state vars
+        Map<String,String> statevarNameToType = new HashMap<>();
+        if (rc.getStatevars()!=null) {
+            for (FieldDeclaration fd : rc.getStatevars()) {
                 for (VariableDeclarator vd : fd.getVariableDeclarators()) {
-                    String typeName = fd.getType().getTypeName();
-                    statevarNameToType.put(vd.getVariableName(), typeName);
+                    statevarNameToType.put(vd.getVariableName(), fd.getType().getTypeName());
                 }
             }
         }
-        ConstructorDeclaration constructor = null;
-        if (!rc.getConstructors().isEmpty()) {
-            constructor = rc.getConstructors().get(0);
-        }
-        if (constructor == null) {
-            for (var entry : statevarNameToType.entrySet()) {
+        // check if we have a constructor
+        ConstructorDeclaration cDec = rc.getConstructors().isEmpty() ? null : rc.getConstructors().get(0);
+
+        if (cDec == null) {
+            // no explicit constructor => everything is a normal var
+            for (var e : statevarNameToType.entrySet()) {
                 StateVar sv = new StateVar();
-                sv.name = entry.getKey();
-                sv.type = mapRebecaTypeToLF(entry.getValue());
+                sv.name = e.getKey();
+                sv.type = mapRebecaTypeToLF(e.getValue());
                 cInfo.regularStateVars.add(sv);
             }
         } else {
-            List<FormalParameterDeclaration> params = constructor.getFormalParameters();
-            Map<String, String> paramToStateVar = new HashMap<>();
-            parseConstructorBlockForAssignments(constructor.getBlock(), paramToStateVar);
+            // parse the constructor's param->statevar assignment
+            List<FormalParameterDeclaration> fps = cDec.getFormalParameters();
+            Map<String, String> param2stateVar = new HashMap<>();
+            parseConstructorBlockForAssignments(cDec.getBlock(), param2stateVar);
 
-            for (FormalParameterDeclaration p : params) {
-                String paramName = p.getName();
-                String paramType = p.getType().getTypeName();
-                String assignedSV = paramToStateVar.get(paramName);
-
-                if (assignedSV != null && statevarNameToType.containsKey(assignedSV)) {
+            for (FormalParameterDeclaration fp : fps) {
+                String pName = fp.getName();
+                String pType = fp.getType().getTypeName();
+                String assignedVar = param2stateVar.get(pName);
+                if (assignedVar != null && statevarNameToType.containsKey(assignedVar)) {
                     ConstructorParam cp = new ConstructorParam();
-                    cp.paramName = paramName;
-                    cp.stateVarName = assignedSV;
-                    cp.type = mapRebecaTypeToLF(paramType);
+                    cp.paramName = pName;
+                    cp.stateVarName = assignedVar;
+                    cp.type = mapRebecaTypeToLF(pType);
                     cp.defaultValue = getDefaultValueForType(cp.type);
                     cInfo.params.add(cp);
                 }
             }
-            Set<String> paramBasedVars = cInfo.params.stream()
+            // the rest become normal vars
+            Set<String> paramVars = cInfo.params.stream()
                     .map(cp -> cp.stateVarName)
                     .collect(Collectors.toSet());
-            for (var entry : statevarNameToType.entrySet()) {
-                if (!paramBasedVars.contains(entry.getKey())) {
+            for (var e : statevarNameToType.entrySet()) {
+                if (!paramVars.contains(e.getKey())) {
                     StateVar sv = new StateVar();
-                    sv.name = entry.getKey();
-                    sv.type = mapRebecaTypeToLF(entry.getValue());
+                    sv.name = e.getKey();
+                    sv.type = mapRebecaTypeToLF(e.getValue());
                     cInfo.regularStateVars.add(sv);
                 }
             }
         }
-        for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-            cInfo.msgsrvToParams.put(msgsrv.getName(), msgsrv.getFormalParameters());
+
+        // fill in msgsrv->params
+        for (MsgsrvDeclaration md : rc.getMsgsrvs()) {
+            cInfo.msgsrvToParams.put(md.getName(), md.getFormalParameters());
         }
+
+        // figure out external vs. internal from Rebeca's standpoint
         Set<String> internalCalls = new HashSet<>();
-        String cName = rc.getName();
-        if (constructor != null) {
-            analyzeBlockForInternalCalls(constructor.getBlock(), cName, internalCalls);
+        if (cDec != null) {
+            analyzeBlockForInternalCalls(cDec.getBlock(), rc.getName(), internalCalls);
         }
-        for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-            analyzeBlockForInternalCalls(msgsrv.getBlock(), cName, internalCalls);
+        for (MsgsrvDeclaration md : rc.getMsgsrvs()) {
+            analyzeBlockForInternalCalls(md.getBlock(), rc.getName(), internalCalls);
         }
-        for (MethodDeclaration md : rc.getSynchMethods()) {
-            analyzeBlockForInternalCalls(md.getBlock(), cName, internalCalls);
+        for (MethodDeclaration syncM : rc.getSynchMethods()) {
+            analyzeBlockForInternalCalls(syncM.getBlock(), rc.getName(), internalCalls);
         }
-        for (MsgsrvDeclaration msgsrv : rc.getMsgsrvs()) {
-            boolean isInternal = internalCalls.contains(msgsrv.getName());
-            if (!isInternal) {
-                cInfo.externalMsgsrvsToParams.put(msgsrv.getName(), msgsrv.getFormalParameters());
+        for (MsgsrvDeclaration md : rc.getMsgsrvs()) {
+            if (!internalCalls.contains(md.getName())) {
+                cInfo.externalMsgsrvsToParams.put(md.getName(), md.getFormalParameters());
             }
         }
+
         return cInfo;
     }
 
-    private boolean isInternal(
-            MsgsrvDeclaration msgsrv,
-            ReactiveClassDeclaration rc,
-            ConstructorDeclaration constructor
-    ) {
-        Set<String> internalCalls = new HashSet<>();
-        String cName = rc.getName();
-        if (constructor != null) {
-            analyzeBlockForInternalCalls(constructor.getBlock(), cName, internalCalls);
-        }
-        analyzeBlockForInternalCalls(msgsrv.getBlock(), cName, internalCalls);
-        for (MethodDeclaration md : rc.getSynchMethods()) {
-            analyzeBlockForInternalCalls(md.getBlock(), cName, internalCalls);
-        }
-        return internalCalls.contains(msgsrv.getName());
-    }
-
-    private void parseConstructorBlockForAssignments(
-            Statement stmt,
-            Map<String, String> paramToStateVar
-    ) {
+    private void parseConstructorBlockForAssignments(Statement stmt, Map<String, String> paramToStateVar) {
         if (stmt == null) return;
-        if (stmt instanceof BlockStatement block) {
-            for (Statement s : block.getStatements()) {
+        if (stmt instanceof BlockStatement bs) {
+            for (Statement s : bs.getStatements()) {
                 parseConstructorBlockForAssignments(s, paramToStateVar);
-            }
-        } else if (stmt instanceof Expression expr) {
-            if (expr instanceof BinaryExpression be && "=".equals(be.getOperator())) {
-                Expression left = be.getLeft();
-                Expression right = be.getRight();
-                if (left instanceof TermPrimary leftTerm && right instanceof TermPrimary rightTerm) {
-                    paramToStateVar.put(rightTerm.getName(), leftTerm.getName());
-                }
             }
         } else if (stmt instanceof ConditionalStatement cs) {
             parseConstructorBlockForAssignments(cs.getStatement(), paramToStateVar);
-            if (cs.getElseStatement() != null) {
+            if (cs.getElseStatement()!=null) {
                 parseConstructorBlockForAssignments(cs.getElseStatement(), paramToStateVar);
+            }
+        } else if (stmt instanceof Expression ex) {
+            if (ex instanceof BinaryExpression be && "=".equals(be.getOperator())) {
+                // typically "stateVar = param"
+                if (be.getLeft() instanceof TermPrimary leftTerm && be.getRight() instanceof TermPrimary rightTerm) {
+                    // param => leftTerm
+                    paramToStateVar.put(rightTerm.getName(), leftTerm.getName());
+                }
             }
         }
     }
 
+    private void analyzeBlockForInternalCalls(Statement stmt, String className, Set<String> internalCalls) {
+        if (stmt == null) return;
+        if (stmt instanceof BlockStatement bs) {
+            for (Statement s : bs.getStatements()) {
+                analyzeBlockForInternalCalls(s, className, internalCalls);
+            }
+        } else if (stmt instanceof ConditionalStatement cs) {
+            analyzeBlockForInternalCalls(cs.getStatement(), className, internalCalls);
+            if (cs.getElseStatement()!=null) {
+                analyzeBlockForInternalCalls(cs.getElseStatement(), className, internalCalls);
+            }
+        } else if (stmt instanceof Expression ex) {
+            analyzeExpressionForInternalCalls(ex, className, internalCalls);
+        }
+    }
+
+    private void analyzeExpressionForInternalCalls(Expression expr, String className, Set<String> internalCalls) {
+        if (expr == null) return;
+        if (expr instanceof DotPrimary dot) {
+            analyzeExpressionForInternalCalls(dot.getLeft(), className, internalCalls);
+            analyzeExpressionForInternalCalls(dot.getRight(), className, internalCalls);
+            if (dot.getLeft() instanceof TermPrimary leftTerm && "self".equals(leftTerm.getName())) {
+                if (dot.getRight() instanceof TermPrimary methodTerm) {
+                    internalCalls.add(methodTerm.getName());
+                }
+            }
+        } else if (expr instanceof UnaryExpression ue) {
+            analyzeExpressionForInternalCalls(ue.getExpression(), className, internalCalls);
+        } else if (expr instanceof BinaryExpression be) {
+            analyzeExpressionForInternalCalls(be.getLeft(), className, internalCalls);
+            analyzeExpressionForInternalCalls(be.getRight(), className, internalCalls);
+        }
+    }
+
+    private Map<String,String> buildInstanceToClassMap() {
+        Map<String,String> map = new HashMap<>();
+        MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
+        if (mainDecl!=null) {
+            for (MainRebecDefinition mrd : mainDecl.getMainRebecDefinition()) {
+                map.put(mrd.getName(), mrd.getType().getTypeName());
+            }
+        }
+        return map;
+    }
+
+    private Map<String,List<String>> buildClassToKnownRebecsMap() {
+        Map<String,List<String>> map = new HashMap<>();
+        for (ReactiveClassDeclaration rc : classes) {
+            List<String> knowns = new ArrayList<>();
+            if (rc.getKnownRebecs()!=null) {
+                for (FieldDeclaration fd : rc.getKnownRebecs()) {
+                    for (VariableDeclarator vd : fd.getVariableDeclarators()) {
+                        knowns.add(vd.getVariableName());
+                    }
+                }
+            }
+            map.put(rc.getName(), knowns);
+        }
+        return map;
+    }
+
+    private Map<String,List<String>> buildInstanceKnownRebecsMap(Map<String,String> instanceToClass) {
+        Map<String,List<String>> res = new HashMap<>();
+        MainDeclaration md = rebecaModel.getRebecaCode().getMainDeclaration();
+        if (md==null) return res;
+
+        // gather class->listOfKnownFields
+        Map<String,List<String>> classToKnownFields = new HashMap<>();
+        for (ReactiveClassDeclaration rc : classes) {
+            List<String> knownVars = new ArrayList<>();
+            if (rc.getKnownRebecs()!=null) {
+                for (FieldDeclaration fd : rc.getKnownRebecs()) {
+                    for (VariableDeclarator vd : fd.getVariableDeclarators()) {
+                        knownVars.add(vd.getVariableName());
+                    }
+                }
+            }
+            classToKnownFields.put(rc.getName(), knownVars);
+        }
+
+        for (MainRebecDefinition def : md.getMainRebecDefinition()) {
+            String instName = def.getName();
+            String clsName = def.getType().getTypeName();
+            List<String> fields = classToKnownFields.getOrDefault(clsName, Collections.emptyList());
+            List<Expression> bindings = def.getBindings();
+            List<String> actualKnown = new ArrayList<>();
+            if (bindings!=null && bindings.size()==fields.size()) {
+                for (Expression e : bindings) {
+                    if (e instanceof TermPrimary tp) {
+                        actualKnown.add(tp.getName());
+                    }
+                }
+            }
+            res.put(instName, actualKnown);
+        }
+        return res;
+    }
+
+    // -----------------------------------------------------------------------
+    // analyzeAllCalls => fill callsByInstance with internal or external calls
+    // -----------------------------------------------------------------------
+    private void analyzeAllCalls(
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance,
+            Map<String, List<String>> classToKnownRebecs,
+            Map<String, List<String>> instanceKnownRebecs
+    ) {
+        for (ReactiveClassDeclaration rc : classes) {
+            String cName = rc.getName();
+            // constructor
+            for (ConstructorDeclaration cDec : rc.getConstructors()) {
+                parseBlockStatement(cDec.getBlock(), cName, instanceToClass, callsByInstance,
+                        classToKnownRebecs, instanceKnownRebecs, "");
+            }
+            // msgsrv
+            for (MsgsrvDeclaration md : rc.getMsgsrvs()) {
+                parseBlockStatement(md.getBlock(), cName, instanceToClass, callsByInstance,
+                        classToKnownRebecs, instanceKnownRebecs, md.getName());
+            }
+            // synch methods
+            for (MethodDeclaration synM : rc.getSynchMethods()) {
+                parseBlockStatement(synM.getBlock(), cName, instanceToClass, callsByInstance,
+                        classToKnownRebecs, instanceKnownRebecs, synM.getName());
+            }
+        }
+    }
+
+    private void parseBlockStatement(
+            Statement stmt,
+            String currentClass,
+            Map<String,String> instanceToClass,
+            Map<String,List<CallDetail>> callsByInstance,
+            Map<String,List<String>> classToKnownRebecs,
+            Map<String,List<String>> instanceKnownRebecs,
+            String currentMsgsrvName
+    ) {
+        if (stmt==null) return;
+        if (stmt instanceof BlockStatement bs) {
+            for (Statement s : bs.getStatements()) {
+                parseBlockStatement(s, currentClass, instanceToClass, callsByInstance,
+                        classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
+            }
+        } else if (stmt instanceof ConditionalStatement cs) {
+            parseBlockStatement(cs.getStatement(), currentClass, instanceToClass, callsByInstance,
+                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
+            if (cs.getElseStatement()!=null) {
+                parseBlockStatement(cs.getElseStatement(), currentClass, instanceToClass, callsByInstance,
+                        classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
+            }
+        } else if (stmt instanceof Expression ex) {
+            parseExpression(ex, currentClass, instanceToClass, callsByInstance,
+                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
+        }
+    }
+
+    private void parseExpression(
+            Expression expr,
+            String currentClass,
+            Map<String, String> instanceToClass,
+            Map<String, List<CallDetail>> callsByInstance,
+            Map<String, List<String>> classToKnownRebecs,
+            Map<String, List<String>> instanceKnownRebecs,
+            String currentMsgsrvName
+    ) {
+        if (expr == null) return;
+
+        if (expr instanceof DotPrimary dot) {
+            // (1) Recurse on subexpressions first
+            parseExpression(dot.getLeft(), currentClass, instanceToClass,
+                    callsByInstance, classToKnownRebecs, instanceKnownRebecs,
+                    currentMsgsrvName);
+            parseExpression(dot.getRight(), currentClass, instanceToClass,
+                    callsByInstance, classToKnownRebecs, instanceKnownRebecs,
+                    currentMsgsrvName);
+
+            // (2) Check if the right side is a method call
+            if (dot.getRight() instanceof TermPrimary methodTerm) {
+                String methodName = methodTerm.getName();
+                ParentSuffixPrimary psp = methodTerm.getParentSuffixPrimary();
+                List<Expression> argList = (psp == null)
+                        ? Collections.emptyList()
+                        : psp.getArguments();
+
+                // Extract the 'after(...)' delay if it's a TimedRebecaParentSuffixPrimary
+                String afterDelayMs = null;
+                if (psp instanceof TimedRebecaParentSuffixPrimary timedPSP) {
+                    Expression afterExpr = timedPSP.getAfterExpression();
+                    if (afterExpr != null) {
+                        // Convert the 'after' expression to a string, e.g. "1" in after(1)
+                        afterDelayMs = expressionToString(afterExpr, "int", "0");
+                    }
+                }
+
+                // A) "self.method(...)"
+                if (dot.getLeft() instanceof TermPrimary leftTerm && "self".equals(leftTerm.getName())) {
+                    // => internal call
+                    for (Map.Entry<String, String> e : instanceToClass.entrySet()) {
+                        if (e.getValue().equals(currentClass)) {
+                            CallDetail cd = new CallDetail(methodName, true, "");
+                            cd.arguments         = argList;
+                            cd.callerMsgsrvName = currentMsgsrvName;
+                            cd.calleeClass      = currentClass;
+
+                            // If there's an after(...) expression, store it
+                            if (afterDelayMs != null) {
+                                cd.afterDelayMs = afterDelayMs;
+                            }
+
+                            callsByInstance.get(e.getKey()).add(cd);
+                        }
+                    }
+
+                    // B) "knownRebec.method(...)"
+                } else if (dot.getLeft() instanceof TermPrimary knownField) {
+                    // => external call if knownField is in known rebecs of currentClass
+                    if (classToKnownRebecs
+                            .getOrDefault(currentClass, Collections.emptyList())
+                            .contains(knownField.getName())) {
+
+                        // For each instance that belongs to currentClass, figure out which rebec is bound
+                        for (Map.Entry<String, String> e : instanceToClass.entrySet()) {
+                            if (!e.getValue().equals(currentClass)) {
+                                continue;
+                            }
+                            String callerInstance = e.getKey();
+                            List<String> knownList = instanceKnownRebecs
+                                    .getOrDefault(callerInstance, Collections.emptyList());
+
+                            int idx = classToKnownRebecs.get(currentClass)
+                                    .indexOf(knownField.getName());
+                            if (idx >= 0 && idx < knownList.size()) {
+                                String targetInstance = knownList.get(idx);
+                                String calleeCls     = instanceToClass.get(targetInstance);
+
+                                CallDetail cd = new CallDetail(methodName, false, targetInstance);
+                                cd.arguments         = argList;
+                                cd.callerMsgsrvName = currentMsgsrvName;
+                                cd.calleeClass      = calleeCls;
+
+                                // If there's an after(...) expression, store it
+                                if (afterDelayMs != null) {
+                                    cd.afterDelayMs = afterDelayMs;
+                                }
+
+                                callsByInstance.get(callerInstance).add(cd);
+                            }
+                        }
+                    }
+                }
+            }
+
+        } else if (expr instanceof UnaryExpression ue) {
+            parseExpression(ue.getExpression(), currentClass, instanceToClass,
+                    callsByInstance, classToKnownRebecs, instanceKnownRebecs,
+                    currentMsgsrvName);
+
+        } else if (expr instanceof BinaryExpression be) {
+            parseExpression(be.getLeft(), currentClass, instanceToClass,
+                    callsByInstance, classToKnownRebecs, instanceKnownRebecs,
+                    currentMsgsrvName);
+            parseExpression(be.getRight(), currentClass, instanceToClass,
+                    callsByInstance, classToKnownRebecs, instanceKnownRebecs,
+                    currentMsgsrvName);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Expression -> textual representation (for arguments etc.)
+    // -----------------------------------------------------------------------
+    private String transformExpression(
+            Expression expr,
+            String msgsrvName,
+            ConstructorInfo cInfo,
+            Map<String,String> externalParamMapping
+    ) {
+        if (expr==null) return "";
+        if (expr instanceof Literal lit) {
+            return lit.getLiteralValue();
+        }
+        if (expr instanceof TermPrimary tp) {
+            String raw = tp.getName();
+            if (externalParamMapping!=null && externalParamMapping.containsKey(raw)) {
+                return externalParamMapping.get(raw);
+            }
+            // see if it's a msgsrv param
+            return renameIfParam(raw, msgsrvName, cInfo);
+        }
+        if (expr instanceof BinaryExpression be) {
+            String l = transformExpression(be.getLeft(), msgsrvName, cInfo, externalParamMapping);
+            String r = transformExpression(be.getRight(), msgsrvName, cInfo, externalParamMapping);
+            return l + " " + be.getOperator() + " " + r;
+        }
+        if (expr instanceof UnaryExpression ue) {
+            String sub = transformExpression(ue.getExpression(), msgsrvName, cInfo, externalParamMapping);
+            return ue.getOperator() + sub;
+        }
+        if (expr instanceof DotPrimary dp) {
+            // we'll produce something like "left.right" but ignoring the argument list
+            String left = transformExpression(dp.getLeft(), msgsrvName, cInfo, externalParamMapping);
+            String right = transformExpression(dp.getRight(), msgsrvName, cInfo, externalParamMapping);
+            if (left.isEmpty()) return right;
+            return left + "." + right;
+        }
+        return "";
+    }
+
+    // rename msgSrv param => param_for_msgSrvName
+    private String renameIfParam(String rawName, String msgsrvName, ConstructorInfo cInfo) {
+        if (msgsrvName==null || msgsrvName.isEmpty()) return rawName;
+        List<FormalParameterDeclaration> fps = cInfo.msgsrvToParams.getOrDefault(msgsrvName, Collections.emptyList());
+        for (FormalParameterDeclaration fp : fps) {
+            if (fp.getName().equals(rawName)) {
+                return rawName + "_for_" + msgsrvName;
+            }
+        }
+        return rawName;
+    }
+
     private String mapRebecaTypeToLF(String rebType) {
-        return switch (rebType) {
+        return switch(rebType) {
             case "boolean" -> "bool";
-            case "int", "byte" -> "int";
+            case "int","byte" -> "int";
             case "double" -> "double";
             default -> rebType;
         };
     }
 
     private String getDefaultValueForType(String lfType) {
-        return switch (lfType) {
+        return switch(lfType) {
             case "bool" -> "false";
             case "double" -> "0.0";
-            case "string" -> "\"\"";
             default -> "0";
         };
     }
 
-    private String expressionToString(
-            Expression expr,
-            String lfType,
-            String fallback) {
-        if (expr == null) {
-            return fallback;
-        }
-        if (expr instanceof BinaryExpression be) {
-            return expressionToString(be.getLeft(), lfType, fallback)
-                    + " " + be.getOperator() + " "
-                    + expressionToString(be.getRight(), lfType, fallback);
-        }
+    // For printing constructor arguments in main
+    private String expressionToString(Expression expr, String lfType, String fallback) {
+        if (expr==null) return fallback;
         if (expr instanceof Literal lit) {
             return lit.getLiteralValue();
         }
         if (expr instanceof TermPrimary tp) {
             return tp.getName();
         }
+        if (expr instanceof BinaryExpression be) {
+            String leftStr = expressionToString(be.getLeft(), lfType, fallback);
+            String rightStr = expressionToString(be.getRight(), lfType, fallback);
+            return leftStr + " " + be.getOperator() + " " + rightStr;
+        }
+        // fallback
         return fallback;
     }
 
-    private static class ConstructorInfo {
-        List<ConstructorParam> params = new ArrayList<>();
-        List<StateVar> regularStateVars = new ArrayList<>();
-        Map<String, List<FormalParameterDeclaration>> msgsrvToParams = new HashMap<>();
-        Map<String, List<FormalParameterDeclaration>> externalMsgsrvsToParams = new HashMap<>();
-    }
-
-    private static class ConstructorParam {
-        String paramName;
-        String stateVarName;
-        String type;
-        String defaultValue;
-    }
-
-    private static class StateVar {
-        String name;
-        String type;
-    }
-
-    private static class CallDetail {
-        final String msgName;
-        final boolean isInternal;
-        final String externalTargetInstance;
-        String callerMsgsrvName;
-        List<Expression> arguments = new ArrayList<>();
-        String calleeClass;
-
-        CallDetail(String msgName, boolean isInternal, String externalTargetInstance) {
-            this.msgName = msgName;
-            this.isInternal = isInternal;
-            this.externalTargetInstance = externalTargetInstance;
+    // quick helper to retrieve constructor info for some callee class
+    private ConstructorInfo cInfoFor(String cls, Map<String,String> inst2cls) {
+        // not the best signature, but let's assume we have a global map in real code
+        // we can do a loop or store a global. For brevity, let's do a quick search in the fields:
+        // Actually let's keep a field "Map<String, ConstructorInfo>" as a member so, we can do: constructorInfoMap.get(cls)
+        // ... But let's do a hack here:
+        for (ReactiveClassDeclaration rcd : classes) {
+            if (rcd.getName().equals(cls)) {
+                return buildConstructorInfo(rcd); // or cached
+            }
         }
+        return new ConstructorInfo(); // fallback
     }
 
     // -----------------------------------------------------------------------
@@ -1180,162 +1401,6 @@ public class LinguaFrancaCodeGenerator {
 
         printStructureMap(instanceToClass, instanceKnownRebecs, classToMsgServers, callsByInstance);
     }
-
-    private Map<String, String> buildInstanceToClassMap() {
-        Map<String, String> result = new HashMap<>();
-        MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
-        if (mainDecl == null) {
-            return result;
-        }
-        for (MainRebecDefinition mainDef : mainDecl.getMainRebecDefinition()) {
-            String instName = mainDef.getName();
-            String clsName = mainDef.getType().getTypeName();
-            result.put(instName, clsName);
-        }
-        return result;
-    }
-
-    private Map<String, List<String>> buildInstanceKnownRebecsMap(Map<String, String> instanceToClass) {
-        Map<String, List<String>> instanceKnownMap = new HashMap<>();
-
-        List<ReactiveClassDeclaration> classList = rebecaModel.getRebecaCode().getReactiveClassDeclaration();
-        Map<String, List<String>> classToKnownFields = new HashMap<>();
-        for (ReactiveClassDeclaration rc : classList) {
-            List<FieldDeclaration> knownRebecFields = rc.getKnownRebecs();
-            List<String> knownFields = new ArrayList<>();
-            if (knownRebecFields != null) {
-                for (FieldDeclaration fd : knownRebecFields) {
-                    for (VariableDeclarator vd : fd.getVariableDeclarators()) {
-                        knownFields.add(vd.getVariableName());
-                    }
-                }
-            }
-            classToKnownFields.put(rc.getName(), knownFields);
-        }
-
-        MainDeclaration mainDecl = rebecaModel.getRebecaCode().getMainDeclaration();
-        if (mainDecl == null) {
-            return instanceKnownMap;
-        }
-
-        for (MainRebecDefinition mainDef : mainDecl.getMainRebecDefinition()) {
-            String instName = mainDef.getName();
-            String clsName = mainDef.getType().getTypeName();
-            List<String> fields = classToKnownFields.getOrDefault(clsName, Collections.emptyList());
-            List<Expression> knownBindings = mainDef.getBindings();
-            List<String> actualKnown = new ArrayList<>();
-
-            if (knownBindings != null && knownBindings.size() == fields.size()) {
-                for (Expression expr : knownBindings) {
-                    if (expr instanceof TermPrimary tp) {
-                        actualKnown.add(tp.getName());
-                    }
-                }
-            }
-            instanceKnownMap.put(instName, actualKnown);
-        }
-
-        return instanceKnownMap;
-    }
-
-    private Map<String, List<String>> buildClassToKnownRebecsMap() {
-        Map<String, List<String>> classToKnownRebecs = new HashMap<>();
-        for (ReactiveClassDeclaration rc : classes) {
-            List<String> knownRebecs = new ArrayList<>();
-            List<FieldDeclaration> knownRebecFields = rc.getKnownRebecs();
-            if (knownRebecFields != null) {
-                for (FieldDeclaration fd : knownRebecFields) {
-                    for (VariableDeclarator vd : fd.getVariableDeclarators()) {
-                        knownRebecs.add(vd.getVariableName());
-                    }
-                }
-            }
-            classToKnownRebecs.put(rc.getName(), knownRebecs);
-        }
-        return classToKnownRebecs;
-    }
-
-    private Map<String, Set<String>> findInternalMsgServers(Map<String, ConstructorInfo> constructorInfoMap) {
-        Map<String, Set<String>> internalMsgsrvs = new HashMap<>();
-        Map<String, Set<String>> classToInternalCalls = new HashMap<>();
-
-        for (ReactiveClassDeclaration rc : classes) {
-            String cName = rc.getName();
-            Set<String> internalCalls = new HashSet<>();
-            for (ConstructorDeclaration cd : rc.getConstructors()) {
-                analyzeBlockForInternalCalls(cd.getBlock(), cName, internalCalls);
-            }
-            for (MsgsrvDeclaration msgs : rc.getMsgsrvs()) {
-                analyzeBlockForInternalCalls(msgs.getBlock(), cName, internalCalls);
-            }
-            for (MethodDeclaration md : rc.getSynchMethods()) {
-                analyzeBlockForInternalCalls(md.getBlock(), cName, internalCalls);
-            }
-            classToInternalCalls.put(cName, internalCalls);
-        }
-
-        Map<String, Set<String>> allMsgsrvs = collectMessageServers();
-        for (var classEntry : allMsgsrvs.entrySet()) {
-            String clsName = classEntry.getKey();
-            Set<String> msgsrvs = classEntry.getValue();
-            Set<String> internal = new HashSet<>();
-            for (String msgsrvName : msgsrvs) {
-                if (classToInternalCalls.getOrDefault(clsName, Collections.emptySet()).contains(msgsrvName)) {
-                    internal.add(msgsrvName);
-                }
-            }
-            if (!internal.isEmpty()) {
-                internalMsgsrvs.put(clsName, internal);
-            }
-        }
-        return internalMsgsrvs;
-    }
-
-    private void analyzeBlockForInternalCalls(
-            Statement stmt,
-            String currentClass,
-            Set<String> internalCalls
-    ) {
-        if (stmt == null) return;
-        if (stmt instanceof BlockStatement block) {
-            for (Statement s : block.getStatements()) {
-                analyzeBlockForInternalCalls(s, currentClass, internalCalls);
-            }
-        } else if (stmt instanceof ConditionalStatement cs) {
-            analyzeBlockForInternalCalls(cs.getStatement(), currentClass, internalCalls);
-            if (cs.getElseStatement() != null) {
-                analyzeBlockForInternalCalls(cs.getElseStatement(), currentClass, internalCalls);
-            }
-        } else if (stmt instanceof Expression expr) {
-            analyzeExpressionForInternalCalls(expr, currentClass, internalCalls);
-        }
-    }
-
-    private void analyzeExpressionForInternalCalls(
-            Expression expr,
-            String currentClass,
-            Set<String> internalCalls
-    ) {
-        if (expr == null) return;
-        if (expr instanceof DotPrimary dot) {
-            Expression left = dot.getLeft();
-            Expression right = dot.getRight();
-            if (right instanceof TermPrimary term) {
-                String methodName = term.getName();
-                if (left instanceof TermPrimary leftTerm && "self".equals(leftTerm.getName())) {
-                    internalCalls.add(methodName);
-                }
-            }
-            analyzeExpressionForInternalCalls(left, currentClass, internalCalls);
-            analyzeExpressionForInternalCalls(right, currentClass, internalCalls);
-        } else if (expr instanceof UnaryExpression ue) {
-            analyzeExpressionForInternalCalls(ue.getExpression(), currentClass, internalCalls);
-        } else if (expr instanceof BinaryExpression be) {
-            analyzeExpressionForInternalCalls(be.getLeft(), currentClass, internalCalls);
-            analyzeExpressionForInternalCalls(be.getRight(), currentClass, internalCalls);
-        }
-    }
-
     private Map<String, Set<String>> collectMessageServers() {
         Map<String, Set<String>> result = new HashMap<>();
         for (ReactiveClassDeclaration rc : classes) {
@@ -1353,134 +1418,6 @@ public class LinguaFrancaCodeGenerator {
         }
         return result;
     }
-
-    private void analyzeAllCalls(
-            Map<String, String> instanceToClass,
-            Map<String, List<CallDetail>> callsByInstance,
-            Map<String, List<String>> classToKnownRebecs,
-            Map<String, List<String>> instanceKnownRebecs
-    ) {
-        for (ReactiveClassDeclaration rc : classes) {
-            String cName = rc.getName();
-            for (ConstructorDeclaration cd : rc.getConstructors()) {
-                parseBlockStatement(cd.getBlock(), cName, instanceToClass, callsByInstance,
-                        classToKnownRebecs, instanceKnownRebecs, "");
-            }
-            for (MsgsrvDeclaration msgs : rc.getMsgsrvs()) {
-                parseBlockStatement(msgs.getBlock(), cName, instanceToClass, callsByInstance,
-                        classToKnownRebecs, instanceKnownRebecs, msgs.getName());
-            }
-            for (MethodDeclaration md : rc.getSynchMethods()) {
-                parseBlockStatement(md.getBlock(), cName, instanceToClass, callsByInstance,
-                        classToKnownRebecs, instanceKnownRebecs, md.getName());
-            }
-        }
-    }
-
-    private void parseBlockStatement(
-            Statement stmt,
-            String currentClass,
-            Map<String, String> instanceToClass,
-            Map<String, List<CallDetail>> callsByInstance,
-            Map<String, List<String>> classToKnownRebecs,
-            Map<String, List<String>> instanceKnownRebecs,
-            String currentMsgsrvName
-    ) {
-        if (stmt == null) return;
-        if (stmt instanceof BlockStatement block) {
-            for (Statement s : block.getStatements()) {
-                parseBlockStatement(s, currentClass, instanceToClass, callsByInstance,
-                        classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-            }
-        } else if (stmt instanceof ConditionalStatement cs) {
-            parseBlockStatement(cs.getStatement(), currentClass, instanceToClass, callsByInstance,
-                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-            if (cs.getElseStatement() != null) {
-                parseBlockStatement(cs.getElseStatement(), currentClass, instanceToClass, callsByInstance,
-                        classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-            }
-        } else if (stmt instanceof Expression expr) {
-            parseExpression(expr, currentClass, instanceToClass, callsByInstance,
-                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-        }
-    }
-
-    private void parseExpression(
-            Expression expr,
-            String currentClass,
-            Map<String, String> instanceToClass,
-            Map<String, List<CallDetail>> callsByInstance,
-            Map<String, List<String>> classToKnownRebecs,
-            Map<String, List<String>> instanceKnownRebecs,
-            String currentMsgsrvName
-    ) {
-        if (expr == null) return;
-
-        if (expr instanceof DotPrimary dot) {
-            Expression left = dot.getLeft();
-            Expression right = dot.getRight();
-
-            if (right instanceof TermPrimary term) {
-                String methodName = term.getName();
-                ParentSuffixPrimary psp = term.getParentSuffixPrimary();
-                List<Expression> arguments = (psp == null) ? Collections.emptyList() : psp.getArguments();
-
-                if (left instanceof TermPrimary leftTerm) {
-                    if ("self".equals(leftTerm.getName())) {
-                        List<String> sameClassInstances = instanceToClass.entrySet()
-                                .stream()
-                                .filter(e -> e.getValue().equals(currentClass))
-                                .map(Map.Entry::getKey)
-                                .toList();
-                        for (String caller : sameClassInstances) {
-                            CallDetail cd = new CallDetail(methodName, true, "");
-                            cd.arguments = arguments;
-                            cd.callerMsgsrvName = currentMsgsrvName;
-                            callsByInstance.get(caller).add(cd);
-                        }
-                    } else {
-                        List<String> knowns = classToKnownRebecs.getOrDefault(currentClass, Collections.emptyList());
-                        if (knowns.contains(leftTerm.getName())) {
-                            List<String> sameClassInstances = instanceToClass.entrySet()
-                                    .stream()
-                                    .filter(e -> e.getValue().equals(currentClass))
-                                    .map(Map.Entry::getKey)
-                                    .toList();
-                            for (String caller : sameClassInstances) {
-                                List<String> knownRebecsForCaller =
-                                        instanceKnownRebecs.getOrDefault(caller, Collections.emptyList());
-                                int idx = knowns.indexOf(leftTerm.getName());
-                                String targetInstance;
-                                if (idx >= 0 && idx < knownRebecsForCaller.size()) {
-                                    targetInstance = knownRebecsForCaller.get(idx);
-                                    String calleeClass = instanceToClass.get(targetInstance);
-
-                                    CallDetail cd = new CallDetail(methodName, false, targetInstance);
-                                    cd.arguments = arguments;
-                                    cd.callerMsgsrvName = currentMsgsrvName;
-                                    cd.calleeClass = calleeClass;
-                                    callsByInstance.get(caller).add(cd);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            parseExpression(left, currentClass, instanceToClass, callsByInstance, classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-            parseExpression(right, currentClass, instanceToClass, callsByInstance, classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-
-        } else if (expr instanceof UnaryExpression ue) {
-            parseExpression(ue.getExpression(), currentClass, instanceToClass, callsByInstance,
-                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-
-        } else if (expr instanceof BinaryExpression be) {
-            parseExpression(be.getLeft(), currentClass, instanceToClass, callsByInstance,
-                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-            parseExpression(be.getRight(), currentClass, instanceToClass, callsByInstance,
-                    classToKnownRebecs, instanceKnownRebecs, currentMsgsrvName);
-        }
-    }
-
     // -----------------------------------------------------------------------
     // Print final structure for debugging
     // -----------------------------------------------------------------------
