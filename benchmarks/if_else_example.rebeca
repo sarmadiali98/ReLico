@@ -7,12 +7,12 @@ reactiveclass Node(100) {
         self.sendMsg2(1);
     }
     msgsrv sendMsg(int msg){
-        sw.rcvMsg(msg);
-        sw.rcvMsg2(msg);
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
     }
     msgsrv sendMsg2(int msg){
-        sw.rcvMsg(msg);
-        sw.rcvMsg2(msg);
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
     }
 }
 reactiveclass Switch(100){
