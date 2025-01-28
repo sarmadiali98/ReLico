@@ -1,0 +1,203 @@
+reactiveclass Controller(10) 
+{ 
+      knownrebecs
+      { 
+            Medium medium;               
+      } 
+            
+      statevars 
+      {     
+      		boolean ctrlSend;  	
+            int next;
+			int n;	 /*number of stations*/		 
+      } 
+      
+      Controller() 
+      { 
+      		n = 2;
+            next = 1;
+			self.sendENQ();              
+      } 
+  
+      msgsrv sendENQ()
+      { 
+      		ctrlSend = true;
+      		self.finSend();
+            medium.passMsg(0, next, 3);
+            		
+            self.sendENQ() after(2);
+            next = next % 2 + 1;
+      } 
+      
+      msgsrv finSend()
+      {
+      	ctrlSend = false;     
+      }
+      
+	  msgsrv receiveData(int senderr, int receiver, int msg)
+	  {			
+	  }	  	                             
+} 
+  
+    
+reactiveclass Medium(10) 
+{ 
+      knownrebecs 
+      { 
+			Controller controller;
+			Interface interface1;
+			Interface interface2;			
+      } 
+      
+      statevars 
+      { 
+        	boolean passMessage;
+      } 
+  
+  
+      Medium() 
+      { 
+           passMessage=false; 
+      } 
+  
+      msgsrv passMsg(int senderr, int receiver, int msg) 
+      { 
+      		passMessage = true;
+      		delay(1);
+			controller.receiveData(senderr, receiver, msg);
+            interface1.getFromMedium(senderr, receiver, msg);
+			interface2.getFromMedium(senderr, receiver, msg);
+			self.finishedPassing();            
+      } 
+       
+	  msgsrv finishedPassing()
+	  {
+	  		passMessage = false;
+	  		  
+	  }                
+} 
+
+reactiveclass Interface(10) 
+{ 
+  
+      knownrebecs 
+      { 
+            Medium medium; 
+            User user;    
+      } 
+      
+      statevars 
+      { 
+			int id;   
+			boolean interfaceSent;         
+      } 
+  
+  
+      Interface(int myId) 
+      { 
+			id = myId;
+			interfaceSent = false;
+             
+      } 
+  
+      msgsrv getFromMedium(int senderr, int receiver, int msg)       
+      { 
+            if(receiver == id)
+			{				
+				if(msg == 3)
+				{
+					user.sendData();					
+				}
+				else
+				{					
+					user.receiveData(senderr, msg);					
+				}
+			}
+      } 
+	  
+	  msgsrv getFromUser(int receiver, int data)
+	  {
+	  	user.changeStatus(true, false);
+	  	interfaceSent = true;
+	  	self.finSend();
+			medium.passMsg(id, receiver, data);
+
+	  }
+	  msgsrv finSend()
+	  {
+	  	interfaceSent = false;
+	  }
+	  msgsrv getAckFromUser()
+	  {
+	  	user.changeStatus(false, true);
+	  }
+	  	  
+                        
+} 
+  
+reactiveclass User(10) 
+{ 
+      knownrebecs 
+      { 
+			Interface interface1;
+      }
+
+      statevars
+      {
+      	boolean speak;
+      	boolean received;
+      	int myId;
+		int data;
+		int receiver;
+      }
+
+      User(int id)
+      {
+      	speak = false;
+      	received = false;
+      	myId = id;
+
+      }
+
+	  msgsrv receiveData(int senderr, int msg)
+	  {
+	  	received = true;
+	  	interface1.getAckFromUser();
+	  }
+
+	  msgsrv sendData()
+	  {
+	  	speak = true;
+	  	data = 1;
+		if(data != 0)
+		{
+			if(myId == 1)
+				receiver = 2;
+
+			else if (myId == 2)
+				receiver = 1;
+
+		interface1.getFromUser(receiver,data);
+		}
+
+		
+	  }
+	  msgsrv changeStatus(boolean spk , boolean rcv)
+	  {
+	  	if(spk == true)
+	  		speak = false;
+	  	else if(rcv == true)
+	  		received = false;
+	  }
+	  
+}
+
+main{ 
+      Controller controller (medium):(); 
+      Medium medium(controller, interface1 , interface2):(); 
+      Interface interface1(medium, user1):(1);
+	  Interface interface2(medium, user2):(2);
+	  User user1(interface1):(1);
+	  User user2(interface2):(2);
+} 
+  
