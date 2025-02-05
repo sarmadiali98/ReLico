@@ -1,0 +1,52 @@
+env int var = 10;
+
+reactiveclass Node(100) {
+    knownrebecs {
+        Switch sw;
+    }
+    Node(){
+        self.sendMsg(var);
+        self.sendMsg2(1);
+    }
+    msgsrv sendMsg(int msg){
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
+    }
+    msgsrv sendMsg2(int msg){
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
+    }
+}
+reactiveclass Switch(100){
+    knownrebecs{
+        Router r0;
+    }
+    statevars {
+        boolean ke;
+        int kkkkk;
+    }
+    msgsrv rcvMsg(int msg, boolean k){
+        ke = k;
+    }
+    msgsrv rcvMsg2(int msg, boolean k){
+        while(k){
+        kkkkk = msg;
+        k = !k;
+        }
+        r0.blah(msg);
+        
+        self.internalrcvMsg(msg);
+    }
+    msgsrv internalrcvMsg(int msg){}
+}
+
+reactiveclass Router(100){
+    msgsrv blah(int msg){
+    }
+}
+
+main {
+    Node node0(sw0):();
+    Switch sw0 (r0):();
+    Router r0():();
+}
