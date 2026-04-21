@@ -214,3 +214,13 @@ All Rebeca model files have been processed.
      mvn dependency:resolve
      ```
 
+
+License
+-------
+ReLico is distributed under the GNU GPL v2.0; see LICENSE.
+
+This artifact includes/adapts components from rebeca-lang/org.rebecalang.compiler,
+which is also distributed under GPL-2.0.
+
+If you redistribute modified versions of ReLico, keep the license and copyright
+notices intact and clearly mark the modified files and dates of change.
