@@ -333,7 +333,7 @@ If you are using the optional hardware example, edit the serial port in `serial_
 
 ReLico is distributed under the **GNU GPL v2.0**; see `LICENSE`.
 
-This repository includes or adapts work built on the Rebeca compiler framework and should retain the associated license and provenance notices.
+This repository includes or adapts work built on the Rebeca compiler framework, publicly available at https://github.com/rebeca-lang/org.rebecalang.compiler, and should retain the associated license and provenance notices.
 
 Unless explicitly stated otherwise, the example files in this repository are distributed under the same license as the main project.
 
