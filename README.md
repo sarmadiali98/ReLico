@@ -202,10 +202,6 @@ All Rebeca model files have been processed.
 
 # Notes
 
-- **Work in Progress**: The compiler is still under development. The following limitations currently apply:
-  - Circular dependency issues are being actively addressed.
-  - Timing constraints concerning the usage of the delay keyword are being addressed.
-
 - **Common Issues**:
   1. **Maven Not Installed**: Ensure Maven is installed on your system. You can install Maven using a package manager:
      ```bash
