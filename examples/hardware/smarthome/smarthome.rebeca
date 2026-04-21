@@ -1,0 +1,339 @@
+// Updated environment constants to match Arduino
+env int TEMP_LOW = 20;        // Heater threshold
+env int TEMP_NORMAL = 25;     // Comfortable range
+env int TEMP_FIRE = 35;       // Fire alarm threshold
+
+env int SAMPLE_PERIOD = 1000;
+env int NET_DELAY = 1;
+env int INTRUSION_CLEAR_DELAY = 30000;
+
+// Status codes
+env int UNWANTED_PERSON = 1;
+env int HEATER_OFF = 2;
+env int HEATER_ON = 3;
+env int LIGHT_OFF = 4;
+env int LIGHT_ON = 5;
+env int DOOR_CLOSED = 6;
+env int DOOR_OPENED = 8;
+env int FIRE_DETECTED = 9;
+env int FIRE_CLEARED = 10;
+
+// ========== TEST SCENARIOS ==========
+// Uncomment ONE scenario at a time to test
+
+// SCENARIO 1: Fire alarm test
+//env int tempLevel = 40;
+//env boolean lightIsDark = false;
+//env boolean motionIsDetected = false;
+
+// SCENARIO 2: Intrusion with light override
+//env int tempLevel = 22;
+//env boolean lightIsDark = true;
+//env boolean motionIsDetected = true;
+
+// SCENARIO 3: Fire overriding intrusion
+//env int tempLevel = 40;
+//env boolean lightIsDark = true;
+//env boolean motionIsDetected = true;
+
+// SCENARIO 4: Normal operation (no alarms)
+//env int tempLevel = 22;
+//env boolean lightIsDark = false;
+//env boolean motionIsDetected = false;
+
+// SCENARIO 5: Cold temperature (heater test)
+env int tempLevel = 15;
+env boolean lightIsDark = false;
+env boolean motionIsDetected = false;
+
+
+reactiveclass Heater (3){
+    knownrebecs { RoomController rc; }
+    statevars { boolean on; }
+
+    Heater() {
+        on = false;
+    }
+
+    msgsrv setOn() {
+        if (!on) {
+            on = true;
+            rc.notifyHeater(HEATER_ON);
+        }
+    }
+
+    msgsrv setOff() {
+        if (on) {
+            on = false;
+            rc.notifyHeater(HEATER_OFF);
+        }
+    }
+}
+
+reactiveclass Light (3){
+    knownrebecs { RoomController rc; }
+    statevars { boolean on; }
+
+    Light() {
+        on = false;
+    }
+
+    msgsrv setOn() {
+        if (!on) {
+            on = true;
+            rc.notifyLight(LIGHT_ON);
+        }
+    }
+
+    msgsrv setOff() {
+        if (on) {
+            on = false;
+            rc.notifyLight(LIGHT_OFF);
+        }
+    }
+}
+
+reactiveclass Door (3){
+    knownrebecs { CentralController central; }
+    statevars { boolean closed; }
+
+    Door() {
+        closed = false;
+    }
+
+    msgsrv closeDoor() {
+        if (!closed) {
+            closed = true;
+            central.report(DOOR_CLOSED);
+        }
+    }
+
+    msgsrv openDoor() {
+        closed = false;
+        central.report(DOOR_OPENED);
+    }
+}
+
+
+reactiveclass TempSensor (3){
+    knownrebecs { RoomController rc; }
+
+    TempSensor() {
+        self.measure();
+    }
+
+    msgsrv measure() {
+        rc.tempUpdate(tempLevel) after(NET_DELAY);
+        self.measure() after(SAMPLE_PERIOD);
+    }
+}
+
+reactiveclass LightSensor (3){
+    knownrebecs { RoomController rc; }
+
+    LightSensor() {
+        self.measure();
+    }
+
+    msgsrv measure() {
+        // LDR digital: true = DARK (HIGH), false = BRIGHT (LOW)
+        rc.lightUpdate(lightIsDark) after(NET_DELAY);
+        self.measure() after(SAMPLE_PERIOD);
+    }
+}
+
+reactiveclass MotionSensor (3){
+    knownrebecs { RoomController rc; }
+
+    MotionSensor() {
+        self.measure();
+    }
+
+    msgsrv measure() {
+        if (motionIsDetected) {
+            rc.motionDetected() after(NET_DELAY);
+        }
+        self.measure() after(SAMPLE_PERIOD);
+    }
+}
+
+
+reactiveclass RoomController (6){
+    knownrebecs {
+        CentralController central;
+        Heater heater;
+        Light light;
+    }
+
+    statevars {
+        int lastTemp;
+        boolean lastLightDark;
+        boolean lightIsOn;
+        boolean lightOverrideActive;
+    }
+
+    RoomController() {
+        lastTemp = 22;
+        lastLightDark = false;
+        lightIsOn = false;
+        lightOverrideActive = false;
+    }
+
+    msgsrv tempUpdate(int t) {
+        lastTemp = t;
+
+        if (t < TEMP_LOW) {
+            // Cold - turn heater on
+            heater.setOn() after(NET_DELAY);
+        } else if (t <= TEMP_NORMAL) {
+            // Comfortable - turn heater off
+            heater.setOff() after(NET_DELAY);
+        } else if (t > TEMP_FIRE) {
+            // FIRE! Critical priority
+            central.fireAlert();
+            heater.setOff() after(NET_DELAY);  // Turn off heater during fire
+        } else {
+            // Between NORMAL and FIRE (25-35°C) - turn heater off
+            heater.setOff() after(NET_DELAY);
+        }
+    }
+
+    msgsrv lightUpdate(boolean isDark) {
+        lastLightDark = isDark;
+
+        // Don't control light if override is active
+        if (!lightOverrideActive) {
+            if (isDark) {
+                // DARK detected (LDR HIGH) - turn light on
+                light.setOn() after(NET_DELAY);
+            } else {
+                // BRIGHT detected (LDR LOW) - turn light off
+                light.setOff() after(NET_DELAY);
+            }
+        }
+    }
+
+    msgsrv motionDetected() {
+        central.unwantedPersonAlert();
+    }
+
+    msgsrv notifyLight(int msg) {
+        if (msg == LIGHT_ON) {
+            // Only acknowledge light is on if override is NOT active
+            if (!lightOverrideActive) {
+                lightIsOn = true;
+            }
+        } else if (msg == LIGHT_OFF) {
+            lightIsOn = false;
+        }
+
+        central.report(msg);
+    }
+
+    msgsrv notifyHeater(int msg) {
+        // Just forward heater status to central
+        central.report(msg);
+    }
+
+    msgsrv activateLightOverride() {
+        lightOverrideActive = true;
+        // If we think light is on, turn it off and update tracking immediately
+        if (lightIsOn) {
+            lightIsOn = false;
+            light.setOff() after(NET_DELAY);
+        }
+    }
+
+    msgsrv deactivateLightOverride() {
+        lightOverrideActive = false;
+        // Resume normal light control based on current sensor reading
+        if (lastLightDark) {
+            light.setOn() after(NET_DELAY);
+        }
+    }
+}
+
+reactiveclass CentralController (6){
+    knownrebecs {
+        Door mainDoor;
+        RoomController rc;
+    }
+
+    statevars {
+        boolean fireAlarmActive;
+        boolean intrusionAlarmActive;
+        boolean emergencyModeActive;
+        boolean intrusionWasCleared;
+        boolean doorCloseRequested;
+    }
+
+    CentralController() {
+        fireAlarmActive = false;
+        intrusionAlarmActive = false;
+        emergencyModeActive = false;
+        intrusionWasCleared = false;
+        doorCloseRequested = false;
+    }
+
+    msgsrv fireAlert() {
+        if (!fireAlarmActive) {
+            fireAlarmActive = true;
+            emergencyModeActive = true;
+            report(FIRE_DETECTED);
+            doorCloseRequested = false;  // Cancel any door close request
+            mainDoor.openDoor();
+        }
+        // If intrusion was active, cancel it
+        if (intrusionAlarmActive) {
+            intrusionAlarmActive = false;
+            intrusionWasCleared = true;
+            rc.deactivateLightOverride();
+        }
+    }
+
+    msgsrv unwantedPersonAlert() {
+        // Only trigger intrusion if NO fire alarm active and not already in intrusion
+        if (!fireAlarmActive && !intrusionAlarmActive && !intrusionWasCleared) {
+            intrusionAlarmActive = true;
+            emergencyModeActive = true;
+            report(UNWANTED_PERSON);
+            doorCloseRequested = true;
+            self.requestCloseDoor() after(NET_DELAY);
+            rc.activateLightOverride() after(NET_DELAY);
+            self.clearIntrusionAlarm() after(INTRUSION_CLEAR_DELAY);
+        }
+    }
+
+    msgsrv requestCloseDoor() {
+        // Only actually close if no fire and door close is still requested
+        if (!fireAlarmActive && doorCloseRequested) {
+            mainDoor.closeDoor();
+        }
+    }
+
+    msgsrv clearIntrusionAlarm() {
+        if (intrusionAlarmActive && !fireAlarmActive) {
+            intrusionAlarmActive = false;
+            emergencyModeActive = false;
+            intrusionWasCleared = true;
+            rc.deactivateLightOverride();
+        }
+    }
+
+    msgsrv report(int msg) {
+        // Logging/monitoring placeholder
+    }
+}
+
+main {
+    CentralController central(mainDoor, rc1):();
+    Door mainDoor(central):();
+
+    // Single room implementation (matches Arduino setup)
+    Heater heater1(rc1):();
+    Light light1(rc1):();
+    TempSensor ts1(rc1):();
+    LightSensor ls1(rc1):();
+    MotionSensor ms1(rc1):();
+    RoomController rc1(central, heater1, light1):();
+}

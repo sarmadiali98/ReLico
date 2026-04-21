@@ -1,0 +1,447 @@
+target Cpp;
+
+public preamble {=
+    struct Heater_setOn {
+        int default_arg;
+    };
+    struct Heater_setOff {
+        int default_arg;
+    };
+    struct Light_setOn {
+        int default_arg;
+    };
+    struct Light_setOff {
+        int default_arg;
+    };
+    struct Door_closeDoor {
+        int default_arg;
+    };
+    struct Door_openDoor {
+        int default_arg;
+    };
+    struct RoomController_motionDetected {
+        int default_arg;
+    };
+    struct RoomController_lightUpdate {
+        bool isDark;
+    };
+    struct RoomController_tempUpdate {
+        int t;
+    };
+    struct RoomController_deactivateLightOverride {
+        int default_arg;
+    };
+    struct RoomController_activateLightOverride {
+        int default_arg;
+    };
+    struct RoomController_notifyLight {
+        int msg;
+    };
+    struct RoomController_notifyHeater {
+        int msg;
+    };
+    struct CentralController_fireAlert {
+        int default_arg;
+    };
+    struct CentralController_unwantedPersonAlert {
+        int default_arg;
+    };
+    struct CentralController_report {
+        int msg;
+    };
+
+    #include <cstdio>
+    #include <cstring>
+    #include <string>
+    #include <iostream>
+
+    static std::string read_file_to_string(const char* path) {
+        FILE* f = std::fopen(path, "r");
+        if (!f) {
+            return "";
+        }
+        std::string result;
+        char buffer[512];
+        while (true) {
+            size_t n = std::fread(buffer, 1, sizeof(buffer), f);
+            if (n == 0) break;
+            result.append(buffer, n);
+        }
+        std::fclose(f);
+        return result;
+    }
+
+    static std::string get_last_line(const std::string& content) {
+        if (content.empty()) return "";
+        std::size_t end = content.size();
+        while (end > 0 && (content[end-1] == '\n' || content[end-1] == '\r')) {
+            --end;
+        }
+        if (end == 0) return "";
+        std::size_t start = content.rfind('\n', end - 1);
+        if (start == std::string::npos) {
+            start = 0;
+        } else {
+            start += 1;
+        }
+        return content.substr(start, end - start);
+    }
+
+    static float parse_sensor_value(const std::string& key) {
+        std::string content = read_file_to_string("sensor_data.jsonl");
+        if (content.empty()) return 0.0f;
+        
+        std::string line = get_last_line(content);
+        if (line.empty()) return 0.0f;
+        
+        std::string search = "\"" + key + "\":";
+        std::size_t pos = line.find(search);
+        if (pos != std::string::npos) {
+            std::size_t start = pos + search.length();
+            std::size_t end = line.find_first_of(",}", start);
+            if (end == std::string::npos) {
+                end = line.size();
+            }
+            std::string value_str = line.substr(start, end - start);
+            try {
+                return std::stof(value_str);
+            } catch (...) {
+                return 0.0f;
+            }
+        }
+        return 0.0f;
+    }
+=}
+
+reactor Heater {
+    output notifyHeater_to_rc1_from_heater1_out: RoomController_notifyHeater;
+    input setOn_to_heater1_from_rc1_in: int;
+    input setOff_to_heater1_from_rc1_in: int;
+    state on: bool
+    reaction(startup) {=
+        on = false;
+    =}
+    reaction(setOn_to_heater1_from_rc1_in) -> notifyHeater_to_rc1_from_heater1_out {=
+        if (!on) {
+        on = true;
+        std::cout << "[EVENT] Heater ON" << std::endl;
+        notifyHeater_to_rc1_from_heater1_out.set(RoomController_notifyHeater{3 /* env variable HEATER_ON replaced */});
+        }
+    =}
+    reaction(setOff_to_heater1_from_rc1_in) -> notifyHeater_to_rc1_from_heater1_out {=
+        if (on) {
+        on = false;
+        std::cout << "[EVENT] Heater OFF" << std::endl;
+        notifyHeater_to_rc1_from_heater1_out.set(RoomController_notifyHeater{2 /* env variable HEATER_OFF replaced */});
+        }
+    =}
+}
+
+reactor Light {
+    output notifyLight_to_rc1_from_light1_out: RoomController_notifyLight;
+    input setOn_to_light1_from_rc1_in: int;
+    input setOff_to_light1_from_rc1_in: int;
+    state on: bool
+    reaction(startup) {=
+        on = false;
+    =}
+    reaction(setOn_to_light1_from_rc1_in) -> notifyLight_to_rc1_from_light1_out {=
+        if (!on) {
+        on = true;
+        std::cout << "[EVENT] Light ON" << std::endl;
+        notifyLight_to_rc1_from_light1_out.set(RoomController_notifyLight{5 /* env variable LIGHT_ON replaced */});
+        }
+    =}
+    reaction(setOff_to_light1_from_rc1_in) -> notifyLight_to_rc1_from_light1_out {=
+        if (on) {
+        on = false;
+        std::cout << "[EVENT] Light OFF" << std::endl;
+        notifyLight_to_rc1_from_light1_out.set(RoomController_notifyLight{4 /* env variable LIGHT_OFF replaced */});
+        }
+    =}
+}
+
+reactor Door {
+    output report_to_central_from_mainDoor_out: CentralController_report;
+    input openDoor_to_mainDoor_from_central_in: int;
+    input closeDoor_to_mainDoor_from_central_in: int;
+    state closed: bool
+    reaction(startup) {=
+        closed = false;
+    =}
+    reaction(closeDoor_to_mainDoor_from_central_in) -> report_to_central_from_mainDoor_out {=
+        if (!closed) {
+        closed = true;
+        std::cout << "[EVENT] Door CLOSED" << std::endl;
+        report_to_central_from_mainDoor_out.set(CentralController_report{6 /* env variable DOOR_CLOSED replaced */});
+        } else {
+        std::cout << "[INFO] Door close command received but door already closed" << std::endl;
+        }
+    =}
+    reaction(openDoor_to_mainDoor_from_central_in) -> report_to_central_from_mainDoor_out {=
+        closed = false;
+        std::cout << "[EVENT] Door OPENED" << std::endl;
+        report_to_central_from_mainDoor_out.set(CentralController_report{8 /* env variable DOOR_OPENED replaced */});
+    =}
+}
+
+reactor TempSensor {
+    output tempUpdate_to_rc1_from_ts1_out: RoomController_tempUpdate;
+    logical action measure;
+    reaction(measure) -> measure, tempUpdate_to_rc1_from_ts1_out {=
+        int tempLevel = static_cast<int>(parse_sensor_value("temp"));
+        tempUpdate_to_rc1_from_ts1_out.set(RoomController_tempUpdate{tempLevel});
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor LightSensor {
+    output lightUpdate_to_rc1_from_ls1_out: RoomController_lightUpdate;
+    logical action measure;
+    reaction(measure) -> measure, lightUpdate_to_rc1_from_ls1_out {=
+        bool lightIsDark = (parse_sensor_value("light") > 0.5);
+        lightUpdate_to_rc1_from_ls1_out.set(RoomController_lightUpdate{lightIsDark});
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor MotionSensor {
+    output motionDetected_to_rc1_from_ms1_out: int;
+    logical action measure;
+    reaction(measure) -> measure, motionDetected_to_rc1_from_ms1_out {=
+        bool motionIsDetected = (parse_sensor_value("motion") > 0.5);
+        if (motionIsDetected) {
+        motionDetected_to_rc1_from_ms1_out.set(int{});
+        }
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor RoomController {
+    output setOn_to_heater1_from_rc1_out: int;
+    output setOff_to_heater1_from_rc1_out: int;
+    output fireAlert_to_central_from_rc1_out: int;
+    output setOn_to_light1_from_rc1_out: int;
+    output setOff_to_light1_from_rc1_out: int;
+    output unwantedPersonAlert_to_central_from_rc1_out: int;
+    output report_to_central_from_rc1_out: CentralController_report;
+    input deactivateLightOverride_to_rc1_from_central_in: int;
+    input activateLightOverride_to_rc1_from_central_in: int;
+    input tempUpdate_to_rc1_from_ts1_in: RoomController_tempUpdate;
+    input notifyLight_to_rc1_from_light1_in: RoomController_notifyLight;
+    input notifyHeater_to_rc1_from_heater1_in: RoomController_notifyHeater;
+    input motionDetected_to_rc1_from_ms1_in: int;
+    input lightUpdate_to_rc1_from_ls1_in: RoomController_lightUpdate;
+    state lastLightDark: bool
+    state lightIsOn: bool
+    state lastTemp: int
+    state lightOverrideActive: bool
+    reaction(startup) {=
+        lastTemp = 22;
+        lastLightDark = false;
+        lightIsOn = false;
+        lightOverrideActive = false;
+    =}
+    reaction(motionDetected_to_rc1_from_ms1_in) -> unwantedPersonAlert_to_central_from_rc1_out {=
+        std::cout << "[EVENT] Motion detected -> unwanted person alert to Central" << std::endl;
+        unwantedPersonAlert_to_central_from_rc1_out.set(int{});
+    =}
+    reaction(lightUpdate_to_rc1_from_ls1_in) -> setOn_to_light1_from_rc1_out, setOff_to_light1_from_rc1_out {=
+        lastLightDark = (*lightUpdate_to_rc1_from_ls1_in.get()).isDark;
+        if (!lightOverrideActive) {
+        if ((*lightUpdate_to_rc1_from_ls1_in.get()).isDark) {
+        std::cout << "[EVENT] Light is DARK (override NOT active) -> request Light ON" << std::endl;
+        setOn_to_light1_from_rc1_out.set(int{});
+        } else {
+        std::cout << "[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF" << std::endl;
+        setOff_to_light1_from_rc1_out.set(int{});
+        }
+        } else {
+        std::cout << "[INFO] Light override ACTIVE -> ignoring light sensor update" << std::endl;
+        std::cout << "[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓" << std::endl;
+        }
+    =}
+    reaction(tempUpdate_to_rc1_from_ts1_in) -> setOn_to_heater1_from_rc1_out, setOff_to_heater1_from_rc1_out, fireAlert_to_central_from_rc1_out {=
+        lastTemp = (*tempUpdate_to_rc1_from_ts1_in.get()).t;
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t < 20 /* env variable TEMP_LOW replaced */) {
+        std::cout << "[EVENT] Temp < 20 -> request Heater ON" << std::endl;
+        setOn_to_heater1_from_rc1_out.set(int{});
+        } else {
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t <= 25 /* env variable TEMP_NORMAL replaced */) {
+        std::cout << "[EVENT] 20 <= Temp <= 25 -> request Heater OFF" << std::endl;
+        setOff_to_heater1_from_rc1_out.set(int{});
+        } else {
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t > 35 /* env variable TEMP_FIRE replaced */) {
+        std::cout << "[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF" << std::endl;
+        fireAlert_to_central_from_rc1_out.set(int{});
+        setOff_to_heater1_from_rc1_out.set(int{});
+        std::cout << "[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓" << std::endl;
+        } else {
+        std::cout << "[EVENT] 25 < Temp <= 35 -> request Heater OFF" << std::endl;
+        setOff_to_heater1_from_rc1_out.set(int{});
+        }
+        }
+        }
+    =}
+    reaction(deactivateLightOverride_to_rc1_from_central_in) -> setOn_to_light1_from_rc1_out {=
+        lightOverrideActive = false;
+        std::cout << "[EVENT] Light override DEACTIVATED -> restore normal light operation" << std::endl;
+        if (lastLightDark) {
+        std::cout << "[EVENT] Re-evaluating: lastLightDark=true -> request Light ON" << std::endl;
+        setOn_to_light1_from_rc1_out.set(int{});
+        }
+    =}
+    reaction(activateLightOverride_to_rc1_from_central_in) -> setOff_to_light1_from_rc1_out {=
+        lightOverrideActive = true;
+        std::cout << "[EVENT] Light override ACTIVATED (stealth mode)" << std::endl;
+        if (lightIsOn) {
+        lightIsOn = false;
+        std::cout << "[EVENT] Light was ON -> forcing Light OFF" << std::endl;
+        setOff_to_light1_from_rc1_out.set(int{});
+        std::cout << "[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, light forced OFF ✓" << std::endl;
+        }
+    =}
+    reaction(notifyHeater_to_rc1_from_heater1_in) -> report_to_central_from_rc1_out {=
+        report_to_central_from_rc1_out.set(CentralController_report{(*notifyHeater_to_rc1_from_heater1_in.get()).msg});
+    =}
+    reaction(notifyLight_to_rc1_from_light1_in) -> report_to_central_from_rc1_out {=
+        if ((*notifyLight_to_rc1_from_light1_in.get()).msg == 5 /* env variable LIGHT_ON replaced */) {
+        if (!lightOverrideActive) {
+        lightIsOn = true;
+        std::cout << "[INFO] Light notified ON, tracking lightIsOn=true" << std::endl;
+        } else {
+        std::cout << "[INFO] Light notified ON but override ACTIVE -> NOT tracking (lightIsOn remains false)" << std::endl;
+        std::cout << "[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, lightIsOn=false ✓" << std::endl;
+        }
+        } else {
+        if ((*notifyLight_to_rc1_from_light1_in.get()).msg == 4 /* env variable LIGHT_OFF replaced */) {
+        lightIsOn = false;
+        std::cout << "[INFO] Light notified OFF, tracking lightIsOn=false" << std::endl;
+        }
+        }
+        report_to_central_from_rc1_out.set(CentralController_report{(*notifyLight_to_rc1_from_light1_in.get()).msg});
+    =}
+}
+
+reactor CentralController {
+    output openDoor_to_mainDoor_from_central_out: int;
+    output deactivateLightOverride_to_rc1_from_central_out: int;
+    output activateLightOverride_to_rc1_from_central_out: int;
+    output closeDoor_to_mainDoor_from_central_out: int;
+    input fireAlert_to_central_from_rc1_in: int;
+    input unwantedPersonAlert_to_central_from_rc1_in: int;
+    input report_to_central_from_rc1_in: CentralController_report;
+    input report_to_central_from_mainDoor_in: CentralController_report;
+    state doorCloseRequested: bool
+    state emergencyModeActive: bool
+    state intrusionAlarmActive: bool
+    state fireAlarmActive: bool
+    state intrusionWasCleared: bool
+    logical action requestCloseDoor;
+    logical action clearIntrusionAlarm;
+    reaction(requestCloseDoor) -> closeDoor_to_mainDoor_from_central_out {=
+        if (!fireAlarmActive && doorCloseRequested) {
+        std::cout << "[EVENT] Delayed door close request executing (fire not active) -> CLOSE DOOR" << std::endl;
+        closeDoor_to_mainDoor_from_central_out.set(int{});
+        } else {
+        std::cout << "[INFO] Delayed door close request cancelled (fire active or not requested)" << std::endl;
+        }
+    =}
+    reaction(clearIntrusionAlarm) -> deactivateLightOverride_to_rc1_from_central_out {=
+        if (intrusionAlarmActive && !fireAlarmActive) {
+        intrusionAlarmActive = false;
+        emergencyModeActive = false;
+        intrusionWasCleared = true;
+        std::cout << "[EVENT] Intrusion CLEARED (auto-timeout) -> deactivate light override" << std::endl;
+        deactivateLightOverride_to_rc1_from_central_out.set(int{});
+        std::cout << "[PROPERTY] EmergencyImpliesAlarmOrHistory: intrusionCleared=true ✓" << std::endl;
+        }
+    =}
+    reaction(startup) {=
+        fireAlarmActive = false;
+        intrusionAlarmActive = false;
+        emergencyModeActive = false;
+        intrusionWasCleared = false;
+        doorCloseRequested = false;
+    =}
+    reaction(fireAlert_to_central_from_rc1_in) -> openDoor_to_mainDoor_from_central_out, deactivateLightOverride_to_rc1_from_central_out {=
+        if (!fireAlarmActive) {
+        fireAlarmActive = true;
+        emergencyModeActive = true;
+        doorCloseRequested = false;
+        std::cout << "[EVENT] FIRE ALERT at Central -> OPEN DOOR, cancel door close request, deactivate light override" << std::endl;
+        openDoor_to_mainDoor_from_central_out.set(int{});
+        std::cout << "[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓" << std::endl;
+        std::cout << "[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓" << std::endl;
+        }
+        if (intrusionAlarmActive) {
+        intrusionAlarmActive = false;
+        intrusionWasCleared = true;
+        std::cout << "[EVENT] Fire overriding intrusion -> set intrusionActive=false, intrusionCleared=true" << std::endl;
+        deactivateLightOverride_to_rc1_from_central_out.set(int{});
+        std::cout << "[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusionActive=false ✓" << std::endl;
+        }
+    =}
+    reaction(report_to_central_from_rc1_in) {=
+    =}
+    reaction(report_to_central_from_mainDoor_in) {=
+    =}
+    reaction(unwantedPersonAlert_to_central_from_rc1_in) -> requestCloseDoor, clearIntrusionAlarm, activateLightOverride_to_rc1_from_central_out {=
+        if (!fireAlarmActive && !intrusionAlarmActive && !intrusionWasCleared) {
+        intrusionAlarmActive = true;
+        emergencyModeActive = true;
+        doorCloseRequested = true;
+        std::cout << "[EVENT] Unwanted person alert at Central -> set emergency mode, schedule delayed CLOSE DOOR, activate light override" << std::endl;
+        requestCloseDoor.schedule(1ms);
+        activateLightOverride_to_rc1_from_central_out.set(int{});
+        clearIntrusionAlarm.schedule(30000ms);
+        std::cout << "[INFO] Intrusion auto-clear scheduled in 30 seconds" << std::endl;
+        std::cout << "[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, intrusionActive=true ✓" << std::endl;
+        } else if (fireAlarmActive) {
+        std::cout << "[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN" << std::endl;
+        std::cout << "[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓" << std::endl;
+        std::cout << "[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓" << std::endl;
+        } else if (intrusionWasCleared) {
+        std::cout << "[INFO] Unwanted person alert IGNORED (intrusion was previously cleared)" << std::endl;
+        } else {
+        std::cout << "[INFO] Unwanted person alert received while intrusion already active (no action)" << std::endl;
+        }
+    =}
+}
+
+main reactor {
+    central = new CentralController();
+    mainDoor = new Door();
+    heater1 = new Heater();
+    light1 = new Light();
+    ts1 = new TempSensor();
+    ls1 = new LightSensor();
+    ms1 = new MotionSensor();
+    rc1 = new RoomController();
+    rc1.setOn_to_heater1_from_rc1_out -> heater1.setOn_to_heater1_from_rc1_in after 1ms;
+    rc1.setOff_to_heater1_from_rc1_out -> heater1.setOff_to_heater1_from_rc1_in after 1ms;
+    rc1.fireAlert_to_central_from_rc1_out -> central.fireAlert_to_central_from_rc1_in after 0;
+    rc1.setOn_to_light1_from_rc1_out -> light1.setOn_to_light1_from_rc1_in after 1ms;
+    rc1.setOff_to_light1_from_rc1_out -> light1.setOff_to_light1_from_rc1_in after 1ms;
+    rc1.unwantedPersonAlert_to_central_from_rc1_out -> central.unwantedPersonAlert_to_central_from_rc1_in after 0;
+    rc1.report_to_central_from_rc1_out -> central.report_to_central_from_rc1_in after 0;
+    central.openDoor_to_mainDoor_from_central_out -> mainDoor.openDoor_to_mainDoor_from_central_in after 0;
+    central.deactivateLightOverride_to_rc1_from_central_out -> rc1.deactivateLightOverride_to_rc1_from_central_in after 0;
+    central.activateLightOverride_to_rc1_from_central_out -> rc1.activateLightOverride_to_rc1_from_central_in after 1ms;
+    central.closeDoor_to_mainDoor_from_central_out -> mainDoor.closeDoor_to_mainDoor_from_central_in after 0;
+    ts1.tempUpdate_to_rc1_from_ts1_out -> rc1.tempUpdate_to_rc1_from_ts1_in after 1ms;
+    light1.notifyLight_to_rc1_from_light1_out -> rc1.notifyLight_to_rc1_from_light1_in after 0;
+    heater1.notifyHeater_to_rc1_from_heater1_out -> rc1.notifyHeater_to_rc1_from_heater1_in after 0;
+    ms1.motionDetected_to_rc1_from_ms1_out -> rc1.motionDetected_to_rc1_from_ms1_in after 1ms;
+    ls1.lightUpdate_to_rc1_from_ls1_out -> rc1.lightUpdate_to_rc1_from_ls1_in after 1ms;
+    mainDoor.report_to_central_from_mainDoor_out -> central.report_to_central_from_mainDoor_in after 0;
+}

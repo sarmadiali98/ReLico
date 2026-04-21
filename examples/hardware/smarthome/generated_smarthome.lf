@@ -1,0 +1,332 @@
+target Cpp;
+
+public preamble {=
+    struct Heater_setOn {
+        int default_arg;
+    };
+    struct Heater_setOff {
+        int default_arg;
+    };
+    struct Light_setOn {
+        int default_arg;
+    };
+    struct Light_setOff {
+        int default_arg;
+    };
+    struct Door_closeDoor {
+        int default_arg;
+    };
+    struct Door_openDoor {
+        int default_arg;
+    };
+    struct RoomController_motionDetected {
+        int default_arg;
+    };
+    struct RoomController_lightUpdate {
+        bool isDark;
+    };
+    struct RoomController_tempUpdate {
+        int t;
+    };
+    struct RoomController_deactivateLightOverride {
+        int default_arg;
+    };
+    struct RoomController_activateLightOverride {
+        int default_arg;
+    };
+    struct RoomController_notifyLight {
+        int msg;
+    };
+    struct RoomController_notifyHeater {
+        int msg;
+    };
+    struct CentralController_fireAlert {
+        int default_arg;
+    };
+    struct CentralController_unwantedPersonAlert {
+        int default_arg;
+    };
+    struct CentralController_report {
+        int msg;
+    };
+=}
+
+reactor Heater {
+    output notifyHeater_to_rc1_from_heater1_out: RoomController_notifyHeater;
+    input setOn_to_heater1_from_rc1_in: int;
+    input setOff_to_heater1_from_rc1_in: int;
+    state on: bool
+    reaction(startup) {=
+        on = false;
+    =}
+    reaction(setOn_to_heater1_from_rc1_in) -> notifyHeater_to_rc1_from_heater1_out {=
+        if (!on) {
+        on = true;
+        notifyHeater_to_rc1_from_heater1_out.set(RoomController_notifyHeater{3 /* env variable HEATER_ON replaced */});
+        }
+    =}
+    reaction(setOff_to_heater1_from_rc1_in) -> notifyHeater_to_rc1_from_heater1_out {=
+        if (on) {
+        on = false;
+        notifyHeater_to_rc1_from_heater1_out.set(RoomController_notifyHeater{2 /* env variable HEATER_OFF replaced */});
+        }
+    =}
+}
+
+reactor Light {
+    output notifyLight_to_rc1_from_light1_out: RoomController_notifyLight;
+    input setOn_to_light1_from_rc1_in: int;
+    input setOff_to_light1_from_rc1_in: int;
+    state on: bool
+    reaction(startup) {=
+        on = false;
+    =}
+    reaction(setOn_to_light1_from_rc1_in) -> notifyLight_to_rc1_from_light1_out {=
+        if (!on) {
+        on = true;
+        notifyLight_to_rc1_from_light1_out.set(RoomController_notifyLight{5 /* env variable LIGHT_ON replaced */});
+        }
+    =}
+    reaction(setOff_to_light1_from_rc1_in) -> notifyLight_to_rc1_from_light1_out {=
+        if (on) {
+        on = false;
+        notifyLight_to_rc1_from_light1_out.set(RoomController_notifyLight{4 /* env variable LIGHT_OFF replaced */});
+        }
+    =}
+}
+
+reactor Door {
+    output report_to_central_from_mainDoor_out: CentralController_report;
+    input openDoor_to_mainDoor_from_central_in: int;
+    input closeDoor_to_mainDoor_from_central_in: int;
+    state closed: bool
+    reaction(startup) {=
+        closed = false;
+    =}
+    reaction(closeDoor_to_mainDoor_from_central_in) -> report_to_central_from_mainDoor_out {=
+        if (!closed) {
+        closed = true;
+        report_to_central_from_mainDoor_out.set(CentralController_report{6 /* env variable DOOR_CLOSED replaced */});
+        }
+    =}
+    reaction(openDoor_to_mainDoor_from_central_in) -> report_to_central_from_mainDoor_out {=
+        closed = false;
+        report_to_central_from_mainDoor_out.set(CentralController_report{8 /* env variable DOOR_OPENED replaced */});
+    =}
+}
+
+reactor TempSensor {
+    output tempUpdate_to_rc1_from_ts1_out: RoomController_tempUpdate;
+    logical action measure;
+    reaction(measure) -> measure, tempUpdate_to_rc1_from_ts1_out {=
+        tempUpdate_to_rc1_from_ts1_out.set(RoomController_tempUpdate{15 /* env variable tempLevel replaced */});
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor LightSensor {
+    output lightUpdate_to_rc1_from_ls1_out: RoomController_lightUpdate;
+    logical action measure;
+    reaction(measure) -> measure, lightUpdate_to_rc1_from_ls1_out {=
+        lightUpdate_to_rc1_from_ls1_out.set(RoomController_lightUpdate{false /* env variable lightIsDark replaced */});
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor MotionSensor {
+    output motionDetected_to_rc1_from_ms1_out: int;
+    logical action measure;
+    reaction(measure) -> measure, motionDetected_to_rc1_from_ms1_out {=
+        if (false /* env variable motionIsDetected replaced */) {
+        motionDetected_to_rc1_from_ms1_out.set(int{});
+        }
+        measure.schedule(1000ms);
+    =}
+    reaction(startup) -> measure {=
+        measure.schedule(0ms);
+    =}
+}
+
+reactor RoomController {
+    output setOn_to_heater1_from_rc1_out: int;
+    output setOff_to_heater1_from_rc1_out: int;
+    output fireAlert_to_central_from_rc1_out: int;
+    output setOn_to_light1_from_rc1_out: int;
+    output setOff_to_light1_from_rc1_out: int;
+    output unwantedPersonAlert_to_central_from_rc1_out: int;
+    output report_to_central_from_rc1_out: CentralController_report;
+    input deactivateLightOverride_to_rc1_from_central_in: int;
+    input activateLightOverride_to_rc1_from_central_in: int;
+    input tempUpdate_to_rc1_from_ts1_in: RoomController_tempUpdate;
+    input notifyLight_to_rc1_from_light1_in: RoomController_notifyLight;
+    input notifyHeater_to_rc1_from_heater1_in: RoomController_notifyHeater;
+    input motionDetected_to_rc1_from_ms1_in: int;
+    input lightUpdate_to_rc1_from_ls1_in: RoomController_lightUpdate;
+    state lastLightDark: bool
+    state lightIsOn: bool
+    state lastTemp: int
+    state lightOverrideActive: bool
+    reaction(startup) {=
+        lastTemp = 22;
+        lastLightDark = false;
+        lightIsOn = false;
+        lightOverrideActive = false;
+    =}
+    reaction(motionDetected_to_rc1_from_ms1_in) -> unwantedPersonAlert_to_central_from_rc1_out {=
+        unwantedPersonAlert_to_central_from_rc1_out.set(int{});
+    =}
+    reaction(lightUpdate_to_rc1_from_ls1_in) -> setOn_to_light1_from_rc1_out, setOff_to_light1_from_rc1_out {=
+        lastLightDark = (*lightUpdate_to_rc1_from_ls1_in.get()).isDark;
+        if (!lightOverrideActive) {
+        if ((*lightUpdate_to_rc1_from_ls1_in.get()).isDark) {
+        setOn_to_light1_from_rc1_out.set(int{});
+        } else {
+        setOff_to_light1_from_rc1_out.set(int{});
+        }
+        }
+    =}
+    reaction(tempUpdate_to_rc1_from_ts1_in) -> setOn_to_heater1_from_rc1_out, setOff_to_heater1_from_rc1_out, fireAlert_to_central_from_rc1_out {=
+        lastTemp = (*tempUpdate_to_rc1_from_ts1_in.get()).t;
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t < 20 /* env variable TEMP_LOW replaced */) {
+        setOn_to_heater1_from_rc1_out.set(int{});
+        } else {
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t <= 25 /* env variable TEMP_NORMAL replaced */) {
+        setOff_to_heater1_from_rc1_out.set(int{});
+        } else {
+        if ((*tempUpdate_to_rc1_from_ts1_in.get()).t > 35 /* env variable TEMP_FIRE replaced */) {
+        fireAlert_to_central_from_rc1_out.set(int{});
+        setOff_to_heater1_from_rc1_out.set(int{});
+        } else {
+        setOff_to_heater1_from_rc1_out.set(int{});
+        }
+        }
+        }
+    =}
+    reaction(deactivateLightOverride_to_rc1_from_central_in) -> setOn_to_light1_from_rc1_out {=
+        lightOverrideActive = false;
+        if (lastLightDark) {
+        setOn_to_light1_from_rc1_out.set(int{});
+        }
+    =}
+    reaction(activateLightOverride_to_rc1_from_central_in) -> setOff_to_light1_from_rc1_out {=
+        lightOverrideActive = true;
+        if (lightIsOn) {
+        lightIsOn = false;
+        setOff_to_light1_from_rc1_out.set(int{});
+        }
+    =}
+    reaction(notifyHeater_to_rc1_from_heater1_in) -> report_to_central_from_rc1_out {=
+        report_to_central_from_rc1_out.set(CentralController_report{(*notifyHeater_to_rc1_from_heater1_in.get()).msg});
+    =}
+    reaction(notifyLight_to_rc1_from_light1_in) -> report_to_central_from_rc1_out {=
+        if ((*notifyLight_to_rc1_from_light1_in.get()).msg == 5 /* env variable LIGHT_ON replaced */) {
+        if (!lightOverrideActive) {
+        lightIsOn = true;
+        }
+        } else {
+        if ((*notifyLight_to_rc1_from_light1_in.get()).msg == 4 /* env variable LIGHT_OFF replaced */) {
+        lightIsOn = false;
+        }
+        }
+        report_to_central_from_rc1_out.set(CentralController_report{(*notifyLight_to_rc1_from_light1_in.get()).msg});
+    =}
+}
+
+reactor CentralController {
+    output openDoor_to_mainDoor_from_central_out: int;
+    output deactivateLightOverride_to_rc1_from_central_out: int;
+    output activateLightOverride_to_rc1_from_central_out: int;
+    output closeDoor_to_mainDoor_from_central_out: int;
+    input fireAlert_to_central_from_rc1_in: int;
+    input unwantedPersonAlert_to_central_from_rc1_in: int;
+    input report_to_central_from_rc1_in: CentralController_report;
+    input report_to_central_from_mainDoor_in: CentralController_report;
+    state doorCloseRequested: bool
+    state emergencyModeActive: bool
+    state intrusionAlarmActive: bool
+    state fireAlarmActive: bool
+    state intrusionWasCleared: bool
+    logical action requestCloseDoor;
+    logical action clearIntrusionAlarm;
+    reaction(requestCloseDoor) -> closeDoor_to_mainDoor_from_central_out {=
+        if (!fireAlarmActive && doorCloseRequested) {
+        closeDoor_to_mainDoor_from_central_out.set(int{});
+        }
+    =}
+    reaction(clearIntrusionAlarm) -> deactivateLightOverride_to_rc1_from_central_out {=
+        if (intrusionAlarmActive && !fireAlarmActive) {
+        intrusionAlarmActive = false;
+        emergencyModeActive = false;
+        intrusionWasCleared = true;
+        deactivateLightOverride_to_rc1_from_central_out.set(int{});
+        }
+    =}
+    reaction(startup) {=
+        fireAlarmActive = false;
+        intrusionAlarmActive = false;
+        emergencyModeActive = false;
+        intrusionWasCleared = false;
+        doorCloseRequested = false;
+    =}
+    reaction(fireAlert_to_central_from_rc1_in) -> openDoor_to_mainDoor_from_central_out, deactivateLightOverride_to_rc1_from_central_out {=
+        if (!fireAlarmActive) {
+        fireAlarmActive = true;
+        emergencyModeActive = true;
+        doorCloseRequested = false;
+        openDoor_to_mainDoor_from_central_out.set(int{});
+        }
+        if (intrusionAlarmActive) {
+        intrusionAlarmActive = false;
+        intrusionWasCleared = true;
+        deactivateLightOverride_to_rc1_from_central_out.set(int{});
+        }
+    =}
+    reaction(report_to_central_from_rc1_in) {=
+    =}
+    reaction(report_to_central_from_mainDoor_in) {=
+    =}
+    reaction(unwantedPersonAlert_to_central_from_rc1_in) -> requestCloseDoor, clearIntrusionAlarm, activateLightOverride_to_rc1_from_central_out {=
+        if (!fireAlarmActive && !intrusionAlarmActive && !intrusionWasCleared) {
+        intrusionAlarmActive = true;
+        emergencyModeActive = true;
+        doorCloseRequested = true;
+        requestCloseDoor.schedule(1ms);
+        activateLightOverride_to_rc1_from_central_out.set(int{});
+        clearIntrusionAlarm.schedule(30000ms);
+        }
+    =}
+}
+
+main reactor {
+    central = new CentralController();
+    mainDoor = new Door();
+    heater1 = new Heater();
+    light1 = new Light();
+    ts1 = new TempSensor();
+    ls1 = new LightSensor();
+    ms1 = new MotionSensor();
+    rc1 = new RoomController();
+    rc1.setOn_to_heater1_from_rc1_out -> heater1.setOn_to_heater1_from_rc1_in after 1ms;
+    rc1.setOff_to_heater1_from_rc1_out -> heater1.setOff_to_heater1_from_rc1_in after 1ms;
+    rc1.fireAlert_to_central_from_rc1_out -> central.fireAlert_to_central_from_rc1_in after 0;
+    rc1.setOn_to_light1_from_rc1_out -> light1.setOn_to_light1_from_rc1_in after 1ms;
+    rc1.setOff_to_light1_from_rc1_out -> light1.setOff_to_light1_from_rc1_in after 1ms;
+    rc1.unwantedPersonAlert_to_central_from_rc1_out -> central.unwantedPersonAlert_to_central_from_rc1_in after 0;
+    rc1.report_to_central_from_rc1_out -> central.report_to_central_from_rc1_in after 0;
+    central.openDoor_to_mainDoor_from_central_out -> mainDoor.openDoor_to_mainDoor_from_central_in after 0;
+    central.deactivateLightOverride_to_rc1_from_central_out -> rc1.deactivateLightOverride_to_rc1_from_central_in after 0;
+    central.activateLightOverride_to_rc1_from_central_out -> rc1.activateLightOverride_to_rc1_from_central_in after 1ms;
+    central.closeDoor_to_mainDoor_from_central_out -> mainDoor.closeDoor_to_mainDoor_from_central_in after 0;
+    ts1.tempUpdate_to_rc1_from_ts1_out -> rc1.tempUpdate_to_rc1_from_ts1_in after 1ms;
+    light1.notifyLight_to_rc1_from_light1_out -> rc1.notifyLight_to_rc1_from_light1_in after 0;
+    heater1.notifyHeater_to_rc1_from_heater1_out -> rc1.notifyHeater_to_rc1_from_heater1_in after 0;
+    ms1.motionDetected_to_rc1_from_ms1_out -> rc1.motionDetected_to_rc1_from_ms1_in after 1ms;
+    ls1.lightUpdate_to_rc1_from_ls1_out -> rc1.lightUpdate_to_rc1_from_ls1_in after 1ms;
+    mainDoor.report_to_central_from_mainDoor_out -> central.report_to_central_from_mainDoor_in after 0;
+}
