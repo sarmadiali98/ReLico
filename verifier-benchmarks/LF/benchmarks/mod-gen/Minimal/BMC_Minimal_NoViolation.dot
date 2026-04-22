@@ -1,0 +1,7 @@
+digraph G {
+    layout=circo;
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nMinimal.ctr.reaction_1\nMinimal.chk.reaction_1 | Pending events:\n(Minimal.ctr.t, (10 ms, 0))"]
+    S0 -> S0 [label = "+10 ms -10 ms" weight = 0 ]
+}
