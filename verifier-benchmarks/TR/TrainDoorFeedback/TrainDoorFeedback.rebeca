@@ -1,0 +1,174 @@
+reactiveclass Checker(5) {
+    statevars {
+        int seenTrain;
+        int seenDoor;
+        int seenDoor2;
+        int violation;
+    }
+
+    Checker() {
+        seenTrain = 0;
+        seenDoor = 0;
+        seenDoor2 = 0;
+        violation = 0;
+    }
+
+    msgsrv start() {
+        self.decide() after(2);
+    }
+
+    msgsrv trainIn(int v) {
+        if (v == 1) {
+            seenTrain = 1;
+        } else {
+            violation = 1;
+        }
+    }
+
+    msgsrv doorIn(int v) {
+        if (v == 2) {
+            seenDoor = 1;
+        } else {
+            violation = 1;
+        }
+    }
+
+    msgsrv door2In(int v) {
+        if (v == 3) {
+            seenDoor2 = 1;
+        } else {
+            violation = 1;
+        }
+    }
+
+    msgsrv decide() {
+        if (seenTrain == 0 || seenDoor == 0 || seenDoor2 == 0) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass Train(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int received;
+    }
+
+    Train() {
+        received = 0;
+    }
+
+    msgsrv in(int v) {
+        received = v;
+        chk.trainIn(received);
+    }
+}
+
+reactiveclass DoorA(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int received;
+    }
+
+    DoorA() {
+        received = 0;
+    }
+
+    msgsrv in(int v) {
+        received = v;
+        chk.doorIn(received);
+    }
+}
+
+reactiveclass DoorB(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int received;
+    }
+
+    DoorB() {
+        received = 0;
+    }
+
+    msgsrv in(int v) {
+        received = v;
+        chk.door2In(received);
+    }
+}
+
+reactiveclass Controller(5) {
+    knownrebecs {
+        Train t;
+        DoorA d;
+        DoorB d2;
+    }
+
+    Controller() {
+    }
+
+    msgsrv start() {
+        t.in(1) after(1);
+        d.in(2) after(1);
+        d2.in(3) after(1);
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+    }
+
+    msgsrv start() {
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+reactiveclass Bootstrap(5) {
+    knownrebecs {
+        Controller c;
+        Checker chk;
+        KeepAlive ka;
+    }
+
+    Bootstrap() {
+        self.kickoff();
+    }
+
+    msgsrv kickoff() {
+        c.start();
+        chk.start();
+        ka.start();
+    }
+}
+
+main {
+    Checker chk():();
+    Train t(chk):();
+    DoorA d(chk):();
+    DoorB d2(chk):();
+    Controller c(t, d, d2):();
+    KeepAlive ka():();
+    Bootstrap b(c, chk, ka):();
+}

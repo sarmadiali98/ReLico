@@ -1,0 +1,102 @@
+reactiveclass Checker(5) {
+    statevars {
+        int sawPong;
+        int sawPing;
+        int violation;
+    }
+
+    Checker() {
+        sawPong = 0;
+        sawPing = 0;
+        violation = 0;
+        self.decide() after(21);
+    }
+
+    msgsrv pongSeen(int v) {
+        if (v == 3) {
+            sawPong = 1;
+        } else {
+            violation = 1;
+        }
+    }
+
+    msgsrv pingSeen(int v) {
+        if (v == 3) {
+            sawPing = 1;
+        } else {
+            violation = 1;
+        }
+    }
+
+    msgsrv decide() {
+        if (sawPong == 0 || sawPing == 0) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass Ping(5) {
+    knownrebecs {
+        Pong pong;
+        Checker chk;
+    }
+
+    Ping() {
+        self.start();
+    }
+
+    msgsrv start() {
+        self.serve(3) after(10);
+    }
+
+    msgsrv serve(int v) {
+        pong.receive(v);
+    }
+
+    msgsrv receive(int v) {
+        chk.pingSeen(v);
+    }
+}
+
+reactiveclass Pong(5) {
+    knownrebecs {
+        Ping ping;
+        Checker chk;
+    }
+
+    msgsrv receive(int v) {
+        chk.pongSeen(v);
+        self.reply(v) after(10);
+    }
+
+    msgsrv reply(int v) {
+        ping.receive(v);
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    Ping ping(pong, chk):();
+    Pong pong(ping, chk):();
+    KeepAlive ka():();
+}

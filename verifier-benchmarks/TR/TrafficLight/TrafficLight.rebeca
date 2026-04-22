@@ -1,0 +1,71 @@
+reactiveclass Checker(5) {
+    statevars {
+        int lastState;
+        int violation;
+    }
+
+    Checker() {
+        lastState = 0;
+        violation = 0;
+    }
+
+    msgsrv stateIn(int v) {
+        lastState = v;
+    }
+
+    msgsrv sigGIn() {
+        if (lastState != 1) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass TrafficLightCore(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int lightState;
+    }
+
+    TrafficLightCore() {
+        lightState = 0;
+        self.start();
+    }
+
+    msgsrv start() {
+        chk.stateIn(lightState);
+        self.emitGreen() after(1);
+    }
+
+    msgsrv emitGreen() {
+        chk.sigGIn();
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    TrafficLightCore tl(chk):();
+    KeepAlive ka():();
+}

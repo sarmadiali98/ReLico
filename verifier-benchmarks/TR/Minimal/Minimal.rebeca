@@ -1,0 +1,63 @@
+reactiveclass Checker(5) {
+    statevars {
+        int violation;
+    }
+
+    Checker() {
+        violation = 0;
+    }
+
+    msgsrv xIn(int v) {
+        if (v < 0) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass Counter(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int x;
+    }
+
+    Counter() {
+        x = 0;
+    }
+
+    msgsrv start() {
+        self.tick();
+    }
+
+    msgsrv tick() {
+        if (x == 0) {
+            x = 1;
+        } else {
+            x = 0;
+        }
+        chk.xIn(x);
+        self.tick() after(10);
+    }
+}
+
+reactiveclass Bootstrap(5) {
+    knownrebecs {
+        Counter ctr;
+    }
+
+    Bootstrap() {
+        self.kickoff();
+    }
+
+    msgsrv kickoff() {
+        ctr.start();
+    }
+}
+
+main {
+    Checker chk():();
+    Counter ctr(chk):();
+    Bootstrap b(ctr):();
+}

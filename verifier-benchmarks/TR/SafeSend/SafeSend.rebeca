@@ -1,0 +1,104 @@
+reactiveclass Checker(5) {
+    statevars {
+        int sawReply;
+        int sawError;
+        int violation;
+    }
+
+    Checker() {
+        sawReply = 0;
+        sawError = 0;
+        violation = 0;
+        self.decide() after(11);
+    }
+
+    msgsrv replySeen() {
+        sawReply = 1;
+    }
+
+    msgsrv errorIn() {
+        sawError = 1;
+    }
+
+    msgsrv decide() {
+        if (sawError == 1 || sawReply == 0) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass Client(5) {
+    knownrebecs {
+        Server s;
+        Checker chk;
+    }
+
+    statevars {
+        int req;
+        int gotReply;
+    }
+
+    Client() {
+        req = 0;
+        gotReply = 0;
+        self.start();
+    }
+
+    msgsrv start() {
+        req = 1;
+        s.in(req) after(10);
+    }
+
+    msgsrv in(int v) {
+        if (v == 1) {
+            gotReply = 1;
+            chk.replySeen();
+        }
+    }
+}
+
+reactiveclass Server(5) {
+    knownrebecs {
+        Client c;
+        Checker chk;
+    }
+
+    msgsrv in(int v) {
+        if (v == 0) {
+            self.err() after(10);
+        } else {
+            c.in(v);
+        }
+    }
+
+    msgsrv err() {
+        chk.errorIn();
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    Client c(s, chk):();
+    Server s(c, chk):();
+    KeepAlive ka():();
+}

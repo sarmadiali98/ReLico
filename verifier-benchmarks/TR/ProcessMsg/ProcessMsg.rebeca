@@ -1,0 +1,102 @@
+reactiveclass Source(5) {
+    knownrebecs {
+        Task task;
+    }
+
+    Source() {
+        self.start();
+    }
+
+    msgsrv start() {
+        task.msg(0);
+    }
+}
+
+reactiveclass Task(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    statevars {
+        int lastMsg;
+        int ok;
+    }
+
+    Task() {
+        lastMsg = 0;
+        ok = 0;
+    }
+
+    msgsrv msg(int v) {
+        self.process(v) after(10);
+    }
+
+    msgsrv process(int v) {
+        lastMsg = v;
+        if (lastMsg == 0) {
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        chk.okIn(ok);
+        chk.doneIn();
+    }
+}
+
+reactiveclass Checker(5) {
+    statevars {
+        int seenOk;
+        int gotDone;
+        int violation;
+    }
+
+    Checker() {
+        seenOk = 0;
+        gotDone = 0;
+        violation = 0;
+        self.decide() after(11);
+    }
+
+    msgsrv okIn(int v) {
+        seenOk = v;
+    }
+
+    msgsrv doneIn() {
+        gotDone = 1;
+    }
+
+    msgsrv decide() {
+        if (gotDone == 0) {
+            violation = 1;
+        } else if (seenOk != 1) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    Task task(chk):();
+    Source src(task):();
+    KeepAlive ka():();
+}
