@@ -1,0 +1,7 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nTrafficLight.tl.reaction_1\nTrafficLight.chk.reaction_1 | Pending events:\n(TrafficLight.tl.emitGreen, (1 s, 0))\n(TrafficLight.ka.t, (100 s, 0))"]
+    S1 [label = "S1 | (1 s, 0) | Reactions invoked:\nTrafficLight.chk.reaction_2\nTrafficLight.tl.reaction_2 | Pending events:\n(TrafficLight.ka.t, (100 s, 0))"]
+    S0 -> S1 [label = "+1 s"]
+}

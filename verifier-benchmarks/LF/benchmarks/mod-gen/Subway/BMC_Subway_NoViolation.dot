@@ -1,0 +1,9 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nSubway.chk.reaction_1\nSubway.s.reaction_1 | Pending events:\n(Subway.s.requestAfterWait, (2 min, 0))\n(Subway.ka.t, (100 min, 0))\n(Subway.chk.decide, (11 min, 0))"]
+    S1 [label = "S1 | (2 min, 0) | Reactions invoked:\nSubway.s.reaction_2 | Pending events:\n(Subway.chk.decide, (11 min, 0))\n(Subway.ka.t, (100 min, 0))\n(Subway.s.finishPassing, (12 min, 0))"]
+    S2 [label = "S2 | (11 min, 0) | Reactions invoked:\nSubway.chk.reaction_3 | Pending events:\n(Subway.s.finishPassing, (12 min, 0))\n(Subway.ka.t, (100 min, 0))"]
+    S0 -> S1 [label = "+2 min"]
+    S1 -> S2 [label = "+9 min"]
+}

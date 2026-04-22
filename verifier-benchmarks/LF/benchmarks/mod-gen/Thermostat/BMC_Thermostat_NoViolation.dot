@@ -1,0 +1,7 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nThermostat.chk.reaction_1\nThermostat.chk.reaction_3\nThermostat.chk.reaction_2\nThermostat.t.reaction_1\nThermostat.src.reaction_1 | Pending events:\n(Thermostat.chk.decide, (11 ms, 0))\n(Thermostat.ka.t, (100 ms, 0))"]
+    S1 [label = "S1 | (11 ms, 0) | Reactions invoked:\nThermostat.chk.reaction_4 | Pending events:\n(Thermostat.ka.t, (100 ms, 0))"]
+    S0 -> S1 [label = "+11 ms"]
+}

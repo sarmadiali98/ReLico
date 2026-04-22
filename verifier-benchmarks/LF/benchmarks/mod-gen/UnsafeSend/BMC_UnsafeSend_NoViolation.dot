@@ -1,0 +1,9 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nUnsafeSend.c.reaction_1\nUnsafeSend.chk.reaction_1\nUnsafeSend.ka.reaction_1 | Pending events:\n(UnsafeSend.s.in, (10 ms, 0))\n(UnsafeSend.chk.decide, (11 ms, 0))\n(UnsafeSend.ka.tick, (100 ms, 0))"]
+    S1 [label = "S1 | (10 ms, 0) | Reactions invoked:\nUnsafeSend.chk.reaction_2\nUnsafeSend.s.reaction_1\nUnsafeSend.c.reaction_2 | Pending events:\n(UnsafeSend.chk.decide, (11 ms, 0))\n(UnsafeSend.s.err, (20 ms, 0))\n(UnsafeSend.ka.tick, (100 ms, 0))"]
+    S2 [label = "S2 | (11 ms, 0) | Reactions invoked:\nUnsafeSend.chk.reaction_4 | Pending events:\n(UnsafeSend.s.err, (20 ms, 0))\n(UnsafeSend.ka.tick, (100 ms, 0))"]
+    S0 -> S1 [label = "+10 ms"]
+    S1 -> S2 [label = "+1 ms"]
+}

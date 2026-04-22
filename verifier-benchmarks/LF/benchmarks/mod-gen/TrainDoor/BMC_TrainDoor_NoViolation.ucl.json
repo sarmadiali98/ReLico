@@ -1,0 +1,25 @@
+{
+  "property__bmc_TrainDoor_NoViolation__0" : {
+    "length" : 1,
+    "trace" : [ {
+      "start_time" : [ "0" ],
+      "trace" : [ {
+        "1" : "(_tuple_1 (_tuple_0 true false false false false false false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 1 1 0 0 0 0 0 0)\n          (_tuple_4 false false true true false false false false false false)\n          (_tuple_5 false false)\n          (_tuple_2 15 16))",
+        "2" : "(_tuple_1 (_tuple_0 false false false false false true false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_4 false false false false false false false false false false)\n          (_tuple_5 false true)\n          (_tuple_2 19 0))",
+        "3" : "(_tuple_1 (_tuple_0 false false true false false false false)\n          (_tuple_2 1000000000 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 1 0 0 0)\n          (_tuple_4 false false false false false false true false false false)\n          (_tuple_5 true false)\n          (_tuple_2 0 20))",
+        "4" : "(_tuple_1 (_tuple_0 false true false false false false false)\n          (_tuple_2 1000000000 0)\n          (_tuple_3 0 0 0 0 0 0 0 1 1 0 0 0 0)\n          (_tuple_4 false false false false true true false false false false)\n          (_tuple_5 false false)\n          (_tuple_2 21 22))",
+        "5" : "(_tuple_1 (_tuple_0 false false false false true false false)\n          (_tuple_2 1000000000 0)\n          (_tuple_3 0 1 0 0 0 0 0 0 0 0 0 1 0)\n          (_tuple_4 false false false false false false false false true false)\n          (_tuple_5 false false)\n          (_tuple_2 23 24))",
+        "6" : "(_tuple_1 (_tuple_0 false false false true false false false)\n          (_tuple_2 2000000000 0)\n          (_tuple_3 0 1 0 0 0 0 0 0 0 0 1 0 0)\n          (_tuple_4 true false false false false false false true false false)\n          (_tuple_5 false false)\n          (_tuple_2 25 26))",
+        "7" : "(_tuple_1 (_tuple_0 false false false false true false false)\n          (_tuple_2 2000000000 0)\n          (_tuple_3 1 1 0 0 0 0 0 0 0 0 0 0 1)\n          (_tuple_4 false false false false false false false false false true)\n          (_tuple_5 false false)\n          (_tuple_2 27 28))",
+        "8" : "(_tuple_1 (_tuple_0 false false true false false false false)\n          (_tuple_2 2000000000 561)\n          (_tuple_3 29 30 31 0 0 32 33 0 34 35 36 0 0)\n          (_tuple_4 false false false false false false true false false false)\n          (_tuple_5 true false)\n          (_tuple_2 37 38))",
+        "9" : "(_tuple_1 (_tuple_0 true false false false false false false)\n          (_tuple_2 2000000000 6414)\n          (_tuple_3 39 40 41 0 0 42 43 0 44 0 45 0 0)\n          (_tuple_4 false false false false false false false false false false)\n          (_tuple_5 false false)\n          (_tuple_2 46 47))",
+        "10" : "(_tuple_1 (_tuple_0 false false false false true false false)\n          (_tuple_2 2000000887 0)\n          (_tuple_3 48 49 50 0 0 51 52 0 53 0 54 55 0)\n          (_tuple_4 false false false false false false false false true false)\n          (_tuple_5 true false)\n          (_tuple_2 56 57))",
+        "11" : "(_tuple_1 (_tuple_0 false false true false false false false)\n          (_tuple_2 2000001238 0)\n          (_tuple_3 58 59 60 0 0 61 62 0 63 64 65 0 0)\n          (_tuple_4 false false false false false false true false false false)\n          (_tuple_5 true false)\n          (_tuple_2 66 67))",
+        "12" : "(_tuple_1 (_tuple_0 false false false false true false false)\n          (_tuple_2 3000001237 0)\n          (_tuple_3 68 69 70 0 0 71 72 0 73 0 74 0 75)\n          (_tuple_4 false false false false false false false false false true)\n          (_tuple_5 false false)\n          (_tuple_2 76 77))",
+        "13" : "(_tuple_1 (_tuple_0 false false false false true false false)\n          (_tuple_2 3000001239 0)\n          (_tuple_3 78 79 80 0 0 81 82 0 83 0 84 0 85)\n          (_tuple_4 false false false false false false false false false true)\n          (_tuple_5 false false)\n          (_tuple_2 86 87))",
+        "14" : "(_tuple_1 (_tuple_0 false false false false false false true)\n          (_tuple_2 100000000000 0)\n          (_tuple_3 88 89 90 0 0 91 92 0 93 0 94 0 0)\n          (_tuple_4 false true false false false false false false false false)\n          (_tuple_5 false false)\n          (_tuple_2 95 96))",
+        "-" : "(_tuple_1 (_tuple_0 false false false false false false false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_4 false false false false false false false false false false)\n          (_tuple_5 false false)\n          (_tuple_2 17 18))"
+      } ]
+    } ]
+  }
+}
