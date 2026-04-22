@@ -1,0 +1,13 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nRoadsideUnit.chk.reaction_1\nRoadsideUnit.src.reaction_1\nRoadsideUnit.rsu.reaction_1 | Pending events:\n(RoadsideUnit.rsu.issue_grant_1, (10 ms, 0))\n(RoadsideUnit.rsu.issue_grant_2, (10 ms, 0))\n(RoadsideUnit.chk.decide, (6 s, 0))\n(RoadsideUnit.ka.t, (100 s, 0))"]
+    S1 [label = "S1 | (10 ms, 0) | Reactions invoked:\nRoadsideUnit.rsu.reaction_2\nRoadsideUnit.rsu.reaction_3\nRoadsideUnit.chk.reaction_2 | Pending events:\n(RoadsideUnit.rsu.release, (5010 ms, 0))\n(RoadsideUnit.chk.decide, (6 s, 0))\n(RoadsideUnit.rsu.release, (5010 ms, 0))\n(RoadsideUnit.ka.t, (100 s, 0))"]
+    S2 [label = "S2 | (5010 ms, 0) | Reactions invoked:\nRoadsideUnit.rsu.reaction_4 | Pending events:\n(RoadsideUnit.rsu.issue_grant_1, (5020 ms, 0))\n(RoadsideUnit.rsu.issue_grant_2, (5020 ms, 0))\n(RoadsideUnit.chk.decide, (6 s, 0))\n(RoadsideUnit.ka.t, (100 s, 0))"]
+    S3 [label = "S3 | (5020 ms, 0) | Reactions invoked:\nRoadsideUnit.rsu.reaction_2\nRoadsideUnit.rsu.reaction_3\nRoadsideUnit.chk.reaction_2 | Pending events:\n(RoadsideUnit.chk.decide, (6 s, 0))\n(RoadsideUnit.rsu.release, (10020 ms, 0))\n(RoadsideUnit.rsu.release, (10020 ms, 0))\n(RoadsideUnit.ka.t, (100 s, 0))"]
+    S4 [label = "S4 | (6 s, 0) | Reactions invoked:\nRoadsideUnit.chk.reaction_3 | Pending events:\n(RoadsideUnit.rsu.release, (10020 ms, 0))\n(RoadsideUnit.ka.t, (100 s, 0))\n(RoadsideUnit.rsu.release, (10020 ms, 0))"]
+    S0 -> S1 [label = "+10 ms"]
+    S1 -> S2 [label = "+5 s"]
+    S2 -> S3 [label = "+10 ms"]
+    S3 -> S4 [label = "+980 ms"]
+}

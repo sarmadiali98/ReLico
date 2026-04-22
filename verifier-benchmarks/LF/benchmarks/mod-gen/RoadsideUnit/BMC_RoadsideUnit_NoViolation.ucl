@@ -1,0 +1,1379 @@
+/*******************************
+ * Auto-generated UCLID5 model *
+ ******************************/
+module main {
+    /*******************************
+     * Time and Related Operations *
+     ******************************/
+    type timestamp_t = integer;                     // The unit is nanoseconds
+    type microstep_t = integer;
+    type tag_t = {
+        timestamp_t,
+        microstep_t
+    };
+    type interval_t  = tag_t;
+    
+    // Projection macros
+    define pi1(t : tag_t) : timestamp_t = t._1;     // Get timestamp from tag
+    define pi2(t : tag_t) : microstep_t = t._2;     // Get microstep from tag
+    
+    // Interval constructor
+    define zero() : interval_t
+    = {0, 0};
+    define startup() : interval_t
+    = zero();
+    define mstep() : interval_t
+    = {0, 1};
+    define nsec(t : integer) : interval_t
+    = {t, 0};
+    define usec(t : integer) : interval_t
+    = {t * 1000, 0};
+    define msec(t : integer) : interval_t
+    = {t * 1000000, 0};
+    define sec(t : integer) : interval_t
+    = {t * 1000000000, 0};
+    define inf() : interval_t
+    = {-1, 0};
+    
+    // Helper function
+    define isInf(i : interval_t) : boolean
+    = pi1(i) < 0;
+    
+    // Tag comparison
+    define tag_later(t1 : tag_t, t2 : tag_t) : boolean
+    = pi1(t1) > pi1(t2)
+        || (pi1(t1) == pi1(t2) && pi2(t1) > pi2(t2))
+        || (isInf(t1) && !isInf(t2));
+    
+    define tag_same(t1 : tag_t, t2 : tag_t) : boolean
+    = t1 == t2;
+    
+    define tag_earlier(t1 : tag_t, t2 : tag_t) : boolean
+    = pi1(t1) < pi1(t2)
+        || (pi1(t1) == pi1(t2) && pi2(t1) < pi2(t2))
+        || (!isInf(t1) && isInf(t2));
+    
+    // Used for incrementing a tag through an action
+    define tag_schedule(t : tag_t, i : integer) : tag_t
+    = if (i == 0) then { pi1(t), pi2(t)+1 } else { pi1(t)+i, 0 };
+    
+    // Used for incrementing a tag along a connection
+    define tag_delay(t : tag_t, i : integer) : tag_t
+    = if (i == 0) then { pi1(t), pi2(t) } else { pi1(t)+i, 0 };
+    
+    // Only consider timestamp for now.
+    define tag_diff(t1, t2: tag_t) : interval_t
+    = if (!isInf(t1) && !isInf(t2))
+        then { pi1(t1) - pi1(t2), pi2(t1) - pi2(t2) }
+        else inf();
+    
+    /********************
+     * Trace Definition *
+     *******************/
+    const START : integer = 0; // The start index of the trace.
+    const END : integer = 11; // The end index of the trace (without padding)
+    const END_TRACE : integer = 20; // The end index of the trace with padding
+    
+    group indices : integer = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+    };
+    
+    // Define step and event types.
+    type step_t = integer;
+    type event_t = { rxn_t, tag_t, state_t, trigger_t, sched_t, payload_t };
+    
+    // Create a bounded trace with length 11
+    // Potentially unbounded trace, we bound this later.
+    type trace_t  = [integer]event_t;
+    // Declare start time.
+    var start_time : timestamp_t;
+    
+    // Declare trace.
+    var trace : trace_t;
+    /*****************
+     * Helper Macros *
+     ****************/
+    // Helper macro that returns an element based on index.
+    define get(tr : trace_t, i : step_t) : event_t =
+    if (i >= START && i <= END_TRACE) then tr[i] else
+    { {false, false, false, false, false, false, false, false, false}, inf(), { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, { false, false, false, false, false, false, false, false, false, false, false, false, false }, {false, false, false, false }, {0, 0, 0, 0} };
+    define elem(i : step_t) : event_t
+    = get(trace, i);
+    
+    // projection macros
+    define rxn      (i : step_t) : rxn_t        = elem(i)._1;
+    define g        (i : step_t) : tag_t        = elem(i)._2;
+    define s        (i : step_t) : state_t      = elem(i)._3;
+    define t        (i : step_t) : trigger_t    = elem(i)._4;
+    define d        (i : step_t) : sched_t      = elem(i)._5;
+    define pl       (i : step_t) : payload_t    = elem(i)._6;
+    define isNULL   (i : step_t) : boolean      = rxn(i) == {false, false, false, false, false, false, false, false, false};
+    /**********************************
+     * Reaction IDs & State Variables *
+     *********************************/
+    
+    //////////////////////////
+    // Application Specific
+    // Reactions
+    type rxn_t = {
+        boolean,	// reaction_1 of RoadsideUnit.src(level: 0)
+        boolean,	// reaction_1 of RoadsideUnit.rsu(level: 1, dominating: reaction_1 of RoadsideUnit.src)
+        boolean,	// reaction_2 of RoadsideUnit.rsu(level: 2)
+        boolean,	// reaction_3 of RoadsideUnit.rsu(level: 3)
+        boolean,	// reaction_4 of RoadsideUnit.rsu(level: 4)
+        boolean,	// reaction_1 of RoadsideUnit.chk(level: 0)
+        boolean,	// reaction_2 of RoadsideUnit.chk(level: 4)
+        boolean,	// reaction_3 of RoadsideUnit.chk(level: 5)
+        boolean	// reaction_1 of RoadsideUnit.ka(level: 0)
+    };
+    // Reaction projection macros
+    define RoadsideUnit_src_reaction_1(n : rxn_t) : boolean = n._1;
+    define RoadsideUnit_rsu_reaction_1(n : rxn_t) : boolean = n._2;
+    define RoadsideUnit_rsu_reaction_2(n : rxn_t) : boolean = n._3;
+    define RoadsideUnit_rsu_reaction_3(n : rxn_t) : boolean = n._4;
+    define RoadsideUnit_rsu_reaction_4(n : rxn_t) : boolean = n._5;
+    define RoadsideUnit_chk_reaction_1(n : rxn_t) : boolean = n._6;
+    define RoadsideUnit_chk_reaction_2(n : rxn_t) : boolean = n._7;
+    define RoadsideUnit_chk_reaction_3(n : rxn_t) : boolean = n._8;
+    define RoadsideUnit_ka_reaction_1(n : rxn_t) : boolean = n._9;
+    
+    // State variables and triggers
+    type state_t = {
+        integer,	// StateVariableInstance RoadsideUnit.rsu.pending_1
+        integer,	// StateVariableInstance RoadsideUnit.rsu.pending_2
+        integer,	// StateVariableInstance RoadsideUnit.rsu.busy
+        integer,	// StateVariableInstance RoadsideUnit.rsu.granted_1
+        integer,	// StateVariableInstance RoadsideUnit.chk.saw_1
+        integer,	// StateVariableInstance RoadsideUnit.chk.saw_2
+        integer,	// StateVariableInstance RoadsideUnit.chk.violation
+        integer,	// StateVariableInstance RoadsideUnit.ka.phase
+        integer,	// org.lflang.generator.ActionInstance@49c8f6e8
+        integer,	// org.lflang.generator.ActionInstance@6b0615ae
+        integer,	// org.lflang.generator.ActionInstance@2cec704c
+        integer,	// org.lflang.generator.ActionInstance@2015b2cd
+        integer,	// PortInstance RoadsideUnit.src.request_1
+        integer,	// PortInstance RoadsideUnit.src.request_2
+        integer,	// PortInstance RoadsideUnit.rsu.request_1
+        integer,	// PortInstance RoadsideUnit.rsu.request_2
+        integer,	// PortInstance RoadsideUnit.rsu.grant_1
+        integer,	// PortInstance RoadsideUnit.rsu.grant_2
+        integer,	// PortInstance RoadsideUnit.chk.grant_1
+        integer,	// PortInstance RoadsideUnit.chk.grant_2
+        integer	// org.lflang.generator.TimerInstance@73a19967
+    };
+    // State variable projection macros
+    define RoadsideUnit_rsu_pending_1(s : state_t) : integer = s._1;
+    define RoadsideUnit_rsu_pending_2(s : state_t) : integer = s._2;
+    define RoadsideUnit_rsu_busy(s : state_t) : integer = s._3;
+    define RoadsideUnit_rsu_granted_1(s : state_t) : integer = s._4;
+    define RoadsideUnit_chk_saw_1(s : state_t) : integer = s._5;
+    define RoadsideUnit_chk_saw_2(s : state_t) : integer = s._6;
+    define RoadsideUnit_chk_violation(s : state_t) : integer = s._7;
+    define RoadsideUnit_ka_phase(s : state_t) : integer = s._8;
+    define RoadsideUnit_rsu_issue_grant_1(s : state_t) : integer = s._9;
+    define RoadsideUnit_rsu_issue_grant_2(s : state_t) : integer = s._10;
+    define RoadsideUnit_rsu_release(s : state_t) : integer = s._11;
+    define RoadsideUnit_chk_decide(s : state_t) : integer = s._12;
+    define RoadsideUnit_src_request_1(s : state_t) : integer = s._13;
+    define RoadsideUnit_src_request_2(s : state_t) : integer = s._14;
+    define RoadsideUnit_rsu_request_1(s : state_t) : integer = s._15;
+    define RoadsideUnit_rsu_request_2(s : state_t) : integer = s._16;
+    define RoadsideUnit_rsu_grant_1(s : state_t) : integer = s._17;
+    define RoadsideUnit_rsu_grant_2(s : state_t) : integer = s._18;
+    define RoadsideUnit_chk_grant_1(s : state_t) : integer = s._19;
+    define RoadsideUnit_chk_grant_2(s : state_t) : integer = s._20;
+    define RoadsideUnit_ka_t(s : state_t) : integer = s._21;
+    
+    // A boolean tuple indicating whether triggers are present.
+    type trigger_t = {
+        boolean,	// org.lflang.generator.ActionInstance@49c8f6e8
+        boolean,	// org.lflang.generator.ActionInstance@6b0615ae
+        boolean,	// org.lflang.generator.ActionInstance@2cec704c
+        boolean,	// org.lflang.generator.ActionInstance@2015b2cd
+        boolean,	// PortInstance RoadsideUnit.src.request_1
+        boolean,	// PortInstance RoadsideUnit.src.request_2
+        boolean,	// PortInstance RoadsideUnit.rsu.request_1
+        boolean,	// PortInstance RoadsideUnit.rsu.request_2
+        boolean,	// PortInstance RoadsideUnit.rsu.grant_1
+        boolean,	// PortInstance RoadsideUnit.rsu.grant_2
+        boolean,	// PortInstance RoadsideUnit.chk.grant_1
+        boolean,	// PortInstance RoadsideUnit.chk.grant_2
+        boolean	// org.lflang.generator.TimerInstance@73a19967
+    };
+    // Trigger presence projection macros
+    define RoadsideUnit_rsu_issue_grant_1_is_present(t : trigger_t) : boolean = t._1;
+    define RoadsideUnit_rsu_issue_grant_2_is_present(t : trigger_t) : boolean = t._2;
+    define RoadsideUnit_rsu_release_is_present(t : trigger_t) : boolean = t._3;
+    define RoadsideUnit_chk_decide_is_present(t : trigger_t) : boolean = t._4;
+    define RoadsideUnit_src_request_1_is_present(t : trigger_t) : boolean = t._5;
+    define RoadsideUnit_src_request_2_is_present(t : trigger_t) : boolean = t._6;
+    define RoadsideUnit_rsu_request_1_is_present(t : trigger_t) : boolean = t._7;
+    define RoadsideUnit_rsu_request_2_is_present(t : trigger_t) : boolean = t._8;
+    define RoadsideUnit_rsu_grant_1_is_present(t : trigger_t) : boolean = t._9;
+    define RoadsideUnit_rsu_grant_2_is_present(t : trigger_t) : boolean = t._10;
+    define RoadsideUnit_chk_grant_1_is_present(t : trigger_t) : boolean = t._11;
+    define RoadsideUnit_chk_grant_2_is_present(t : trigger_t) : boolean = t._12;
+    define RoadsideUnit_ka_t_is_present(t : trigger_t) : boolean = t._13;
+    // A boolean tuple indicating whether actions are scheduled by reactions
+    // at the instant when they are triggered.
+    type sched_t = {
+        boolean,	// org.lflang.generator.ActionInstance@49c8f6e8
+        boolean,	// org.lflang.generator.ActionInstance@6b0615ae
+        boolean,	// org.lflang.generator.ActionInstance@2cec704c
+        boolean	// org.lflang.generator.ActionInstance@2015b2cd
+    };
+    // Projection macros for action schedule flag
+    define RoadsideUnit_rsu_issue_grant_1_scheduled(d : sched_t) : boolean = d._1;
+    define RoadsideUnit_rsu_issue_grant_2_scheduled(d : sched_t) : boolean = d._2;
+    define RoadsideUnit_rsu_release_scheduled(d : sched_t) : boolean = d._3;
+    define RoadsideUnit_chk_decide_scheduled(d : sched_t) : boolean = d._4;
+    // A integer tuple indicating the integer payloads scheduled by reactions
+    // at the instant when they are triggered.
+    type payload_t = {
+        integer,	// org.lflang.generator.ActionInstance@49c8f6e8
+        integer,	// org.lflang.generator.ActionInstance@6b0615ae
+        integer,	// org.lflang.generator.ActionInstance@2cec704c
+        integer	// org.lflang.generator.ActionInstance@2015b2cd
+    };
+    // Projection macros for scheduled payloads
+    define RoadsideUnit_rsu_issue_grant_1_scheduled_payload(payload : payload_t) : integer = payload._1;
+    define RoadsideUnit_rsu_issue_grant_2_scheduled_payload(payload : payload_t) : integer = payload._2;
+    define RoadsideUnit_rsu_release_scheduled_payload(payload : payload_t) : integer = payload._3;
+    define RoadsideUnit_chk_decide_scheduled_payload(payload : payload_t) : integer = payload._4;
+    /*********************
+     * Reactor Semantics *
+     *********************/
+    // Non-federated "happened-before"
+    define hb(e1, e2 : event_t) : boolean
+    = tag_earlier(e1._2, e2._2)
+        || (tag_same(e1._2, e2._2) && ( false
+        || (RoadsideUnit_src_reaction_1(e1._1) && RoadsideUnit_rsu_reaction_1(e2._1))
+        || (RoadsideUnit_rsu_reaction_2(e1._1) && RoadsideUnit_chk_reaction_2(e2._1))
+        || (RoadsideUnit_rsu_reaction_3(e1._1) && RoadsideUnit_chk_reaction_2(e2._1))
+        || (RoadsideUnit_rsu_reaction_1(e1._1) && RoadsideUnit_rsu_reaction_2(e2._1))
+        || (RoadsideUnit_rsu_reaction_1(e1._1) && RoadsideUnit_rsu_reaction_3(e2._1))
+        || (RoadsideUnit_rsu_reaction_1(e1._1) && RoadsideUnit_rsu_reaction_4(e2._1))
+        || (RoadsideUnit_rsu_reaction_2(e1._1) && RoadsideUnit_rsu_reaction_3(e2._1))
+        || (RoadsideUnit_rsu_reaction_2(e1._1) && RoadsideUnit_rsu_reaction_4(e2._1))
+        || (RoadsideUnit_rsu_reaction_3(e1._1) && RoadsideUnit_rsu_reaction_4(e2._1))
+        || (RoadsideUnit_chk_reaction_1(e1._1) && RoadsideUnit_chk_reaction_2(e2._1))
+        || (RoadsideUnit_chk_reaction_1(e1._1) && RoadsideUnit_chk_reaction_3(e2._1))
+        || (RoadsideUnit_chk_reaction_2(e1._1) && RoadsideUnit_chk_reaction_3(e2._1))
+    ))
+    ;
+    /** transition relation **/
+    // transition relation constrains future states
+    // based on previous states.
+    
+    // Events are ordered by "happened-before" relation.
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (finite_forall (j : integer) in indices ::
+        (j >= START && j <= END_TRACE) ==> (hb(elem(i), elem(j)) ==> i < j)));
+    
+    // Tags should be non-negative.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> pi1(g(i)) >= 0);
+    
+    // Microsteps should be non-negative.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> pi2(g(i)) >= 0);
+    
+    // Begin the frame at the start time specified.
+    define start_frame(i : step_t) : boolean =
+        (tag_same(g(i), {start_time, 0}) || tag_later(g(i), {start_time, 0}));
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> start_frame(i));
+    
+    // NULL events should appear in the suffix, except for START.
+    axiom(finite_forall (j : integer) in indices :: (j > START && j <= END_TRACE) ==> (
+        !isNULL(j)) ==> 
+            (finite_forall (i : integer) in indices :: (i > START && i < j) ==> (!isNULL(i))));
+    //// Axioms for the event-based semantics
+    // the same event can only trigger once in a logical instant
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (finite_forall (j : integer) in indices ::
+        (j >= START && j <= END_TRACE) ==> ((rxn(i) == rxn(j) && i != j)
+            ==> !tag_same(g(i), g(j)))));
+    // Only one reaction gets triggered at a time.
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (
+        isNULL(i)
+        || rxn(i) == {true, false, false, false, false, false, false, false, false}
+        || rxn(i) == {false, true, false, false, false, false, false, false, false}
+        || rxn(i) == {false, false, true, false, false, false, false, false, false}
+        || rxn(i) == {false, false, false, true, false, false, false, false, false}
+        || rxn(i) == {false, false, false, false, true, false, false, false, false}
+        || rxn(i) == {false, false, false, false, false, true, false, false, false}
+        || rxn(i) == {false, false, false, false, false, false, true, false, false}
+        || rxn(i) == {false, false, false, false, false, false, false, true, false}
+        || rxn(i) == {false, false, false, false, false, false, false, false, true}
+    ));
+    /***************
+     * Connections *
+     ***************/
+    // RoadsideUnit_src_request_1 -> RoadsideUnit_rsu_request_1
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If RoadsideUnit_src_request_1 is present, then RoadsideUnit_rsu_request_1 will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (RoadsideUnit_src_request_1_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && RoadsideUnit_rsu_request_1_is_present(t(j))
+        && RoadsideUnit_rsu_request_1(s(j)) == RoadsideUnit_src_request_1(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (RoadsideUnit_src_request_1_is_present(t(i)) ==> ((.
+    // If RoadsideUnit_rsu_request_1 is present, there exists an RoadsideUnit_src_request_1 in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (RoadsideUnit_rsu_request_1_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_src_request_1_is_present(t(j))
+        && RoadsideUnit_src_request_1(s(j)) == RoadsideUnit_rsu_request_1(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If RoadsideUnit_rsu_request_1 is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_rsu_request_1_is_present(t(i)) ==> (
+            RoadsideUnit_rsu_request_1(s(i)) == 0
+        ))
+    ));
+    // RoadsideUnit_src_request_2 -> RoadsideUnit_rsu_request_2
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If RoadsideUnit_src_request_2 is present, then RoadsideUnit_rsu_request_2 will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (RoadsideUnit_src_request_2_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && RoadsideUnit_rsu_request_2_is_present(t(j))
+        && RoadsideUnit_rsu_request_2(s(j)) == RoadsideUnit_src_request_2(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (RoadsideUnit_src_request_2_is_present(t(i)) ==> ((.
+    // If RoadsideUnit_rsu_request_2 is present, there exists an RoadsideUnit_src_request_2 in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (RoadsideUnit_rsu_request_2_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_src_request_2_is_present(t(j))
+        && RoadsideUnit_src_request_2(s(j)) == RoadsideUnit_rsu_request_2(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If RoadsideUnit_rsu_request_2 is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_rsu_request_2_is_present(t(i)) ==> (
+            RoadsideUnit_rsu_request_2(s(i)) == 0
+        ))
+    ));
+    // RoadsideUnit_rsu_grant_1 -> RoadsideUnit_chk_grant_1
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If RoadsideUnit_rsu_grant_1 is present, then RoadsideUnit_chk_grant_1 will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (RoadsideUnit_rsu_grant_1_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && RoadsideUnit_chk_grant_1_is_present(t(j))
+        && RoadsideUnit_chk_grant_1(s(j)) == RoadsideUnit_rsu_grant_1(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (RoadsideUnit_rsu_grant_1_is_present(t(i)) ==> ((.
+    // If RoadsideUnit_chk_grant_1 is present, there exists an RoadsideUnit_rsu_grant_1 in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (RoadsideUnit_chk_grant_1_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_grant_1_is_present(t(j))
+        && RoadsideUnit_rsu_grant_1(s(j)) == RoadsideUnit_chk_grant_1(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If RoadsideUnit_chk_grant_1 is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_chk_grant_1_is_present(t(i)) ==> (
+            RoadsideUnit_chk_grant_1(s(i)) == 0
+        ))
+    ));
+    // RoadsideUnit_rsu_grant_2 -> RoadsideUnit_chk_grant_2
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If RoadsideUnit_rsu_grant_2 is present, then RoadsideUnit_chk_grant_2 will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (RoadsideUnit_rsu_grant_2_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && RoadsideUnit_chk_grant_2_is_present(t(j))
+        && RoadsideUnit_chk_grant_2(s(j)) == RoadsideUnit_rsu_grant_2(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (RoadsideUnit_rsu_grant_2_is_present(t(i)) ==> ((.
+    // If RoadsideUnit_chk_grant_2 is present, there exists an RoadsideUnit_rsu_grant_2 in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (RoadsideUnit_chk_grant_2_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_grant_2_is_present(t(j))
+        && RoadsideUnit_rsu_grant_2(s(j)) == RoadsideUnit_chk_grant_2(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If RoadsideUnit_chk_grant_2 is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_chk_grant_2_is_present(t(i)) ==> (
+            RoadsideUnit_chk_grant_2(s(i)) == 0
+        ))
+    ));
+    /***********
+     * Actions *
+     ***********/
+    // If RoadsideUnit_rsu_issue_grant_1 is present, these reactions could schedule it: RoadsideUnit_rsu_reaction_1, RoadsideUnit_rsu_reaction_4, 
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ( false
+    // RoadsideUnit_rsu_reaction_1
+    || (RoadsideUnit_rsu_issue_grant_1_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_1(rxn(j))
+        && g(i) == tag_schedule(g(j), 10000000)
+        && RoadsideUnit_rsu_issue_grant_1_scheduled(d(j))
+        && RoadsideUnit_rsu_issue_grant_1(s(i)) == RoadsideUnit_rsu_issue_grant_1_scheduled_payload(pl(j))
+    ))// RoadsideUnit_rsu_reaction_4
+    || (RoadsideUnit_rsu_issue_grant_1_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_4(rxn(j))
+        && g(i) == tag_schedule(g(j), 10000000)
+        && RoadsideUnit_rsu_issue_grant_1_scheduled(d(j))
+        && RoadsideUnit_rsu_issue_grant_1(s(i)) == RoadsideUnit_rsu_issue_grant_1_scheduled_payload(pl(j))
+    ))
+    ));
+    // If RoadsideUnit_rsu_issue_grant_1  is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_rsu_issue_grant_1_is_present(t(i)) ==> (
+            RoadsideUnit_rsu_issue_grant_1(s(i)) == 0
+        ))
+    ));
+    // If RoadsideUnit_rsu_issue_grant_2 is present, these reactions could schedule it: RoadsideUnit_rsu_reaction_1, RoadsideUnit_rsu_reaction_4, 
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ( false
+    // RoadsideUnit_rsu_reaction_1
+    || (RoadsideUnit_rsu_issue_grant_2_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_1(rxn(j))
+        && g(i) == tag_schedule(g(j), 10000000)
+        && RoadsideUnit_rsu_issue_grant_2_scheduled(d(j))
+        && RoadsideUnit_rsu_issue_grant_2(s(i)) == RoadsideUnit_rsu_issue_grant_2_scheduled_payload(pl(j))
+    ))// RoadsideUnit_rsu_reaction_4
+    || (RoadsideUnit_rsu_issue_grant_2_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_4(rxn(j))
+        && g(i) == tag_schedule(g(j), 10000000)
+        && RoadsideUnit_rsu_issue_grant_2_scheduled(d(j))
+        && RoadsideUnit_rsu_issue_grant_2(s(i)) == RoadsideUnit_rsu_issue_grant_2_scheduled_payload(pl(j))
+    ))
+    ));
+    // If RoadsideUnit_rsu_issue_grant_2  is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_rsu_issue_grant_2_is_present(t(i)) ==> (
+            RoadsideUnit_rsu_issue_grant_2(s(i)) == 0
+        ))
+    ));
+    // If RoadsideUnit_rsu_release is present, these reactions could schedule it: RoadsideUnit_rsu_reaction_2, RoadsideUnit_rsu_reaction_3, 
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ( false
+    // RoadsideUnit_rsu_reaction_2
+    || (RoadsideUnit_rsu_release_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_2(rxn(j))
+        && g(i) == tag_schedule(g(j), 5000000000)
+        && RoadsideUnit_rsu_release_scheduled(d(j))
+        && RoadsideUnit_rsu_release(s(i)) == RoadsideUnit_rsu_release_scheduled_payload(pl(j))
+    ))// RoadsideUnit_rsu_reaction_3
+    || (RoadsideUnit_rsu_release_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_rsu_reaction_3(rxn(j))
+        && g(i) == tag_schedule(g(j), 5000000000)
+        && RoadsideUnit_rsu_release_scheduled(d(j))
+        && RoadsideUnit_rsu_release(s(i)) == RoadsideUnit_rsu_release_scheduled_payload(pl(j))
+    ))
+    ));
+    // If RoadsideUnit_rsu_release  is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_rsu_release_is_present(t(i)) ==> (
+            RoadsideUnit_rsu_release(s(i)) == 0
+        ))
+    ));
+    // If RoadsideUnit_chk_decide is present, these reactions could schedule it: RoadsideUnit_chk_reaction_1, 
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ( false
+    // RoadsideUnit_chk_reaction_1
+    || (RoadsideUnit_chk_decide_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && RoadsideUnit_chk_reaction_1(rxn(j))
+        && g(i) == tag_schedule(g(j), 6000000000)
+        && RoadsideUnit_chk_decide_scheduled(d(j))
+        && RoadsideUnit_chk_decide(s(i)) == RoadsideUnit_chk_decide_scheduled_payload(pl(j))
+    ))
+    ));
+    // If RoadsideUnit_chk_decide  is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!RoadsideUnit_chk_decide_is_present(t(i)) ==> (
+            RoadsideUnit_chk_decide(s(i)) == 0
+        ))
+    ));
+    /**********
+     * Timers *
+     **********/
+    //// Axioms for RoadsideUnit.ka.t
+    // RoadsideUnit.ka.t: an initial firing at (100000000000, 0)
+    axiom(
+        ((pi1(g(END)) >= 100000000000) ==> (
+            finite_exists (j : integer) in indices :: (j > START && j <= END)
+                && RoadsideUnit_ka_t_is_present(t(j))
+                && tag_same(g(j), {100000000000, 0})
+         ))
+         && ((pi1(g(END)) < 100000000000) ==> (
+            finite_forall (i : integer) in indices :: (i > START && i <= END)
+                ==> (!isNULL(i))
+         ))
+    );
+    // RoadsideUnit.ka.t: schedule subsequent firings every 100000000000 ns
+    axiom(
+        finite_forall (i : integer) in indices :: (i >= START && i <= END) ==> (
+            RoadsideUnit_ka_t_is_present(t(i)) ==> (
+                (
+                    finite_exists (j : integer) in indices :: (j >= START && j > i)
+                        && RoadsideUnit_ka_t_is_present(t(j))
+                        && (g(j) == tag_schedule(g(i), 100000000000))
+                )
+            )
+        )
+    );
+    // RoadsideUnit.ka.t: all firings must be evenly spaced out.
+    axiom(
+        finite_forall (i : integer) in indices :: (i >= START && i <= END) ==> (
+            RoadsideUnit_ka_t_is_present(t(i)) ==> (
+                // Timestamp must be offset + n * period.
+                (
+                    exists (n : integer) :: (
+                        n >= 0 &&
+                        pi1(g(i)) == 100000000000 + n * 100000000000
+                    )
+                )
+                // Microstep must be 0.
+                && (pi2(g(i)) == 0)
+            )
+        )
+    );
+    /********************************
+     * Reactions and Their Triggers *
+     ********************************/
+    // If startup is within frame (and all variables have default values),
+    // RoadsideUnit_src_reaction_1 must be invoked.
+    axiom(
+        ((start_time == 0) ==> (
+            finite_exists (i : integer) in indices :: i > START && i <= END
+                && RoadsideUnit_src_reaction_1(rxn(i)) && tag_same(g(i), zero())
+                && !(
+                finite_exists (j : integer) in indices :: j > START && j <= END
+                && RoadsideUnit_src_reaction_1(rxn(j))
+                && j != i
+                )
+        ))
+    );
+    // RoadsideUnit_rsu_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_rsu_request_1_is_present(t(i)))
+    || (RoadsideUnit_rsu_request_2_is_present(t(i)))
+    ) <==> (RoadsideUnit_rsu_reaction_1(rxn(i)))));
+    // RoadsideUnit_rsu_reaction_2 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_rsu_issue_grant_1_is_present(t(i)))
+    ) <==> (RoadsideUnit_rsu_reaction_2(rxn(i)))));
+    // RoadsideUnit_rsu_reaction_3 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_rsu_issue_grant_2_is_present(t(i)))
+    ) <==> (RoadsideUnit_rsu_reaction_3(rxn(i)))));
+    // RoadsideUnit_rsu_reaction_4 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_rsu_release_is_present(t(i)))
+    ) <==> (RoadsideUnit_rsu_reaction_4(rxn(i)))));
+    // If startup is within frame (and all variables have default values),
+    // RoadsideUnit_chk_reaction_1 must be invoked.
+    axiom(
+        ((start_time == 0) ==> (
+            finite_exists (i : integer) in indices :: i > START && i <= END
+                && RoadsideUnit_chk_reaction_1(rxn(i)) && tag_same(g(i), zero())
+                && !(
+                finite_exists (j : integer) in indices :: j > START && j <= END
+                && RoadsideUnit_chk_reaction_1(rxn(j))
+                && j != i
+                )
+        ))
+    );
+    // RoadsideUnit_chk_reaction_2 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_chk_grant_1_is_present(t(i)))
+    || (RoadsideUnit_chk_grant_2_is_present(t(i)))
+    ) <==> (RoadsideUnit_chk_reaction_2(rxn(i)))));
+    // RoadsideUnit_chk_reaction_3 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_chk_decide_is_present(t(i)))
+    ) <==> (RoadsideUnit_chk_reaction_3(rxn(i)))));
+    // RoadsideUnit_ka_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (RoadsideUnit_ka_t_is_present(t(i)))
+    ) <==> (RoadsideUnit_ka_reaction_1(rxn(i)))));
+    /*********************
+     * Initial Condition *
+     *********************/
+    define initial_condition() : boolean
+    = start_time == 0
+        && isNULL(0)
+        && g(0) == {0, 0}
+        && RoadsideUnit_rsu_pending_1(s(0)) == 0
+        && RoadsideUnit_rsu_pending_2(s(0)) == 0
+        && RoadsideUnit_rsu_busy(s(0)) == 0
+        && RoadsideUnit_rsu_granted_1(s(0)) == 0
+        && RoadsideUnit_chk_saw_1(s(0)) == 0
+        && RoadsideUnit_chk_saw_2(s(0)) == 0
+        && RoadsideUnit_chk_violation(s(0)) == 0
+        && RoadsideUnit_ka_phase(s(0)) == 0
+        && RoadsideUnit_rsu_issue_grant_1(s(0)) == 0
+        && RoadsideUnit_rsu_issue_grant_2(s(0)) == 0
+        && RoadsideUnit_rsu_release(s(0)) == 0
+        && RoadsideUnit_chk_decide(s(0)) == 0
+        && RoadsideUnit_src_request_1(s(0)) == 0
+        && RoadsideUnit_src_request_2(s(0)) == 0
+        && RoadsideUnit_rsu_request_1(s(0)) == 0
+        && RoadsideUnit_rsu_request_2(s(0)) == 0
+        && RoadsideUnit_rsu_grant_1(s(0)) == 0
+        && RoadsideUnit_rsu_grant_2(s(0)) == 0
+        && RoadsideUnit_chk_grant_1(s(0)) == 0
+        && RoadsideUnit_chk_grant_2(s(0)) == 0
+        && RoadsideUnit_ka_t(s(0)) == 0
+        && !RoadsideUnit_rsu_issue_grant_1_is_present(t(0))
+        && !RoadsideUnit_rsu_issue_grant_2_is_present(t(0))
+        && !RoadsideUnit_rsu_release_is_present(t(0))
+        && !RoadsideUnit_chk_decide_is_present(t(0))
+        && !RoadsideUnit_src_request_1_is_present(t(0))
+        && !RoadsideUnit_src_request_2_is_present(t(0))
+        && !RoadsideUnit_rsu_request_1_is_present(t(0))
+        && !RoadsideUnit_rsu_request_2_is_present(t(0))
+        && !RoadsideUnit_rsu_grant_1_is_present(t(0))
+        && !RoadsideUnit_rsu_grant_2_is_present(t(0))
+        && !RoadsideUnit_chk_grant_1_is_present(t(0))
+        && !RoadsideUnit_chk_grant_2_is_present(t(0))
+        && !RoadsideUnit_ka_t_is_present(t(0))
+        && !RoadsideUnit_rsu_issue_grant_1_scheduled(d(0))
+        && !RoadsideUnit_rsu_issue_grant_2_scheduled(d(0))
+        && !RoadsideUnit_rsu_release_scheduled(d(0))
+        && !RoadsideUnit_chk_decide_scheduled(d(0))
+    ;
+    /*************
+     * Reactions *
+     *************/
+    // Reaction body of reaction_1 of RoadsideUnit.src(level: 0)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_src_reaction_1(rxn(i)))
+            ==> (((true ==> (((RoadsideUnit_src_request_1(s(i)) == 1) && (RoadsideUnit_src_request_1_is_present(t(i))))
+    ))
+            && (true ==> (((RoadsideUnit_src_request_2(s(i)) == 1) && (RoadsideUnit_src_request_2_is_present(t(i))))
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_1 of RoadsideUnit.rsu(level: 1, dominating: reaction_1 of RoadsideUnit.src)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_rsu_reaction_1(rxn(i)))
+            ==> (((RoadsideUnit_rsu_request_1_is_present(t(i)) ==> ((RoadsideUnit_rsu_pending_1(s(i)) == 1)
+    ))
+            && (RoadsideUnit_rsu_request_2_is_present(t(i)) ==> ((RoadsideUnit_rsu_pending_2(s(i)) == 1)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) ==> ((RoadsideUnit_rsu_busy(s(i)) == 1)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) ==> ((RoadsideUnit_rsu_pending_1(s(i)) == 0)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) ==> ((RoadsideUnit_rsu_granted_1(s(i)) == 1)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_issue_grant_1_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (10000000+0)))
+        && RoadsideUnit_rsu_issue_grant_1(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_issue_grant_1_scheduled(d(i))
+    )
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))) ==> ((RoadsideUnit_rsu_busy(s(i)) == 1)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))) ==> ((RoadsideUnit_rsu_pending_2(s(i)) == 0)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))) ==> ((RoadsideUnit_rsu_granted_1(s(i)) == 0)
+    ))
+            && (((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))) ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_issue_grant_2_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (10000000+0)))
+        && RoadsideUnit_rsu_issue_grant_2(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_issue_grant_2_scheduled(d(i))
+    )
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)))) ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((RoadsideUnit_rsu_request_2_is_present(t(i)) || ((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))))) ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))))) ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((RoadsideUnit_rsu_request_1_is_present(t(i)) || ((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1))))) ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) || ((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))))) ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((((RoadsideUnit_rsu_busy(s(i)) == 0) && (RoadsideUnit_rsu_pending_1(s(i)) == 1)) || ((RoadsideUnit_rsu_busy(s(i)) == 0) && (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))))) ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_2 of RoadsideUnit.rsu(level: 2)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_rsu_reaction_2(rxn(i)))
+            ==> (((true ==> (((RoadsideUnit_rsu_grant_1(s(i)) == 1) && (RoadsideUnit_rsu_grant_1_is_present(t(i))))
+    ))
+            && (true ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_release_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (5000000000+0)))
+        && RoadsideUnit_rsu_release(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_release_scheduled(d(i))
+    )
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_3 of RoadsideUnit.rsu(level: 3)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_rsu_reaction_3(rxn(i)))
+            ==> (((true ==> (((RoadsideUnit_rsu_grant_2(s(i)) == 1) && (RoadsideUnit_rsu_grant_2_is_present(t(i))))
+    ))
+            && (true ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_release_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (5000000000+0)))
+        && RoadsideUnit_rsu_release(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_release_scheduled(d(i))
+    )
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_4 of RoadsideUnit.rsu(level: 4)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_rsu_reaction_4(rxn(i)))
+            ==> (((true ==> ((RoadsideUnit_rsu_busy(s(i)) == 0)
+    ))
+            && ((RoadsideUnit_rsu_pending_1(s(i)) == 1) ==> ((RoadsideUnit_rsu_busy(s(i)) == 1)
+    ))
+            && ((RoadsideUnit_rsu_pending_1(s(i)) == 1) ==> ((RoadsideUnit_rsu_pending_1(s(i)) == 0)
+    ))
+            && ((RoadsideUnit_rsu_pending_1(s(i)) == 1) ==> ((RoadsideUnit_rsu_granted_1(s(i)) == 1)
+    ))
+            && ((RoadsideUnit_rsu_pending_1(s(i)) == 1) ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_issue_grant_1_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (10000000+0)))
+        && RoadsideUnit_rsu_issue_grant_1(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_issue_grant_1_scheduled(d(i))
+    )
+    ))
+            && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)) ==> ((RoadsideUnit_rsu_busy(s(i)) == 1)
+    ))
+            && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)) ==> ((RoadsideUnit_rsu_pending_2(s(i)) == 0)
+    ))
+            && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)) ==> ((RoadsideUnit_rsu_granted_1(s(i)) == 0)
+    ))
+            && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)) ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_rsu_issue_grant_2_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (10000000+0)))
+        && RoadsideUnit_rsu_issue_grant_2(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_rsu_issue_grant_2_scheduled(d(i))
+    )
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1))) ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))) ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))) ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((RoadsideUnit_rsu_pending_1(s(i)) == 1))) ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((true || ((RoadsideUnit_rsu_pending_1(s(i)) == 1) || (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1)))))) ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(((RoadsideUnit_rsu_pending_1(s(i)) == 1) || (!((RoadsideUnit_rsu_pending_1(s(i)) == 1)) && (RoadsideUnit_rsu_pending_2(s(i)) == 1))))) ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_1 of RoadsideUnit.chk(level: 0)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_chk_reaction_1(rxn(i)))
+            ==> (((true ==> (
+    ((finite_exists (j : integer) in indices :: (j > i && j <= END_TRACE) && (
+        RoadsideUnit_chk_decide_is_present(t(j))
+        && tag_same(g(j), tag_schedule(g(i), (6000000000+0)))
+        && RoadsideUnit_chk_decide(s(j)) == 0
+    )) // Closes finite_exists
+    && RoadsideUnit_chk_decide_scheduled(d(i))
+    )
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_2 of RoadsideUnit.chk(level: 4)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_chk_reaction_2(rxn(i)))
+            ==> ((((RoadsideUnit_chk_grant_1_is_present(t(i)) && RoadsideUnit_chk_grant_2_is_present(t(i))) ==> ((RoadsideUnit_chk_violation(s(i)) == 1)
+    ))
+            && (RoadsideUnit_chk_grant_1_is_present(t(i)) ==> ((RoadsideUnit_chk_saw_1(s(i)) == 1)
+    ))
+            && (RoadsideUnit_chk_grant_2_is_present(t(i)) ==> ((RoadsideUnit_chk_saw_2(s(i)) == 1)
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(RoadsideUnit_chk_grant_2_is_present(t(i)))) ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(RoadsideUnit_chk_grant_1_is_present(t(i)))) ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!((RoadsideUnit_chk_grant_1_is_present(t(i)) && RoadsideUnit_chk_grant_2_is_present(t(i))))) ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_3 of RoadsideUnit.chk(level: 5)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_chk_reaction_3(rxn(i)))
+            ==> (((((RoadsideUnit_chk_saw_1(s(i)) == 0) || (RoadsideUnit_chk_saw_2(s(i)) == 0)) ==> ((RoadsideUnit_chk_violation(s(i)) == 1)
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((RoadsideUnit_chk_saw_1(s(i)) == 0) || (RoadsideUnit_chk_saw_2(s(i)) == 0)))) ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    // Reaction body of reaction_1 of RoadsideUnit.ka(level: 0)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (RoadsideUnit_ka_reaction_1(rxn(i)))
+            ==> ((((RoadsideUnit_ka_phase(s(i)) == 0) ==> ((RoadsideUnit_ka_phase(s(i)) == 1)
+    ))
+            && (!((RoadsideUnit_ka_phase(s(i)) == 0)) ==> ((RoadsideUnit_ka_phase(s(i)) == 0)
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((RoadsideUnit_ka_phase(s(i)) == 0) || !((RoadsideUnit_ka_phase(s(i)) == 0))))) ==> (
+    RoadsideUnit_ka_phase(s(i)) == RoadsideUnit_ka_phase(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    RoadsideUnit_rsu_pending_1(s(i)) == RoadsideUnit_rsu_pending_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_pending_2(s(i)) == RoadsideUnit_rsu_pending_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_busy(s(i)) == RoadsideUnit_rsu_busy(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_granted_1(s(i)) == RoadsideUnit_rsu_granted_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_1(s(i)) == RoadsideUnit_chk_saw_1(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_saw_2(s(i)) == RoadsideUnit_chk_saw_2(s(i-1))
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_violation(s(i)) == RoadsideUnit_chk_violation(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_1(s(i)) == 0
+    && RoadsideUnit_src_request_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_src_request_2(s(i)) == 0
+    && RoadsideUnit_src_request_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_1(s(i)) == 0
+    && RoadsideUnit_rsu_grant_1_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && RoadsideUnit_rsu_grant_2(s(i)) == 0
+    && RoadsideUnit_rsu_grant_2_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_1_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_issue_grant_2_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_rsu_release_scheduled(d(i)) == false
+    ))
+    && (true ==> (
+    RoadsideUnit_chk_decide_scheduled(d(i)) == false
+    ))
+    ))));
+    /************
+     * Property *
+     ************/
+    // The FOL property translated from user-defined MTL property:
+    // G[0, 6 sec](RoadsideUnit_chk_violation == 0)
+    define p(i : step_t) : boolean =
+        (((finite_forall (j0 : integer) in indices :: (j0 >= i && j0 <= END && !isNULL(j0) && (
+        // Time Predicate
+        (pi1(g(j0)) >= (pi1(g(i)) + 0)) && (pi1(g(j0)) <= (pi1(g(i)) + 6000000000))
+        )) ==> (((RoadsideUnit_chk_violation(s(j0)) == 0))))));
+    // BMC
+    property bmc_RoadsideUnit_NoViolation : initial_condition() ==> p(0);
+    control {
+        v = bmc(0);
+        check;
+        print_results;
+        v.print_cex_json;
+    }
+}
