@@ -1,0 +1,70 @@
+target C;
+
+reactor Scenario {
+    output done:int;
+
+    logical action requestAfterWait(2 minute);
+    logical action finishPassing(10 minute);
+
+    reaction(startup) -> requestAfterWait {=
+        lf_schedule(requestAfterWait, 0);
+    =}
+
+    reaction(requestAfterWait) -> finishPassing {=
+        lf_schedule(finishPassing, 0);
+    =}
+
+    reaction(finishPassing) -> done {=
+        lf_set(done, 1);
+    =}
+}
+
+reactor Checker {
+    input doneIn:int;
+
+    logical action decide(11 minute);
+
+    state gotDone:int = 0;
+    state violation:int = 0;
+
+    reaction(startup) -> decide {=
+        lf_schedule(decide, 0);
+    =}
+
+    reaction(doneIn) {=
+        self->gotDone = 1;
+    =}
+
+    reaction(decide) {=
+        if (self->gotDone == 0) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 minute, 100 minute);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="Subway_NoViolation",
+    tactic="bmc",
+    spec="G[0, 11 minute](Subway_chk_violation == 0)",
+    expect=false
+)
+main reactor Subway {
+    s = new Scenario();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    s.done -> chk.doneIn;
+}

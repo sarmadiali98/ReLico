@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+if [[ -f "$repo_root/env.bash" ]]; then
+    source "$repo_root/env.bash"
+fi
+
+missing=0
+for cmd in lfc uclid z3; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "ERROR: '$cmd' is not on PATH." >&2
+        missing=1
+    fi
+done
+if [[ "$missing" -ne 0 ]]; then
+    exit 1
+fi
+
+time_to_seconds() {
+    awk '
+        /^real[[:space:]]+/ {
+            t=$2
+        }
+        END {
+            if (t == "") {
+                print ""
+            } else {
+                split(t, a, "m")
+                sec=a[2]
+                sub(/s$/, "", sec)
+                printf "%.3f\n", (a[1] * 60.0) + sec
+            }
+        }
+    ' "$1"
+}
+
+bmark_dir="${1:-benchmarks}"
+timestamp="$(date +"%Y-%m-%d-%H-%M-%S")"
+
+mkdir -p "$repo_root/results"
+result_file="$repo_root/results/result-$timestamp.txt"
+csv_file="$repo_root/results/result-$timestamp.csv"
+
+echo "$result_file"
+echo "$csv_file"
+
+echo "benchmark,lf_loc,uclid_loc,rxns,ct,expect_field,lf_validity,lfc_exit_code,uclid_exit_code,z3_exit_code,lfc_real_sec,uclid_real_sec,z3_real_sec,total_real_sec,uclid_smt_generated,z3_ran" > "$csv_file"
+
+shopt -s nullglob
+for program_file in "$repo_root"/"$bmark_dir"/src/*.lf; do
+    program="$(basename "$program_file" .lf)"
+    outdir="$repo_root/$bmark_dir/mod-gen/$program"
+    srcgendir="$repo_root/$bmark_dir/src-gen/$program"
+    smt_prefix="$outdir/smt"
+
+    lf_loc="$(wc -l < "$program_file" | tr -d ' ')"
+    rxns="$(grep -c 'reaction(' "$program_file" || true)"
+    expect_field="$(grep -o 'expect[[:space:]]*=[[:space:]]*[A-Za-z]*' "$program_file" | head -n1 | sed 's/.*=//; s/[[:space:]]//g')"
+
+    lfc_status=""
+    uclid_status=""
+    z3_status=""
+    ct=""
+    lf_validity="UNKNOWN"
+    lfc_real=""
+    uclid_real=""
+    z3_real=""
+    total_real=""
+    uclid_smt_generated="no"
+    z3_ran="no"
+    uclid_loc=""
+
+    echo "Benchmarking $program"
+
+    {
+        echo "[$program]"
+        echo "*** Time for LF verification/model generation:"
+    } >> "$result_file"
+
+    tmp_lfc="$(mktemp)"
+    { time bash -lc '
+        rm -rf "'"$outdir"'"
+        rm -rf "'"$srcgendir"'"
+        lfc --verify --no-compile "'"$program_file"'"
+    '; } >"$tmp_lfc" 2>&1
+    lfc_status=$?
+    cat "$tmp_lfc" >> "$result_file"
+    lfc_real="$(time_to_seconds "$tmp_lfc")"
+    ct="$(grep '^CT:' "$tmp_lfc" | tail -n1 | awk '{print $2}')"
+    if grep -q 'Valid!' "$tmp_lfc"; then
+        lf_validity="Valid"
+    elif grep -q 'Not valid!' "$tmp_lfc"; then
+        lf_validity="Not valid"
+    fi
+    rm -f "$tmp_lfc"
+
+    echo "lfc_exit_code=$lfc_status" >> "$result_file"
+    echo >> "$result_file"
+
+    ucl_files=( "$outdir"/*.ucl )
+    if (( ${#ucl_files[@]} > 0 )); then
+        uclid_loc="$(cat "${ucl_files[@]}" | wc -l | tr -d ' ')"
+        rm -f "$outdir"/smt*.smt
+
+        echo "*** Time for generating SMT from Uclid:" >> "$result_file"
+        tmp_uclid="$(mktemp)"
+        { time uclid -g "$smt_prefix" "${ucl_files[@]}"; } >"$tmp_uclid" 2>&1
+        uclid_status=$?
+        cat "$tmp_uclid" >> "$result_file"
+        uclid_real="$(time_to_seconds "$tmp_uclid")"
+        rm -f "$tmp_uclid"
+
+        echo "uclid_exit_code=$uclid_status" >> "$result_file"
+        echo >> "$result_file"
+
+        smt_files=( "$outdir"/smt*.smt )
+        if (( ${#smt_files[@]} > 0 )); then
+            uclid_smt_generated="yes"
+            echo "*** Time for solving SMT using Z3:" >> "$result_file"
+            tmp_z3="$(mktemp)"
+            { time z3 "${smt_files[@]}"; } >"$tmp_z3" 2>&1
+            z3_status=$?
+            z3_ran="yes"
+            cat "$tmp_z3" >> "$result_file"
+            z3_real="$(time_to_seconds "$tmp_z3")"
+            rm -f "$tmp_z3"
+
+            echo "z3_exit_code=$z3_status" >> "$result_file"
+            echo >> "$result_file"
+        else
+            echo "*** No SMT files generated under prefix $smt_prefix" >> "$result_file"
+            echo >> "$result_file"
+        fi
+    else
+        echo "*** No UCLID model generated under $outdir" >> "$result_file"
+        echo >> "$result_file"
+    fi
+
+    total_real="$(awk -v a="${lfc_real:-0}" -v b="${uclid_real:-0}" -v c="${z3_real:-0}" 'BEGIN { printf "%.3f", a + b + c }')"
+
+    echo "----------------------------" >> "$result_file"
+    echo >> "$result_file"
+
+    printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
+        "$program" \
+        "$lf_loc" \
+        "$uclid_loc" \
+        "$rxns" \
+        "$ct" \
+        "$expect_field" \
+        "$lf_validity" \
+        "${lfc_status:-}" \
+        "${uclid_status:-}" \
+        "${z3_status:-}" \
+        "$lfc_real" \
+        "$uclid_real" \
+        "$z3_real" \
+        "$total_real" \
+        "$uclid_smt_generated" \
+        "$z3_ran" >> "$csv_file"
+done

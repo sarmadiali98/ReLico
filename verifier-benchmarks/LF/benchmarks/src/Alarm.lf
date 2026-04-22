@@ -1,0 +1,65 @@
+target C;
+
+reactor Controller {
+    output out:int;
+    output out2:int;
+    output stopResult:int;
+
+    state fault:int = 0;
+    logical action turnOff(1 sec):int;
+
+    reaction(startup) -> out, out2, turnOff {=
+        self->fault = 1; // Fault occurs
+
+        if (self->fault == 1) {
+            lf_schedule(turnOff, 0); // Wrong action value. Should be 1.
+            lf_set(out, 5);
+            lf_set(out2, 10);
+        }
+    =}
+
+    reaction(turnOff) -> stopResult {=
+        if (turnOff->value == 1) {
+            self->fault = 0;
+        }
+        lf_set(stopResult, self->fault);
+    =}
+}
+
+reactor Checker {
+    input stopResult:int;
+    state violation:int = 0;
+
+    reaction(stopResult) {=
+        if (stopResult->value != 0) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(2 sec, 2 sec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="AlarmStops_NoViolation",
+    tactic="bmc",
+    spec="G[0, 1500 msec](Alarm_chk_violation == 0)",
+    expect=false
+)
+main reactor Alarm {
+    c = new Controller();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    c.stopResult -> chk.stopResult;
+}

@@ -1,0 +1,119 @@
+target C;
+
+reactor Node0 {
+    input in:int;
+    output out:int;
+    output electedOut:int;
+
+    logical action a(10 msec):int;
+
+    state elected:int = 0;
+
+    reaction(startup) -> out {=
+        lf_set(out, 0);
+    =}
+
+    reaction(a) -> out {=
+        lf_set(out, a->value);
+    =}
+
+    reaction(in) -> a, electedOut {=
+        if (in->value > 0) {
+            lf_schedule_int(a, 0, in->value);
+        } else if (in->value == 0) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+}
+
+reactor Node1 {
+    input in:int;
+    output out:int;
+    output electedOut:int;
+
+    logical action a(10 msec):int;
+
+    state elected:int = 0;
+
+    reaction(startup) -> out {=
+        lf_set(out, 1);
+    =}
+
+    reaction(a) -> out, electedOut {=
+        lf_set(out, a->value);
+        if (a->value == 1) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+
+    reaction(in) -> a, electedOut {=
+        if (in->value > 1) {
+            lf_schedule_int(a, 0, in->value);
+        } else if (in->value == 1) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+}
+
+reactor Checker {
+    input e0:int;
+    input e1:int;
+
+    logical action decide(11 msec);
+
+    state seen1:int = 0;
+    state violation:int = 0;
+
+    reaction(startup) -> decide {=
+        lf_schedule(decide, 0);
+    =}
+
+    reaction(e0) {=
+        self->violation = 1;
+    =}
+
+    reaction(e1) {=
+        self->seen1 = 1;
+    =}
+
+    reaction(decide) {=
+        if (self->seen1 == 0) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 msec, 100 msec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="Election_NoViolation",
+    tactic="bmc",
+    spec="G[0, 12 msec](Election_chk_violation == 0)",
+    expect=true
+)
+main reactor Election {
+    i0 = new Node0();
+    i1 = new Node1();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    i0.out -> i1.in;
+    i1.out -> i0.in;
+
+    i0.electedOut -> chk.e0;
+    i1.electedOut -> chk.e1;
+}

@@ -1,0 +1,103 @@
+target C;
+
+reactor Client {
+    input in:int;
+    output out:int;
+    output replySeen:int;
+
+    reaction(startup) -> out {=
+        lf_set(out, 1);
+    =}
+
+    reaction(in) -> replySeen {=
+        if (in->value == 1) {
+            lf_set(replySeen, 1);
+        }
+    =}
+}
+
+reactor Server {
+    input in:int;
+    output out:int;
+    output errorOut:int;
+
+    logical action err(10 msec);
+
+    reaction(in) -> out, err {=
+        if (in->value == 0) {
+            lf_schedule(err, 0);
+        } else {
+            lf_set(out, in->value);
+        }
+    =}
+
+    reaction(err) -> errorOut {=
+        lf_set(errorOut, 1);
+    =}
+}
+
+reactor Checker {
+    input replySeenIn:int;
+    input errorIn:int;
+
+    logical action decide(11 msec);
+
+    state sawReply:int = 0;
+    state sawError:int = 0;
+    state violation:int = 0;
+
+    reaction(startup) -> decide {=
+        lf_schedule(decide, 0);
+    =}
+
+    reaction(replySeenIn) {=
+        self->sawReply = 1;
+    =}
+
+    reaction(errorIn) {=
+        self->sawError = 1;
+    =}
+
+    reaction(decide) {=
+        if (self->sawReply == 0 || self->sawError == 1) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    logical action tick(100 msec);
+    state phase:int = 0;
+
+    reaction(startup) -> tick {=
+        lf_schedule(tick, 0);
+    =}
+
+    reaction(tick) -> tick {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+        lf_schedule(tick, 0);
+    =}
+}
+
+@property(
+    name="UnsafeSend_NoViolation",
+    tactic="bmc",
+    spec="G[0, 12 msec](UnsafeSend_chk_violation == 0)",
+    expect=true
+)
+main reactor UnsafeSend {
+    c = new Client();
+    s = new Server();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    c.out -> s.in after 10 msec;
+    s.out -> c.in;
+
+    c.replySeen -> chk.replySeenIn;
+    s.errorOut -> chk.errorIn;
+}
