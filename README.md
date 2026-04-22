@@ -47,7 +47,7 @@ Typical contents of this repository are:
   Generated Lingua Franca output files.
 
 - `examples/hardware/smarthome/`  
-  Optional hardware-validation example, including:
+  hardware-validation example, including:
   - Timed Rebeca source model,
   - property specification,
   - generated LF,
@@ -205,9 +205,9 @@ Example expectations:
 * sample node/switch/router or sender/receiver benchmarks are translated successfully
 * the build ends with `BUILD SUCCESS`
 
-## Optional hardware validation example
+## hardware validation example
 
-This repository also contains an **optional hardware-backed smart-home example** that demonstrates an end-to-end path from:
+This repository also contains an ** hardware-backed smart-home example** that demonstrates an end-to-end path from:
 
 Timed Rebeca model → generated LF → adapted LF runtime → ESP32 sensor input → runtime property validation
 
@@ -280,7 +280,7 @@ Use the translator on example or benchmark Timed Rebeca inputs and inspect the g
 
 ### 2. End-to-end smart-home workflow
 
-Use the optional smart-home directory to reproduce the hardware-backed example with:
+Use the smart-home directory to reproduce the hardware-backed example with:
 
 * ESP32 firmware
 * PlatformIO upload/monitor
@@ -327,7 +327,7 @@ Check that:
 
 ### Smart-home serial bridge does not connect
 
-If you are using the optional hardware example, edit the serial port in `serial_bridge.py` to match your system.
+If you are using the hardware example, edit the serial port in `serial_bridge.py` to match your system.
 
 ## License
 
@@ -355,13 +355,11 @@ These dependencies are not relicensed by this repository.
 
 If you use ReLico in academic work, please cite the associated paper and the archived artifact release.
 
-A `CITATION.cff` file is recommended for the repository root.
-
 ## Notes for artifact evaluation
 
 For artifact-review purposes, the most important distinctions are:
 
 * the core contribution is the Timed Rebeca → Lingua Franca translator,
 * the supported source language is a deterministic subset of Timed Rebeca,
-* the smart-home example is an optional end-to-end validation workflow,
+* the smart-home example is an end-to-end validation workflow,
 * the hardware-backed LF program contains additional integration beyond the raw generated LF file.
