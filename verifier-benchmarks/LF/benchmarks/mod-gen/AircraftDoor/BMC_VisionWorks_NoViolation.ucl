@@ -1,0 +1,642 @@
+/*******************************
+ * Auto-generated UCLID5 model *
+ ******************************/
+module main {
+    /*******************************
+     * Time and Related Operations *
+     ******************************/
+    type timestamp_t = integer;                     // The unit is nanoseconds
+    type microstep_t = integer;
+    type tag_t = {
+        timestamp_t,
+        microstep_t
+    };
+    type interval_t  = tag_t;
+    
+    // Projection macros
+    define pi1(t : tag_t) : timestamp_t = t._1;     // Get timestamp from tag
+    define pi2(t : tag_t) : microstep_t = t._2;     // Get microstep from tag
+    
+    // Interval constructor
+    define zero() : interval_t
+    = {0, 0};
+    define startup() : interval_t
+    = zero();
+    define mstep() : interval_t
+    = {0, 1};
+    define nsec(t : integer) : interval_t
+    = {t, 0};
+    define usec(t : integer) : interval_t
+    = {t * 1000, 0};
+    define msec(t : integer) : interval_t
+    = {t * 1000000, 0};
+    define sec(t : integer) : interval_t
+    = {t * 1000000000, 0};
+    define inf() : interval_t
+    = {-1, 0};
+    
+    // Helper function
+    define isInf(i : interval_t) : boolean
+    = pi1(i) < 0;
+    
+    // Tag comparison
+    define tag_later(t1 : tag_t, t2 : tag_t) : boolean
+    = pi1(t1) > pi1(t2)
+        || (pi1(t1) == pi1(t2) && pi2(t1) > pi2(t2))
+        || (isInf(t1) && !isInf(t2));
+    
+    define tag_same(t1 : tag_t, t2 : tag_t) : boolean
+    = t1 == t2;
+    
+    define tag_earlier(t1 : tag_t, t2 : tag_t) : boolean
+    = pi1(t1) < pi1(t2)
+        || (pi1(t1) == pi1(t2) && pi2(t1) < pi2(t2))
+        || (!isInf(t1) && isInf(t2));
+    
+    // Used for incrementing a tag through an action
+    define tag_schedule(t : tag_t, i : integer) : tag_t
+    = if (i == 0) then { pi1(t), pi2(t)+1 } else { pi1(t)+i, 0 };
+    
+    // Used for incrementing a tag along a connection
+    define tag_delay(t : tag_t, i : integer) : tag_t
+    = if (i == 0) then { pi1(t), pi2(t) } else { pi1(t)+i, 0 };
+    
+    // Only consider timestamp for now.
+    define tag_diff(t1, t2: tag_t) : interval_t
+    = if (!isInf(t1) && !isInf(t2))
+        then { pi1(t1) - pi1(t2), pi2(t1) - pi2(t2) }
+        else inf();
+    
+    /********************
+     * Trace Definition *
+     *******************/
+    const START : integer = 0; // The start index of the trace.
+    const END : integer = 4; // The end index of the trace (without padding)
+    const END_TRACE : integer = 9; // The end index of the trace with padding
+    
+    group indices : integer = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    };
+    
+    // Define step and event types.
+    type step_t = integer;
+    type event_t = { rxn_t, tag_t, state_t, trigger_t, sched_t, payload_t };
+    
+    // Create a bounded trace with length 4
+    // Potentially unbounded trace, we bound this later.
+    type trace_t  = [integer]event_t;
+    // Declare start time.
+    var start_time : timestamp_t;
+    
+    // Declare trace.
+    var trace : trace_t;
+    /*****************
+     * Helper Macros *
+     ****************/
+    // Helper macro that returns an element based on index.
+    define get(tr : trace_t, i : step_t) : event_t =
+    if (i >= START && i <= END_TRACE) then tr[i] else
+    { {false, false, false, false, false}, inf(), { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, { false, false, false, false, false, false, false }, {false }, {0} };
+    define elem(i : step_t) : event_t
+    = get(trace, i);
+    
+    // projection macros
+    define rxn      (i : step_t) : rxn_t        = elem(i)._1;
+    define g        (i : step_t) : tag_t        = elem(i)._2;
+    define s        (i : step_t) : state_t      = elem(i)._3;
+    define t        (i : step_t) : trigger_t    = elem(i)._4;
+    define d        (i : step_t) : sched_t      = elem(i)._5;
+    define pl       (i : step_t) : payload_t    = elem(i)._6;
+    define isNULL   (i : step_t) : boolean      = rxn(i) == {false, false, false, false, false};
+    /**********************************
+     * Reaction IDs & State Variables *
+     *********************************/
+    
+    //////////////////////////
+    // Application Specific
+    // Reactions
+    type rxn_t = {
+        boolean,	// reaction_1 of AircraftDoor.controller(level: 0)
+        boolean,	// reaction_1 of AircraftDoor.vision(level: 1, dominating: reaction_1 of AircraftDoor.controller)
+        boolean,	// reaction_1 of AircraftDoor.door(level: 2, dominating: reaction_1 of AircraftDoor.vision)
+        boolean,	// reaction_1 of AircraftDoor.m(level: 3, dominating: reaction_1 of AircraftDoor.door)
+        boolean	// reaction_1 of AircraftDoor.ka(level: 0)
+    };
+    // Reaction projection macros
+    define AircraftDoor_controller_reaction_1(n : rxn_t) : boolean = n._1;
+    define AircraftDoor_vision_reaction_1(n : rxn_t) : boolean = n._2;
+    define AircraftDoor_door_reaction_1(n : rxn_t) : boolean = n._3;
+    define AircraftDoor_m_reaction_1(n : rxn_t) : boolean = n._4;
+    define AircraftDoor_ka_reaction_1(n : rxn_t) : boolean = n._5;
+    
+    // State variables and triggers
+    type state_t = {
+        integer,	// StateVariableInstance AircraftDoor.vision.ramp
+        integer,	// StateVariableInstance AircraftDoor.door.doorOpen
+        integer,	// StateVariableInstance AircraftDoor.m.violation
+        integer,	// StateVariableInstance AircraftDoor.ka.phase
+        integer,	// PortInstance AircraftDoor.controller.out
+        integer,	// PortInstance AircraftDoor.vision.in
+        integer,	// PortInstance AircraftDoor.vision.out
+        integer,	// PortInstance AircraftDoor.door.in
+        integer,	// PortInstance AircraftDoor.door.status
+        integer,	// PortInstance AircraftDoor.m.door
+        integer	// org.lflang.generator.TimerInstance@5ff90645
+    };
+    // State variable projection macros
+    define AircraftDoor_vision_ramp(s : state_t) : integer = s._1;
+    define AircraftDoor_door_doorOpen(s : state_t) : integer = s._2;
+    define AircraftDoor_m_violation(s : state_t) : integer = s._3;
+    define AircraftDoor_ka_phase(s : state_t) : integer = s._4;
+    define AircraftDoor_controller_out(s : state_t) : integer = s._5;
+    define AircraftDoor_vision_in(s : state_t) : integer = s._6;
+    define AircraftDoor_vision_out(s : state_t) : integer = s._7;
+    define AircraftDoor_door_in(s : state_t) : integer = s._8;
+    define AircraftDoor_door_status(s : state_t) : integer = s._9;
+    define AircraftDoor_m_door(s : state_t) : integer = s._10;
+    define AircraftDoor_ka_t(s : state_t) : integer = s._11;
+    
+    // A boolean tuple indicating whether triggers are present.
+    type trigger_t = {
+        boolean,	// PortInstance AircraftDoor.controller.out
+        boolean,	// PortInstance AircraftDoor.vision.in
+        boolean,	// PortInstance AircraftDoor.vision.out
+        boolean,	// PortInstance AircraftDoor.door.in
+        boolean,	// PortInstance AircraftDoor.door.status
+        boolean,	// PortInstance AircraftDoor.m.door
+        boolean	// org.lflang.generator.TimerInstance@5ff90645
+    };
+    // Trigger presence projection macros
+    define AircraftDoor_controller_out_is_present(t : trigger_t) : boolean = t._1;
+    define AircraftDoor_vision_in_is_present(t : trigger_t) : boolean = t._2;
+    define AircraftDoor_vision_out_is_present(t : trigger_t) : boolean = t._3;
+    define AircraftDoor_door_in_is_present(t : trigger_t) : boolean = t._4;
+    define AircraftDoor_door_status_is_present(t : trigger_t) : boolean = t._5;
+    define AircraftDoor_m_door_is_present(t : trigger_t) : boolean = t._6;
+    define AircraftDoor_ka_t_is_present(t : trigger_t) : boolean = t._7;
+    // A boolean tuple indicating whether actions are scheduled by reactions
+    // at the instant when they are triggered.
+    type sched_t = {
+        // There are no actions.
+        // Insert a dummy boolean to make the model compile.
+        boolean
+    };
+    // Projection macros for action schedule flag
+    // A integer tuple indicating the integer payloads scheduled by reactions
+    // at the instant when they are triggered.
+    type payload_t = {
+        // There are no actions.
+        // Insert a dummy integer to make the model compile.
+        integer
+    };
+    // Projection macros for scheduled payloads
+    /*********************
+     * Reactor Semantics *
+     *********************/
+    // Non-federated "happened-before"
+    define hb(e1, e2 : event_t) : boolean
+    = tag_earlier(e1._2, e2._2)
+        || (tag_same(e1._2, e2._2) && ( false
+        || (AircraftDoor_controller_reaction_1(e1._1) && AircraftDoor_vision_reaction_1(e2._1))
+        || (AircraftDoor_vision_reaction_1(e1._1) && AircraftDoor_door_reaction_1(e2._1))
+        || (AircraftDoor_door_reaction_1(e1._1) && AircraftDoor_m_reaction_1(e2._1))
+    ))
+    ;
+    /** transition relation **/
+    // transition relation constrains future states
+    // based on previous states.
+    
+    // Events are ordered by "happened-before" relation.
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (finite_forall (j : integer) in indices ::
+        (j >= START && j <= END_TRACE) ==> (hb(elem(i), elem(j)) ==> i < j)));
+    
+    // Tags should be non-negative.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> pi1(g(i)) >= 0);
+    
+    // Microsteps should be non-negative.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> pi2(g(i)) >= 0);
+    
+    // Begin the frame at the start time specified.
+    define start_frame(i : step_t) : boolean =
+        (tag_same(g(i), {start_time, 0}) || tag_later(g(i), {start_time, 0}));
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE)
+        ==> start_frame(i));
+    
+    // NULL events should appear in the suffix, except for START.
+    axiom(finite_forall (j : integer) in indices :: (j > START && j <= END_TRACE) ==> (
+        !isNULL(j)) ==> 
+            (finite_forall (i : integer) in indices :: (i > START && i < j) ==> (!isNULL(i))));
+    //// Axioms for the event-based semantics
+    // the same event can only trigger once in a logical instant
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (finite_forall (j : integer) in indices ::
+        (j >= START && j <= END_TRACE) ==> ((rxn(i) == rxn(j) && i != j)
+            ==> !tag_same(g(i), g(j)))));
+    // Only one reaction gets triggered at a time.
+    axiom(finite_forall (i : integer) in indices :: (i >= START && i <= END_TRACE) ==> (
+        isNULL(i)
+        || rxn(i) == {true, false, false, false, false}
+        || rxn(i) == {false, true, false, false, false}
+        || rxn(i) == {false, false, true, false, false}
+        || rxn(i) == {false, false, false, true, false}
+        || rxn(i) == {false, false, false, false, true}
+    ));
+    /***************
+     * Connections *
+     ***************/
+    // AircraftDoor_controller_out -> AircraftDoor_vision_in
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If AircraftDoor_controller_out is present, then AircraftDoor_vision_in will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (AircraftDoor_controller_out_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && AircraftDoor_vision_in_is_present(t(j))
+        && AircraftDoor_vision_in(s(j)) == AircraftDoor_controller_out(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (AircraftDoor_controller_out_is_present(t(i)) ==> ((.
+    // If AircraftDoor_vision_in is present, there exists an AircraftDoor_controller_out in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (AircraftDoor_vision_in_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && AircraftDoor_controller_out_is_present(t(j))
+        && AircraftDoor_controller_out(s(j)) == AircraftDoor_vision_in(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If AircraftDoor_vision_in is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!AircraftDoor_vision_in_is_present(t(i)) ==> (
+            AircraftDoor_vision_in(s(i)) == 0
+        ))
+    ));
+    // AircraftDoor_vision_out -> AircraftDoor_door_in
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If AircraftDoor_vision_out is present, then AircraftDoor_door_in will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (AircraftDoor_vision_out_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && AircraftDoor_door_in_is_present(t(j))
+        && AircraftDoor_door_in(s(j)) == AircraftDoor_vision_out(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (AircraftDoor_vision_out_is_present(t(i)) ==> ((.
+    // If AircraftDoor_door_in is present, there exists an AircraftDoor_vision_out in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (AircraftDoor_door_in_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && AircraftDoor_vision_out_is_present(t(j))
+        && AircraftDoor_vision_out(s(j)) == AircraftDoor_door_in(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If AircraftDoor_door_in is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!AircraftDoor_door_in_is_present(t(i)) ==> (
+            AircraftDoor_door_in(s(i)) == 0
+        ))
+    ));
+    // AircraftDoor_door_status -> AircraftDoor_m_door
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+    // If AircraftDoor_door_status is present, then AircraftDoor_m_door will be present.
+    // with the same value after some fixed delay of 0 nanoseconds.
+    (AircraftDoor_door_status_is_present(t(i)) ==> ((
+        finite_exists (j : integer) in indices :: j > i && j <= END_TRACE
+        && AircraftDoor_m_door_is_present(t(j))
+        && AircraftDoor_m_door(s(j)) == AircraftDoor_door_status(s(i))
+    && g(j) == tag_delay(g(i), 0)
+    )
+    )) // Closes (AircraftDoor_door_status_is_present(t(i)) ==> ((.
+    // If AircraftDoor_m_door is present, there exists an AircraftDoor_door_status in prior steps.
+    // This additional term establishes a one-to-one relationship between two ports' signals.
+    && (AircraftDoor_m_door_is_present(t(i)) ==> (
+        finite_exists (j : integer) in indices :: j >= START && j < i
+        && AircraftDoor_door_status_is_present(t(j))
+        && AircraftDoor_door_status(s(j)) == AircraftDoor_m_door(s(i))
+        && g(i) == tag_delay(g(j), 0)
+    )) // Closes the one-to-one relationship.
+    ));
+    // If AircraftDoor_m_door is not present, then its value resets to 0.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE && !isNULL(i)) ==> (
+        (!AircraftDoor_m_door_is_present(t(i)) ==> (
+            AircraftDoor_m_door(s(i)) == 0
+        ))
+    ));
+    /**********
+     * Timers *
+     **********/
+    //// Axioms for AircraftDoor.ka.t
+    // AircraftDoor.ka.t: an initial firing at (1000000000, 0)
+    axiom(
+        ((pi1(g(END)) >= 1000000000) ==> (
+            finite_exists (j : integer) in indices :: (j > START && j <= END)
+                && AircraftDoor_ka_t_is_present(t(j))
+                && tag_same(g(j), {1000000000, 0})
+         ))
+         && ((pi1(g(END)) < 1000000000) ==> (
+            finite_forall (i : integer) in indices :: (i > START && i <= END)
+                ==> (!isNULL(i))
+         ))
+    );
+    // AircraftDoor.ka.t: schedule subsequent firings every 1000000000 ns
+    axiom(
+        finite_forall (i : integer) in indices :: (i >= START && i <= END) ==> (
+            AircraftDoor_ka_t_is_present(t(i)) ==> (
+                (
+                    finite_exists (j : integer) in indices :: (j >= START && j > i)
+                        && AircraftDoor_ka_t_is_present(t(j))
+                        && (g(j) == tag_schedule(g(i), 1000000000))
+                )
+            )
+        )
+    );
+    // AircraftDoor.ka.t: all firings must be evenly spaced out.
+    axiom(
+        finite_forall (i : integer) in indices :: (i >= START && i <= END) ==> (
+            AircraftDoor_ka_t_is_present(t(i)) ==> (
+                // Timestamp must be offset + n * period.
+                (
+                    exists (n : integer) :: (
+                        n >= 0 &&
+                        pi1(g(i)) == 1000000000 + n * 1000000000
+                    )
+                )
+                // Microstep must be 0.
+                && (pi2(g(i)) == 0)
+            )
+        )
+    );
+    /********************************
+     * Reactions and Their Triggers *
+     ********************************/
+    // If startup is within frame (and all variables have default values),
+    // AircraftDoor_controller_reaction_1 must be invoked.
+    axiom(
+        ((start_time == 0) ==> (
+            finite_exists (i : integer) in indices :: i > START && i <= END
+                && AircraftDoor_controller_reaction_1(rxn(i)) && tag_same(g(i), zero())
+                && !(
+                finite_exists (j : integer) in indices :: j > START && j <= END
+                && AircraftDoor_controller_reaction_1(rxn(j))
+                && j != i
+                )
+        ))
+    );
+    // AircraftDoor_vision_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (AircraftDoor_vision_in_is_present(t(i)))
+    ) <==> (AircraftDoor_vision_reaction_1(rxn(i)))));
+    // AircraftDoor_door_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (AircraftDoor_door_in_is_present(t(i)))
+    ) <==> (AircraftDoor_door_reaction_1(rxn(i)))));
+    // AircraftDoor_m_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (AircraftDoor_m_door_is_present(t(i)))
+    ) <==> (AircraftDoor_m_reaction_1(rxn(i)))));
+    // AircraftDoor_ka_reaction_1 is invoked when any of it triggers are present.
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END_TRACE) ==> ((
+        false
+    || (AircraftDoor_ka_t_is_present(t(i)))
+    ) <==> (AircraftDoor_ka_reaction_1(rxn(i)))));
+    /*********************
+     * Initial Condition *
+     *********************/
+    define initial_condition() : boolean
+    = start_time == 0
+        && isNULL(0)
+        && g(0) == {0, 0}
+        && AircraftDoor_vision_ramp(s(0)) == 0
+        && AircraftDoor_door_doorOpen(s(0)) == 0
+        && AircraftDoor_m_violation(s(0)) == 0
+        && AircraftDoor_ka_phase(s(0)) == 0
+        && AircraftDoor_controller_out(s(0)) == 0
+        && AircraftDoor_vision_in(s(0)) == 0
+        && AircraftDoor_vision_out(s(0)) == 0
+        && AircraftDoor_door_in(s(0)) == 0
+        && AircraftDoor_door_status(s(0)) == 0
+        && AircraftDoor_m_door(s(0)) == 0
+        && AircraftDoor_ka_t(s(0)) == 0
+        && !AircraftDoor_controller_out_is_present(t(0))
+        && !AircraftDoor_vision_in_is_present(t(0))
+        && !AircraftDoor_vision_out_is_present(t(0))
+        && !AircraftDoor_door_in_is_present(t(0))
+        && !AircraftDoor_door_status_is_present(t(0))
+        && !AircraftDoor_m_door_is_present(t(0))
+        && !AircraftDoor_ka_t_is_present(t(0))
+    ;
+    /*************
+     * Reactions *
+     *************/
+    // Reaction body of reaction_1 of AircraftDoor.controller(level: 0)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (AircraftDoor_controller_reaction_1(rxn(i)))
+            ==> (((true ==> (((AircraftDoor_controller_out(s(i)) == 1) && (AircraftDoor_controller_out_is_present(t(i))))
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && AircraftDoor_controller_out(s(i)) == 0
+    && AircraftDoor_controller_out_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    AircraftDoor_vision_ramp(s(i)) == AircraftDoor_vision_ramp(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_door_doorOpen(s(i)) == AircraftDoor_door_doorOpen(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_m_violation(s(i)) == AircraftDoor_m_violation(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_ka_phase(s(i)) == AircraftDoor_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_vision_out(s(i)) == 0
+    && AircraftDoor_vision_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_door_status(s(i)) == 0
+    && AircraftDoor_door_status_is_present(t(i)) == false)
+    ))
+    ))));
+    // Reaction body of reaction_1 of AircraftDoor.vision(level: 1, dominating: reaction_1 of AircraftDoor.controller)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (AircraftDoor_vision_reaction_1(rxn(i)))
+            ==> ((((AircraftDoor_vision_ramp(s(i)) == 1) ==> (((AircraftDoor_vision_out(s(i)) == 0) && (AircraftDoor_vision_out_is_present(t(i))))
+    ))
+            && (!((AircraftDoor_vision_ramp(s(i)) == 1)) ==> (((AircraftDoor_vision_out(s(i)) == 1) && (AircraftDoor_vision_out_is_present(t(i))))
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((AircraftDoor_vision_ramp(s(i)) == 1) || !((AircraftDoor_vision_ramp(s(i)) == 1))))) ==> (
+    ( true
+    && AircraftDoor_vision_out(s(i)) == 0
+    && AircraftDoor_vision_out_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    AircraftDoor_vision_ramp(s(i)) == AircraftDoor_vision_ramp(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_door_doorOpen(s(i)) == AircraftDoor_door_doorOpen(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_m_violation(s(i)) == AircraftDoor_m_violation(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_ka_phase(s(i)) == AircraftDoor_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_controller_out(s(i)) == 0
+    && AircraftDoor_controller_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_door_status(s(i)) == 0
+    && AircraftDoor_door_status_is_present(t(i)) == false)
+    ))
+    ))));
+    // Reaction body of reaction_1 of AircraftDoor.door(level: 2, dominating: reaction_1 of AircraftDoor.vision)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (AircraftDoor_door_reaction_1(rxn(i)))
+            ==> ((((AircraftDoor_door_in(s(i)) == 1) ==> ((AircraftDoor_door_doorOpen(s(i)) == 1)
+    ))
+            && ((!((AircraftDoor_door_in(s(i)) == 1)) && (AircraftDoor_door_in(s(i)) == 0)) ==> ((AircraftDoor_door_doorOpen(s(i)) == 0)
+    ))
+            && (true ==> (((AircraftDoor_door_status(s(i)) == AircraftDoor_door_doorOpen(s(i))) && (AircraftDoor_door_status_is_present(t(i))))
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((AircraftDoor_door_in(s(i)) == 1) || (!((AircraftDoor_door_in(s(i)) == 1)) && (AircraftDoor_door_in(s(i)) == 0))))) ==> (
+    AircraftDoor_door_doorOpen(s(i)) == AircraftDoor_door_doorOpen(s(i-1))
+    ))
+    // Unused state variables and ports are reset by default.
+    && ((!(true)) ==> (
+    ( true
+    && AircraftDoor_door_status(s(i)) == 0
+    && AircraftDoor_door_status_is_present(t(i)) == false)
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    AircraftDoor_vision_ramp(s(i)) == AircraftDoor_vision_ramp(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_m_violation(s(i)) == AircraftDoor_m_violation(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_ka_phase(s(i)) == AircraftDoor_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_controller_out(s(i)) == 0
+    && AircraftDoor_controller_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_vision_out(s(i)) == 0
+    && AircraftDoor_vision_out_is_present(t(i)) == false)
+    ))
+    ))));
+    // Reaction body of reaction_1 of AircraftDoor.m(level: 3, dominating: reaction_1 of AircraftDoor.door)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (AircraftDoor_m_reaction_1(rxn(i)))
+            ==> ((((AircraftDoor_m_door(s(i)) != 1) ==> ((AircraftDoor_m_violation(s(i)) == 1)
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!((AircraftDoor_m_door(s(i)) != 1))) ==> (
+    AircraftDoor_m_violation(s(i)) == AircraftDoor_m_violation(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    AircraftDoor_vision_ramp(s(i)) == AircraftDoor_vision_ramp(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_door_doorOpen(s(i)) == AircraftDoor_door_doorOpen(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_ka_phase(s(i)) == AircraftDoor_ka_phase(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_controller_out(s(i)) == 0
+    && AircraftDoor_controller_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_vision_out(s(i)) == 0
+    && AircraftDoor_vision_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_door_status(s(i)) == 0
+    && AircraftDoor_door_status_is_present(t(i)) == false)
+    ))
+    ))));
+    // Reaction body of reaction_1 of AircraftDoor.ka(level: 0)
+    axiom(finite_forall (i : integer) in indices :: (i > START && i <= END) ==> (
+        (AircraftDoor_ka_reaction_1(rxn(i)))
+            ==> ((((AircraftDoor_ka_phase(s(i)) == 0) ==> ((AircraftDoor_ka_phase(s(i)) == 1)
+    ))
+            && (!((AircraftDoor_ka_phase(s(i)) == 0)) ==> ((AircraftDoor_ka_phase(s(i)) == 0)
+    )))
+    && ( true
+    // Unused state variables and ports are reset by default.
+    && ((!(((AircraftDoor_ka_phase(s(i)) == 0) || !((AircraftDoor_ka_phase(s(i)) == 0))))) ==> (
+    AircraftDoor_ka_phase(s(i)) == AircraftDoor_ka_phase(s(i-1))
+    ))
+    // By default, the value of the variables used in this reaction stay the same.
+    && (true ==> (
+    AircraftDoor_vision_ramp(s(i)) == AircraftDoor_vision_ramp(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_door_doorOpen(s(i)) == AircraftDoor_door_doorOpen(s(i-1))
+    ))
+    && (true ==> (
+    AircraftDoor_m_violation(s(i)) == AircraftDoor_m_violation(s(i-1))
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_controller_out(s(i)) == 0
+    && AircraftDoor_controller_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_vision_out(s(i)) == 0
+    && AircraftDoor_vision_out_is_present(t(i)) == false)
+    ))
+    && (true ==> (
+    ( true
+    && AircraftDoor_door_status(s(i)) == 0
+    && AircraftDoor_door_status_is_present(t(i)) == false)
+    ))
+    ))));
+    /************
+     * Property *
+     ************/
+    // The FOL property translated from user-defined MTL property:
+    // G[0, 1 msec](AircraftDoor_m_violation == 0)
+    define p(i : step_t) : boolean =
+        (((finite_forall (j0 : integer) in indices :: (j0 >= i && j0 <= END && !isNULL(j0) && (
+        // Time Predicate
+        (pi1(g(j0)) >= (pi1(g(i)) + 0)) && (pi1(g(j0)) <= (pi1(g(i)) + 1000000))
+        )) ==> (((AircraftDoor_m_violation(s(j0)) == 0))))));
+    // BMC
+    property bmc_VisionWorks_NoViolation : initial_condition() ==> p(0);
+    control {
+        v = bmc(0);
+        check;
+        print_results;
+        v.print_cex_json;
+    }
+}

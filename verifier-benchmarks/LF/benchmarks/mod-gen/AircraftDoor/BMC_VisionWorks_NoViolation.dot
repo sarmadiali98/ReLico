@@ -1,0 +1,5 @@
+digraph G {
+    rankdir=LR;
+    node [shape=Mrecord]
+    S0 [label = "S0 | (0, 0) | Reactions invoked:\nAircraftDoor.controller.reaction_1\nAircraftDoor.m.reaction_1\nAircraftDoor.vision.reaction_1\nAircraftDoor.door.reaction_1 | Pending events:\n(AircraftDoor.ka.t, (1 s, 0))"]
+}
