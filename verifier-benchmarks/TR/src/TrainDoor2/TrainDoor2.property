@@ -1,0 +1,8 @@
+property {
+  define {
+    NoViolation = (chk.violation == 0);
+  }
+  Assertion {
+    TrainDoor2_NoViolation : NoViolation;
+  }
+}

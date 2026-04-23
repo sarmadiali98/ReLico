@@ -1,0 +1,87 @@
+reactiveclass Checker(5) {
+    statevars {
+        int violation;
+    }
+
+    Checker() {
+        violation = 0;
+    }
+
+    msgsrv complete(int v) {
+        if (v != 1) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass Sink(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    Sink() {
+    }
+
+    msgsrv in(int v) {
+        chk.complete(v);
+    }
+}
+
+reactiveclass Node(5) {
+    knownrebecs {
+        Sink sink;
+    }
+
+    Node() {
+    }
+
+    msgsrv in(int v) {
+        self.forward(v) after(10);
+    }
+
+    msgsrv forward(int v) {
+        sink.in(v);
+    }
+}
+
+reactiveclass Source(5) {
+    knownrebecs {
+        Node node;
+    }
+
+    Source() {
+        self.start();
+    }
+
+    msgsrv start() {
+        node.in(1);
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    Sink sink(chk):();
+    Node node(sink):();
+    Source source(node):();
+    KeepAlive ka():();
+}
