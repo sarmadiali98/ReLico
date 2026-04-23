@@ -1,0 +1,74 @@
+reactiveclass Source(5) {
+    knownrebecs {
+        FibCore fib;
+    }
+
+    Source() {
+        self.start();
+    }
+
+    msgsrv start() {
+        fib.inputN(10);
+    }
+}
+
+reactiveclass FibCore(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    msgsrv inputN(int n) {
+        if (n == 10) {
+            self.complete(89) after(10);
+        } else {
+            self.complete(0) after(10);
+        }
+    }
+
+    msgsrv complete(int v) {
+        chk.complete(v);
+    }
+}
+
+reactiveclass Checker(5) {
+    statevars {
+        int violation;
+    }
+
+    Checker() {
+        violation = 0;
+    }
+
+    msgsrv complete(int v) {
+        if (v != 89) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    FibCore fib(chk):();
+    Source src(fib):();
+    KeepAlive ka():();
+}

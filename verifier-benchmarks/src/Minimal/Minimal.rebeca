@@ -1,0 +1,30 @@
+reactiveclass Counter(5) {
+    statevars {
+        int x;
+        int violation;
+    }
+
+    Counter() {
+        x = 0;
+        violation = 0;
+        self.tick();
+    }
+
+    msgsrv tick() {
+        if (x == 0) {
+            x = 1;
+        } else {
+            x = 0;
+        }
+
+        if (x < 0) {
+            violation = 1;
+        }
+
+        self.tick();
+    }
+}
+
+main {
+    Counter ctr():();
+}

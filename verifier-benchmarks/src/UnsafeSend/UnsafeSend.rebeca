@@ -1,0 +1,80 @@
+reactiveclass Checker(5) {
+    statevars {
+        int violation;
+    }
+
+    Checker() {
+        violation = 0;
+    }
+
+    msgsrv errorIn() {
+        self.latch() after(1);
+    }
+
+    msgsrv latch() {
+        violation = 1;
+    }
+}
+
+reactiveclass Client(5) {
+    knownrebecs {
+        Server s;
+    }
+
+    Client() {
+        self.start();
+    }
+
+    msgsrv start() {
+        s.in(0) after(10);
+    }
+
+    msgsrv in(int v) {
+    }
+}
+
+reactiveclass Server(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    Server() {
+    }
+
+    msgsrv in(int v) {
+        if (v == 0) {
+            self.err() after(10);
+        }
+    }
+
+    msgsrv err() {
+        chk.errorIn();
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.kick();
+    }
+
+    msgsrv kick() {
+        self.tick() after(100);
+    }
+
+    msgsrv tick() {
+        phase = 1 - phase;
+        self.tick() after(100);
+    }
+}
+
+main {
+    Checker chk():();
+    Client c(s):();
+    Server s(chk):();
+    KeepAlive ka():();
+}
