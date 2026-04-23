@@ -1,0 +1,116 @@
+target C;
+
+reactor Source {
+    output to0:int;
+    output to1:int;
+
+    reaction(startup) -> to0, to1 {=
+        lf_set(to0, 1);
+        lf_set(to1, 0);
+    =}
+}
+
+reactor Router {
+    input from0:int;
+    output to1:int;
+
+    reaction(from0) -> to1 {=
+        lf_set(to1, from0->value);
+    =}
+}
+
+reactor Node0 {
+    input in:int;
+    output forward:int;
+    output electedOut:int;
+
+    state elected:int = 0;
+
+    reaction(in) -> forward, electedOut {=
+        if (in->value > 0) {
+            lf_set(forward, in->value);
+        } else if (in->value == 0) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+}
+
+reactor Node1 {
+    input fromSrc:int;
+    input fromRouter:int;
+    output electedOut:int;
+
+    state elected:int = 0;
+
+    reaction(fromSrc) -> electedOut {=
+        if (fromSrc->value == 1) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+
+    reaction(fromRouter) -> electedOut {=
+        if (fromRouter->value == 1) {
+            self->elected = 1;
+            lf_set(electedOut, 1);
+        }
+    =}
+}
+
+reactor Checker {
+    input e0:int;
+    input e1:int;
+
+    state seen1:int = 0;
+    state violation:int = 0;
+
+    reaction(e0) {=
+        self->violation = 1;
+    =}
+
+    reaction(e1) {=
+        self->seen1 = 1;
+    =}
+}
+
+reactor KeepAlive {
+    logical action tick(100 msec);
+    state phase:int = 0;
+
+    reaction(startup) -> tick {=
+        lf_schedule(tick, 0);
+    =}
+
+    reaction(tick) -> tick {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+        lf_schedule(tick, 0);
+    =}
+}
+
+@property(
+    name="Election_NoViolation",
+    tactic="bmc",
+    spec="G[0, 1 msec](Election_chk_violation == 0)",
+    expect=true
+)
+main reactor Election {
+    src = new Source();
+    r = new Router();
+    i0 = new Node0();
+    i1 = new Node1();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    src.to0 -> i0.in;
+    src.to1 -> i1.fromSrc;
+    i0.forward -> r.from0;
+    r.to1 -> i1.fromRouter;
+
+    i0.electedOut -> chk.e0;
+    i1.electedOut -> chk.e1;
+}

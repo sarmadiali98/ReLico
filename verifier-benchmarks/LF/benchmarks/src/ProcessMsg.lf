@@ -1,0 +1,74 @@
+target C
+
+reactor Source {
+    output msg:int;
+
+    reaction(startup) -> msg {=
+        lf_set(msg, 0);
+    =}
+}
+
+reactor Task {
+    input msg:int;
+    output complete:int;
+
+    logical action process(10 msec):int;
+
+    state lastMsg:int = 0
+    state ok:int = 0
+
+    reaction(msg) -> process {=
+        lf_schedule_int(process, 0, msg->value);
+    =}
+
+    reaction(process) -> complete {=
+        self->lastMsg = process->value;
+        if (self->lastMsg == 0) {
+            self->ok = 1;
+        } else {
+            self->ok = 0;
+        }
+        lf_set(complete, self->ok);
+    =}
+}
+
+reactor Checker {
+    input complete:int;
+
+    state violation:int = 0
+
+    reaction(complete) {=
+        if (complete->value != 1) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 msec, 100 msec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="ProcessMsg_NoViolation",
+    tactic="bmc",
+    spec="G[0, 12 msec](ProcessMsg_chk_violation == 0)",
+    expect=true
+)
+main reactor ProcessMsg {
+    src = new Source();
+    task = new Task();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    src.msg -> task.msg;
+    task.complete -> chk.complete;
+}

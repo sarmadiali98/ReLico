@@ -1,0 +1,76 @@
+target C;
+
+reactor Source {
+    output out:int;
+
+    reaction(startup) -> out {=
+        lf_set(out, 1);
+    =}
+}
+
+reactor Node {
+    input in:int;
+    output out:int;
+
+    logical action forward(10 msec):int;
+
+    reaction(in) -> forward {=
+        lf_schedule_int(forward, 0, in->value);
+    =}
+
+    reaction(forward) -> out {=
+        lf_set(out, forward->value);
+    =}
+}
+
+reactor Sink {
+    input in:int;
+    output complete:int;
+
+    reaction(in) -> complete {=
+        lf_set(complete, in->value);
+    =}
+}
+
+reactor Checker {
+    input complete:int;
+
+    state violation:int = 0;
+
+    reaction(complete) {=
+        if (complete->value != 1) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 msec, 100 msec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="Pipe_NoViolation",
+    tactic="bmc",
+    spec="G[0, 12 msec](Pipe_chk_violation == 0)",
+    expect=true
+)
+main reactor Pipe {
+    source = new Source();
+    node = new Node();
+    sink = new Sink();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    source.out -> node.in;
+    node.out -> sink.in;
+    sink.complete -> chk.complete;
+}

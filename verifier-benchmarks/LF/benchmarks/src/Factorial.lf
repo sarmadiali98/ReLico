@@ -1,0 +1,68 @@
+target C;
+
+reactor Source {
+    output n:int;
+
+    reaction(startup) -> n {=
+        lf_set(n, 4);
+    =}
+}
+
+reactor FactorialCore {
+    input n:int;
+    output complete:int;
+
+    logical action produce(10 msec):int;
+
+    reaction(n) -> produce {=
+        if (n->value == 4) {
+            lf_schedule_int(produce, 0, 24);
+        } else {
+            lf_schedule_int(produce, 0, 0);
+        }
+    =}
+
+    reaction(produce) -> complete {=
+        lf_set(complete, produce->value);
+    =}
+}
+
+reactor Checker {
+    input complete:int;
+    state violation:int = 0;
+
+    reaction(complete) {=
+        if (complete->value != 24) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 msec, 100 msec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="Factorial_CorrectResult",
+    tactic="bmc",
+    spec="G[0, 12 msec](Factorial_chk_violation == 0)",
+    expect=true
+)
+main reactor Factorial {
+    src = new Source();
+    f = new FactorialCore();
+    chk = new Checker();
+    ka = new KeepAlive();
+
+    src.n -> f.n;
+    f.complete -> chk.complete;
+}

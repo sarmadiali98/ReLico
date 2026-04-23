@@ -1,0 +1,2056 @@
+[AircraftDoor]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/AircraftDoor.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/AircraftDoor[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/AircraftDoor.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/AircraftDoor[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/AircraftDoor
+*************************************************
+* Pretty printing worst-case state space diagram:
+* (Tail) state 0: (0, [reaction_1 of AircraftDoor.vision, reaction_1 of AircraftDoor.controller, reaction_1 of AircraftDoor.door, reaction_1 of AircraftDoor.ka, reaction_1 of AircraftDoor.m], [(AircraftDoor.ka.tick, (1 s, 0))])
+*************************************************
+CT: 5
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/AircraftDoor
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/AircraftDoor/BMC_VisionWorks_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/AircraftDoor/BMC_VisionWorks_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_VisionWorks_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/AircraftDoor/BMC_VisionWorks_NoViolation.ucl, line 705
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m8.241s
+user	0m18.192s
+sys	0m1.022s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m6.237s
+user	0m13.098s
+sys	0m0.735s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 6176
+ :arith-assert-diseq        207
+ :arith-assert-lower        580
+ :arith-assert-upper        1066
+ :arith-bound-prop          244
+ :arith-eq-adapter          469
+ :arith-fixed-eqs           233
+ :arith-num-rows            305
+ :arith-offset-eqs          620
+ :arith-pivots              37
+ :arith-row-summations      102
+ :arith-tableau-max-columns 422
+ :arith-tableau-max-rows    305
+ :binary-propagations       5566
+ :conflicts                 38
+ :datatype-accessor-ax      138
+ :datatype-constructor-ax   120
+ :decisions                 67
+ :del-clause                147
+ :eliminated-vars           1
+ :max-memory                7.22
+ :memory                    4.41
+ :minimized-lits            20
+ :mk-bool-var               2897
+ :mk-clause                 1235
+ :num-allocs                6585722
+ :num-checks                1
+ :propagations              7089
+ :rlimit-count              377263
+ :time                      0.04)
+
+real	0m0.085s
+user	0m0.043s
+sys	0m0.006s
+z3_exit_code=0
+
+----------------------------
+
+[Alarm]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Alarm.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Alarm[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Alarm.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Alarm[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Alarm.c, reaction_1 of Alarm.ka], [(Alarm.c.turnOff, (1 s, 0)), (Alarm.ka.tick, (2 s, 0))])
+*     => Advance time by 1 s
+* (Tail) state 1: (1 s, [reaction_1 of Alarm.chk, reaction_2 of Alarm.c], [(Alarm.ka.tick, (2 s, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm/BMC_AlarmStops_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm/BMC_AlarmStops_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+0 assertions passed.
+1 assertions failed.
+0 assertions indeterminate.
+  FAILED -> v [Step #0] property bmc_AlarmStops_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm/BMC_AlarmStops_NoViolation.ucl, line 562
+=================================
+CEX for v [Step #0] property bmc_AlarmStops_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm/BMC_AlarmStops_NoViolation.ucl, line 562
+Generated CEX trace of length 1
+=================================
+Wrote CEX traces to file: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Alarm/BMC_AlarmStops_NoViolation.ucl.json
+Finished execution for module: main.
+Not valid!
+============ Step 0 ============
+reactions: []
+tag: (0, 0)
+variables: {Alarm.c.turnOff=0, Alarm.ka.phase=0, Alarm.ka.tick=0, Alarm.c.fault=0, Alarm.c.stopResult=0, Alarm.chk.stopResult=0, Alarm.chk.violation=0}
+triggers: {Alarm.c.turnOff=false, Alarm.ka.tick=false, Alarm.c.stopResult=false, Alarm.chk.stopResult=false}
+scheduled: {Alarm.c.turnOff=false, Alarm.ka.tick=false}
+payloads: {Alarm.c.turnOff=59, Alarm.ka.tick=60}
+============ Step 1 ============
+reactions: [Alarm.ka.reaction_1]
+tag: (0, 0)
+variables: {Alarm.c.turnOff=0, Alarm.ka.phase=0, Alarm.ka.tick=0, Alarm.c.fault=0, Alarm.c.stopResult=0, Alarm.chk.stopResult=0, Alarm.chk.violation=0}
+triggers: {Alarm.c.turnOff=false, Alarm.ka.tick=false, Alarm.c.stopResult=false, Alarm.chk.stopResult=false}
+scheduled: {Alarm.c.turnOff=false, Alarm.ka.tick=true}
+payloads: {Alarm.c.turnOff=10, Alarm.ka.tick=0}
+============ Step 2 ============
+reactions: [Alarm.c.reaction_1]
+tag: (0, 0)
+variables: {Alarm.c.turnOff=0, Alarm.ka.phase=0, Alarm.ka.tick=0, Alarm.c.fault=1, Alarm.c.stopResult=0, Alarm.chk.stopResult=0, Alarm.chk.violation=0}
+triggers: {Alarm.c.turnOff=false, Alarm.ka.tick=false, Alarm.c.stopResult=false, Alarm.chk.stopResult=false}
+scheduled: {Alarm.c.turnOff=true, Alarm.ka.tick=false}
+payloads: {Alarm.c.turnOff=0, Alarm.ka.tick=11}
+============ Step 3 ============
+reactions: [Alarm.c.reaction_2]
+tag: (1 s, 0)
+variables: {Alarm.c.turnOff=0, Alarm.ka.phase=0, Alarm.ka.tick=0, Alarm.c.fault=1, Alarm.c.stopResult=1, Alarm.chk.stopResult=0, Alarm.chk.violation=0}
+triggers: {Alarm.c.turnOff=true, Alarm.ka.tick=false, Alarm.c.stopResult=true, Alarm.chk.stopResult=false}
+scheduled: {Alarm.c.turnOff=false, Alarm.ka.tick=false}
+payloads: {Alarm.c.turnOff=12, Alarm.ka.tick=13}
+============ Step 4 ============
+reactions: [Alarm.chk.reaction_1]
+tag: (1 s, 0)
+variables: {Alarm.c.turnOff=0, Alarm.ka.phase=0, Alarm.ka.tick=0, Alarm.c.fault=1, Alarm.c.stopResult=0, Alarm.chk.stopResult=1, Alarm.chk.violation=1}
+triggers: {Alarm.c.turnOff=false, Alarm.ka.tick=false, Alarm.c.stopResult=false, Alarm.chk.stopResult=true}
+scheduled: {Alarm.c.turnOff=false, Alarm.ka.tick=false}
+payloads: {Alarm.c.turnOff=14, Alarm.ka.tick=15}
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m6.194s
+user	0m15.428s
+sys	0m0.557s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m4.607s
+user	0m10.311s
+sys	0m0.419s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+sat
+(:added-eqs                 6884
+ :arith-assert-diseq        370
+ :arith-assert-lower        585
+ :arith-assert-upper        714
+ :arith-assume-eqs          2
+ :arith-bound-prop          226
+ :arith-conflicts           3
+ :arith-eq-adapter          389
+ :arith-fixed-eqs           234
+ :arith-num-rows            205
+ :arith-offset-eqs          768
+ :arith-pivots              65
+ :arith-row-summations      879
+ :arith-tableau-max-columns 289
+ :arith-tableau-max-rows    205
+ :binary-propagations       4100
+ :conflicts                 60
+ :datatype-accessor-ax      123
+ :datatype-constructor-ax   100
+ :datatype-occurs-check     29
+ :decisions                 1985
+ :del-clause                137
+ :eliminated-vars           1
+ :final-checks              3
+ :interface-eqs             2
+ :max-memory                6.03
+ :memory                    3.79
+ :minimized-lits            38
+ :mk-bool-var               2024
+ :mk-clause                 931
+ :num-allocs                4309065
+ :num-checks                1
+ :propagations              5120
+ :rlimit-count              286250
+ :time                      0.03)
+
+real	0m0.037s
+user	0m0.033s
+sys	0m0.002s
+z3_exit_code=0
+
+----------------------------
+
+[Election]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Election.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Election[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Election.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Election[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Election
+*************************************************
+* Pretty printing worst-case state space diagram:
+* (Tail) state 0: (0, [reaction_1 of Election.src, reaction_1 of Election.i1, reaction_1 of Election.chk, reaction_2 of Election.i1, reaction_2 of Election.chk, reaction_1 of Election.ka, reaction_1 of Election.i0, reaction_1 of Election.r], [(Election.ka.tick, (100 ms, 0))])
+*************************************************
+CT: 8
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Election
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Election/BMC_Election_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Election/BMC_Election_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Election_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Election/BMC_Election_NoViolation.ucl, line 1139
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m19.413s
+user	0m34.484s
+sys	0m1.990s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m19.226s
+user	0m29.569s
+sys	0m2.277s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 52905
+ :arith-assert-diseq        1569
+ :arith-assert-lower        6999
+ :arith-assert-upper        10515
+ :arith-bound-prop          932
+ :arith-conflicts           5
+ :arith-eq-adapter          1807
+ :arith-fixed-eqs           3253
+ :arith-num-rows            1046
+ :arith-offset-eqs          6741
+ :arith-pivots              97
+ :arith-row-summations      699
+ :arith-tableau-max-columns 1309
+ :arith-tableau-max-rows    1046
+ :binary-propagations       98522
+ :conflicts                 246
+ :datatype-accessor-ax      207
+ :datatype-constructor-ax   180
+ :decisions                 543
+ :del-clause                663
+ :eliminated-vars           1
+ :max-memory                14.34
+ :memory                    6.77
+ :minimized-lits            1617
+ :mk-bool-var               9441
+ :mk-clause                 5160
+ :num-allocs                30622280
+ :num-checks                1
+ :propagations              129119
+ :restarts                  2
+ :rlimit-count              1473124
+ :time                      0.14)
+
+real	0m0.200s
+user	0m0.148s
+sys	0m0.012s
+z3_exit_code=0
+
+----------------------------
+
+[Factorial]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Factorial.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Factorial[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Factorial.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Factorial[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Factorial
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Factorial.src, reaction_1 of Factorial.f], [(Factorial.f.produce, (10 ms, 0)), (Factorial.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 1: (10 ms, [reaction_2 of Factorial.f, reaction_1 of Factorial.chk], [(Factorial.ka.t, (100 ms, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Factorial
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Factorial/BMC_Factorial_CorrectResult.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Factorial/BMC_Factorial_CorrectResult.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Factorial_CorrectResult @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Factorial/BMC_Factorial_CorrectResult.ucl, line 585
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m6.396s
+user	0m14.560s
+sys	0m0.686s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m4.405s
+user	0m9.818s
+sys	0m0.438s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 1506
+ :arith-assert-diseq        50
+ :arith-assert-lower        82
+ :arith-assert-upper        166
+ :arith-bound-prop          91
+ :arith-eq-adapter          184
+ :arith-fixed-eqs           24
+ :arith-num-rows            168
+ :arith-offset-eqs          93
+ :arith-pivots              14
+ :arith-row-summations      74
+ :arith-tableau-max-columns 245
+ :arith-tableau-max-rows    168
+ :binary-propagations       516
+ :conflicts                 9
+ :datatype-accessor-ax      114
+ :datatype-constructor-ax   100
+ :decisions                 27
+ :del-clause                3
+ :eliminated-vars           1
+ :max-memory                5.54
+ :memory                    3.71
+ :mk-bool-var               1642
+ :mk-clause                 498
+ :num-allocs                3227164
+ :num-checks                1
+ :propagations              588
+ :rlimit-count              270034
+ :time                      0.02)
+
+real	0m0.030s
+user	0m0.027s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[Fibonacci]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Fibonacci.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Fibonacci[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Fibonacci.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Fibonacci[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Fibonacci
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Fibonacci.src, reaction_1 of Fibonacci.fib], [(Fibonacci.fib.produce, (10 ms, 0)), (Fibonacci.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 1: (10 ms, [reaction_2 of Fibonacci.fib, reaction_1 of Fibonacci.chk], [(Fibonacci.ka.t, (100 ms, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Fibonacci
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Fibonacci/BMC_Fibonacci_CorrectResult.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Fibonacci/BMC_Fibonacci_CorrectResult.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Fibonacci_CorrectResult @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Fibonacci/BMC_Fibonacci_CorrectResult.ucl, line 585
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m5.842s
+user	0m14.171s
+sys	0m0.580s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m4.439s
+user	0m10.393s
+sys	0m0.417s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 1926
+ :arith-assert-diseq        62
+ :arith-assert-lower        97
+ :arith-assert-upper        195
+ :arith-bound-prop          104
+ :arith-conflicts           1
+ :arith-eq-adapter          186
+ :arith-fixed-eqs           31
+ :arith-num-rows            168
+ :arith-offset-eqs          99
+ :arith-pivots              17
+ :arith-row-summations      91
+ :arith-tableau-max-columns 246
+ :arith-tableau-max-rows    168
+ :binary-propagations       713
+ :conflicts                 11
+ :datatype-accessor-ax      114
+ :datatype-constructor-ax   100
+ :decisions                 42
+ :del-clause                4
+ :eliminated-vars           1
+ :max-memory                5.52
+ :memory                    3.71
+ :mk-bool-var               1643
+ :mk-clause                 508
+ :num-allocs                3457040
+ :num-checks                1
+ :propagations              815
+ :rlimit-count              270321
+ :time                      0.02)
+
+real	0m0.030s
+user	0m0.026s
+sys	0m0.004s
+z3_exit_code=0
+
+----------------------------
+
+[Minimal]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Minimal.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Minimal[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Minimal.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Minimal[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Minimal
+*************************************************
+* Pretty printing worst-case state space diagram:
+* (Tail) state 0: (0, [reaction_1 of Minimal.ctr], [(Minimal.ctr.t, (10 ms, 0))])
+*     => Advance time by 10 ms
+* Goes back to loop node: state 0
+* Loop node reached 2nd time: (10 ms, [reaction_1 of Minimal.ctr], [(Minimal.ctr.t, (20 ms, 0))])
+*************************************************
+CT: 11
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Minimal
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Minimal/BMC_Minimal_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Minimal/BMC_Minimal_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Minimal_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Minimal/BMC_Minimal_NoViolation.ucl, line 303
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m4.463s
+user	0m12.236s
+sys	0m0.470s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m2.919s
+user	0m7.598s
+sys	0m0.256s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:eliminated-vars 1
+ :max-memory      4.11
+ :memory          3.42
+ :mk-bool-var     6
+ :num-allocs      1486892
+ :num-checks      1
+ :rlimit-count    121369
+ :time            0.01)
+
+real	0m0.019s
+user	0m0.015s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[PingPong]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/PingPong.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/PingPong[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true
+      - fast: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/PingPong.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/PingPong[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true
+      - fast: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/PingPong
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of PingPong.ping], [(PingPong.ping.serve, (10 ms, 0)), (PingPong.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* State 1: (10 ms, [reaction_1 of PingPong.pong, reaction_2 of PingPong.ping, reaction_1 of PingPong.chk], [(PingPong.pong.reply, (20 ms, 0)), (PingPong.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 2: (20 ms, [reaction_2 of PingPong.chk, reaction_2 of PingPong.pong, reaction_3 of PingPong.ping], [(PingPong.ka.t, (100 ms, 0))])
+*************************************************
+CT: 7
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/PingPong
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/PingPong/BMC_PingPong_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/PingPong/BMC_PingPong_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_PingPong_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/PingPong/BMC_PingPong_NoViolation.ucl, line 908
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m13.923s
+user	0m26.941s
+sys	0m1.503s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m12.663s
+user	0m22.421s
+sys	0m1.339s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 20260
+ :arith-assert-diseq        927
+ :arith-assert-lower        2763
+ :arith-assert-upper        3073
+ :arith-bound-prop          909
+ :arith-conflicts           1
+ :arith-eq-adapter          1137
+ :arith-fixed-eqs           1380
+ :arith-num-rows            775
+ :arith-offset-eqs          3385
+ :arith-pivots              79
+ :arith-row-summations      1115
+ :arith-tableau-max-columns 975
+ :arith-tableau-max-rows    775
+ :binary-propagations       20266
+ :conflicts                 79
+ :datatype-accessor-ax      184
+ :datatype-constructor-ax   160
+ :decisions                 748
+ :del-clause                955
+ :eliminated-vars           1
+ :max-memory                11.89
+ :memory                    6.03
+ :minimized-lits            32
+ :mk-bool-var               6664
+ :mk-clause                 3495
+ :num-allocs                16968377
+ :num-checks                1
+ :propagations              28521
+ :rlimit-count              985708
+ :time                      0.08)
+
+real	0m0.096s
+user	0m0.090s
+sys	0m0.006s
+z3_exit_code=0
+
+----------------------------
+
+[Pipe]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Pipe.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Pipe[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Pipe.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Pipe[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Pipe
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Pipe.source, reaction_1 of Pipe.node], [(Pipe.node.forward, (10 ms, 0)), (Pipe.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 1: (10 ms, [reaction_1 of Pipe.chk, reaction_2 of Pipe.node, reaction_1 of Pipe.sink], [(Pipe.ka.t, (100 ms, 0))])
+*************************************************
+CT: 5
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Pipe
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Pipe/BMC_Pipe_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Pipe/BMC_Pipe_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Pipe_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Pipe/BMC_Pipe_NoViolation.ucl, line 681
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m7.848s
+user	0m17.415s
+sys	0m0.929s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m6.121s
+user	0m12.590s
+sys	0m0.686s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 3154
+ :arith-assert-diseq        98
+ :arith-assert-lower        183
+ :arith-assert-upper        339
+ :arith-bound-prop          144
+ :arith-conflicts           2
+ :arith-eq-adapter          331
+ :arith-fixed-eqs           63
+ :arith-num-rows            304
+ :arith-offset-eqs          235
+ :arith-pivots              22
+ :arith-row-summations      165
+ :arith-tableau-max-columns 413
+ :arith-tableau-max-rows    304
+ :binary-propagations       1219
+ :conflicts                 15
+ :datatype-accessor-ax      173
+ :datatype-constructor-ax   156
+ :decisions                 44
+ :del-clause                7
+ :eliminated-vars           1
+ :max-memory                7.70
+ :memory                    4.34
+ :mk-bool-var               2682
+ :mk-clause                 904
+ :num-allocs                6944755
+ :num-checks                1
+ :propagations              1463
+ :rlimit-count              384661
+ :time                      0.03)
+
+real	0m0.043s
+user	0m0.039s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[ProcessMsg]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/ProcessMsg.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/ProcessMsg[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/ProcessMsg.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/ProcessMsg[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/ProcessMsg
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of ProcessMsg.src, reaction_1 of ProcessMsg.task], [(ProcessMsg.task.process, (10 ms, 0)), (ProcessMsg.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 1: (10 ms, [reaction_2 of ProcessMsg.task, reaction_1 of ProcessMsg.chk], [(ProcessMsg.ka.t, (100 ms, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/ProcessMsg
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/ProcessMsg/BMC_ProcessMsg_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/ProcessMsg/BMC_ProcessMsg_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_ProcessMsg_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/ProcessMsg/BMC_ProcessMsg_NoViolation.ucl, line 620
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m6.020s
+user	0m15.049s
+sys	0m0.642s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m4.565s
+user	0m10.656s
+sys	0m0.404s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 1740
+ :arith-assert-diseq        52
+ :arith-assert-lower        102
+ :arith-assert-upper        193
+ :arith-bound-prop          93
+ :arith-conflicts           1
+ :arith-eq-adapter          204
+ :arith-fixed-eqs           29
+ :arith-num-rows            179
+ :arith-offset-eqs          57
+ :arith-pivots              13
+ :arith-row-summations      74
+ :arith-tableau-max-columns 263
+ :arith-tableau-max-rows    179
+ :binary-propagations       685
+ :conflicts                 9
+ :datatype-accessor-ax      114
+ :datatype-constructor-ax   100
+ :decisions                 37
+ :del-clause                19
+ :eliminated-vars           1
+ :max-memory                5.60
+ :memory                    3.73
+ :mk-bool-var               1680
+ :mk-clause                 514
+ :num-allocs                3544623
+ :num-checks                1
+ :propagations              761
+ :rlimit-count              204394
+ :time                      0.02)
+
+real	0m0.028s
+user	0m0.025s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[Ring]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Ring.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Ring[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Ring.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Ring[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Ring
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Ring.s], [(Ring.n1.in, (10 ms, 0)), (Ring.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* State 1: (10 ms, [reaction_1 of Ring.n1], [(Ring.n2.in, (20 ms, 0)), (Ring.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* State 2: (20 ms, [reaction_1 of Ring.n2], [(Ring.s.in, (30 ms, 0)), (Ring.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 3: (30 ms, [reaction_2 of Ring.s, reaction_1 of Ring.chk], [(Ring.ka.t, (100 ms, 0))])
+*************************************************
+CT: 5
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Ring
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Ring/BMC_Ring_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Ring/BMC_Ring_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Ring_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Ring/BMC_Ring_NoViolation.ucl, line 697
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m7.922s
+user	0m17.736s
+sys	0m0.908s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m6.071s
+user	0m12.721s
+sys	0m0.703s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 3258
+ :arith-assert-diseq        111
+ :arith-assert-lower        173
+ :arith-assert-upper        337
+ :arith-bound-prop          194
+ :arith-eq-adapter          357
+ :arith-fixed-eqs           83
+ :arith-num-rows            290
+ :arith-offset-eqs          150
+ :arith-pivots              37
+ :arith-row-summations      333
+ :arith-tableau-max-columns 396
+ :arith-tableau-max-rows    290
+ :binary-propagations       987
+ :conflicts                 17
+ :datatype-accessor-ax      169
+ :datatype-constructor-ax   156
+ :decisions                 147
+ :del-clause                39
+ :eliminated-vars           1
+ :max-memory                6.95
+ :memory                    3.95
+ :minimized-lits            1
+ :mk-bool-var               2663
+ :mk-clause                 840
+ :num-allocs                5703951
+ :num-checks                1
+ :propagations              1188
+ :rlimit-count              342341
+ :time                      0.03)
+
+real	0m0.039s
+user	0m0.036s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[RoadsideUnit]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/RoadsideUnit.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/RoadsideUnit[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/RoadsideUnit.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/RoadsideUnit[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/RoadsideUnit
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of RoadsideUnit.rsu, reaction_1 of RoadsideUnit.src], [(RoadsideUnit.rsu.issue_grant_1, (10 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0)), (RoadsideUnit.rsu.issue_grant_2, (10 ms, 0))])
+*     => Advance time by 10 ms
+* State 1: (10 ms, [reaction_1 of RoadsideUnit.chk, reaction_2 of RoadsideUnit.rsu, reaction_3 of RoadsideUnit.rsu], [(RoadsideUnit.rsu.release, (5010 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0)), (RoadsideUnit.rsu.release, (5010 ms, 0))])
+*     => Advance time by 5 s
+* State 2: (5010 ms, [reaction_4 of RoadsideUnit.rsu, reaction_2 of RoadsideUnit.chk], [(RoadsideUnit.rsu.issue_grant_1, (5020 ms, 0)), (RoadsideUnit.rsu.issue_grant_2, (5020 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0))])
+*     => Advance time by 10 ms
+* State 3: (5020 ms, [reaction_1 of RoadsideUnit.chk, reaction_2 of RoadsideUnit.rsu, reaction_3 of RoadsideUnit.rsu], [(RoadsideUnit.rsu.release, (10020 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0)), (RoadsideUnit.rsu.release, (10020 ms, 0))])
+*     => Advance time by 5 s
+* State 4: (10020 ms, [reaction_4 of RoadsideUnit.rsu, reaction_2 of RoadsideUnit.chk], [(RoadsideUnit.rsu.issue_grant_1, (10030 ms, 0)), (RoadsideUnit.rsu.issue_grant_2, (10030 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 5: (10030 ms, [reaction_1 of RoadsideUnit.chk, reaction_2 of RoadsideUnit.rsu, reaction_3 of RoadsideUnit.rsu], [(RoadsideUnit.rsu.release, (15030 ms, 0)), (RoadsideUnit.ka.t, (100 s, 0)), (RoadsideUnit.rsu.release, (15030 ms, 0))])
+*************************************************
+CT: 15
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/RoadsideUnit
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/RoadsideUnit/BMC_RoadsideUnit_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/RoadsideUnit/BMC_RoadsideUnit_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Not valid!
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1;31merror[0m[1m: ERROR: The expected result does not match the actual result. Expected: true, Result: false[0m
+lfc: [1;31merror[0m[1m: Not able to read from /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/RoadsideUnit/BMC_RoadsideUnit_NoViolation.ucl[0m
+lfc: [1;31mfatal error: [0m[1mAborting due to 2 previous errors.[0m
+
+real	0m42.278s
+user	0m57.401s
+sys	0m5.376s
+lfc_exit_code=1
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m46.671s
+user	1m2.422s
+sys	0m4.497s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 6063
+ :arith-assert-diseq        168
+ :arith-assert-lower        251
+ :arith-assert-upper        791
+ :arith-bound-prop          180
+ :arith-eq-adapter          2498
+ :arith-fixed-eqs           70
+ :arith-num-rows            2428
+ :arith-offset-eqs          360
+ :arith-pivots              2
+ :arith-row-summations      10
+ :arith-tableau-max-columns 2900
+ :arith-tableau-max-rows    2428
+ :binary-propagations       4500
+ :conflicts                 10
+ :datatype-accessor-ax      291
+ :datatype-constructor-ax   240
+ :decisions                 140
+ :del-clause                118
+ :eliminated-vars           1
+ :max-memory                25.71
+ :memory                    10.77
+ :mk-bool-var               18760
+ :mk-clause                 9211
+ :num-allocs                141738093
+ :num-checks                1
+ :propagations              4816
+ :rlimit-count              4453606
+ :time                      0.29)
+
+real	0m0.387s
+user	0m0.335s
+sys	0m0.013s
+z3_exit_code=0
+
+----------------------------
+
+[SafeSend]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/SafeSend.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/SafeSend[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/SafeSend.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/SafeSend[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/SafeSend
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of SafeSend.c], [(SafeSend.s.in, (10 ms, 0)), (SafeSend.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* (Tail) state 1: (10 ms, [reaction_1 of SafeSend.s, reaction_1 of SafeSend.chk, reaction_2 of SafeSend.c], [(SafeSend.s.err, (20 ms, 0)), (SafeSend.ka.t, (100 ms, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/SafeSend
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/SafeSend/BMC_SafeSend_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/SafeSend/BMC_SafeSend_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_SafeSend_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/SafeSend/BMC_SafeSend_NoViolation.ucl, line 829
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m9.089s
+user	0m19.268s
+sys	0m0.944s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m7.285s
+user	0m14.247s
+sys	0m0.799s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 2949
+ :arith-assert-diseq        66
+ :arith-assert-lower        125
+ :arith-assert-upper        233
+ :arith-bound-prop          108
+ :arith-eq-adapter          343
+ :arith-fixed-eqs           41
+ :arith-num-rows            315
+ :arith-offset-eqs          63
+ :arith-pivots              18
+ :arith-row-summations      127
+ :arith-tableau-max-columns 437
+ :arith-tableau-max-rows    315
+ :binary-propagations       1236
+ :conflicts                 9
+ :datatype-accessor-ax      175
+ :datatype-constructor-ax   156
+ :decisions                 38
+ :del-clause                33
+ :eliminated-vars           1
+ :max-memory                8.01
+ :memory                    4.46
+ :minimized-lits            2
+ :mk-bool-var               3052
+ :mk-clause                 1035
+ :num-allocs                6534147
+ :num-checks                1
+ :propagations              1390
+ :rlimit-count              493754
+ :time                      0.04)
+
+real	0m0.047s
+user	0m0.039s
+sys	0m0.007s
+z3_exit_code=0
+
+----------------------------
+
+[Subway]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Subway.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Subway[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Subway.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Subway[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of Subway.chk, reaction_1 of Subway.s], [(Subway.s.requestAfterWait, (2 min, 0)), (Subway.ka.t, (100 min, 0)), (Subway.chk.timeout, (11 min, 0))])
+*     => Advance time by 2 min
+* State 1: (2 min, [reaction_2 of Subway.s], [(Subway.chk.timeout, (11 min, 0)), (Subway.ka.t, (100 min, 0)), (Subway.s.finishPassing, (12 min, 0))])
+*     => Advance time by 9 min
+* (Tail) state 2: (11 min, [reaction_3 of Subway.chk], [(Subway.s.finishPassing, (12 min, 0)), (Subway.ka.t, (100 min, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway/BMC_Subway_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway/BMC_Subway_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+0 assertions passed.
+1 assertions failed.
+0 assertions indeterminate.
+  FAILED -> v [Step #0] property bmc_Subway_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway/BMC_Subway_NoViolation.ucl, line 723
+=================================
+CEX for v [Step #0] property bmc_Subway_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway/BMC_Subway_NoViolation.ucl, line 723
+Generated CEX trace of length 1
+=================================
+Wrote CEX traces to file: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Subway/BMC_Subway_NoViolation.ucl.json
+Finished execution for module: main.
+Not valid!
+============ Step 0 ============
+reactions: []
+tag: (0, 0)
+variables: {Subway.chk.doneIn=0, Subway.chk.violation=0, Subway.chk.timeout=0, Subway.s.done=0, Subway.ka.phase=0, Subway.s.finishPassing=0, Subway.chk.gotDone=0, Subway.s.requestAfterWait=0, Subway.ka.t=0}
+triggers: {Subway.chk.doneIn=false, Subway.chk.timeout=false, Subway.s.done=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false, Subway.ka.t=false}
+scheduled: {Subway.chk.timeout=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false}
+payloads: {Subway.chk.timeout=84, Subway.s.finishPassing=83, Subway.s.requestAfterWait=82}
+============ Step 1 ============
+reactions: [Subway.chk.reaction_1]
+tag: (0, 0)
+variables: {Subway.chk.doneIn=0, Subway.chk.violation=0, Subway.chk.timeout=0, Subway.s.done=0, Subway.ka.phase=0, Subway.s.finishPassing=0, Subway.chk.gotDone=0, Subway.s.requestAfterWait=0, Subway.ka.t=12}
+triggers: {Subway.chk.doneIn=false, Subway.chk.timeout=false, Subway.s.done=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false, Subway.ka.t=false}
+scheduled: {Subway.chk.timeout=true, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false}
+payloads: {Subway.chk.timeout=0, Subway.s.finishPassing=14, Subway.s.requestAfterWait=13}
+============ Step 2 ============
+reactions: [Subway.s.reaction_1]
+tag: (0, 0)
+variables: {Subway.chk.doneIn=0, Subway.chk.violation=0, Subway.chk.timeout=0, Subway.s.done=0, Subway.ka.phase=0, Subway.s.finishPassing=0, Subway.chk.gotDone=0, Subway.s.requestAfterWait=0, Subway.ka.t=15}
+triggers: {Subway.chk.doneIn=false, Subway.chk.timeout=false, Subway.s.done=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false, Subway.ka.t=false}
+scheduled: {Subway.chk.timeout=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=true}
+payloads: {Subway.chk.timeout=17, Subway.s.finishPassing=16, Subway.s.requestAfterWait=0}
+============ Step 3 ============
+reactions: [Subway.s.reaction_2]
+tag: (2 min, 0)
+variables: {Subway.chk.doneIn=0, Subway.chk.violation=0, Subway.chk.timeout=0, Subway.s.done=0, Subway.ka.phase=0, Subway.s.finishPassing=0, Subway.chk.gotDone=0, Subway.s.requestAfterWait=0, Subway.ka.t=18}
+triggers: {Subway.chk.doneIn=false, Subway.chk.timeout=false, Subway.s.done=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=true, Subway.ka.t=false}
+scheduled: {Subway.chk.timeout=false, Subway.s.finishPassing=true, Subway.s.requestAfterWait=false}
+payloads: {Subway.chk.timeout=20, Subway.s.finishPassing=0, Subway.s.requestAfterWait=19}
+============ Step 4 ============
+reactions: [Subway.chk.reaction_3]
+tag: (11 min, 0)
+variables: {Subway.chk.doneIn=0, Subway.chk.violation=1, Subway.chk.timeout=0, Subway.s.done=0, Subway.ka.phase=0, Subway.s.finishPassing=0, Subway.chk.gotDone=0, Subway.s.requestAfterWait=0, Subway.ka.t=21}
+triggers: {Subway.chk.doneIn=false, Subway.chk.timeout=true, Subway.s.done=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false, Subway.ka.t=false}
+scheduled: {Subway.chk.timeout=false, Subway.s.finishPassing=false, Subway.s.requestAfterWait=false}
+payloads: {Subway.chk.timeout=24, Subway.s.finishPassing=23, Subway.s.requestAfterWait=22}
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m8.138s
+user	0m18.399s
+sys	0m0.918s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m6.451s
+user	0m13.574s
+sys	0m0.749s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+sat
+(:added-eqs                 19687
+ :arith-assert-diseq        1347
+ :arith-assert-lower        1978
+ :arith-assert-upper        2668
+ :arith-assume-eqs          2
+ :arith-bound-prop          584
+ :arith-conflicts           17
+ :arith-eq-adapter          1121
+ :arith-fixed-eqs           319
+ :arith-num-rows            363
+ :arith-offset-eqs          1191
+ :arith-pivots              121
+ :arith-row-summations      2540
+ :arith-tableau-max-columns 485
+ :arith-tableau-max-rows    363
+ :binary-propagations       21589
+ :conflicts                 120
+ :datatype-accessor-ax      194
+ :datatype-constructor-ax   156
+ :datatype-occurs-check     68
+ :decisions                 6051
+ :del-clause                643
+ :eliminated-vars           1
+ :final-checks              3
+ :interface-eqs             2
+ :max-memory                8.84
+ :memory                    4.56
+ :minimized-lits            13
+ :mk-bool-var               4504
+ :mk-clause                 2294
+ :num-allocs                10122314
+ :num-checks                1
+ :propagations              24737
+ :restarts                  1
+ :rlimit-count              679114
+ :time                      0.05)
+
+real	0m0.067s
+user	0m0.062s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[Thermostat]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Thermostat.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Thermostat[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/Thermostat.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/Thermostat[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Thermostat
+*************************************************
+* Pretty printing worst-case state space diagram:
+* (Tail) state 0: (0, [reaction_1 of Thermostat.t, reaction_1 of Thermostat.chk, reaction_1 of Thermostat.src], [(Thermostat.ka.t, (100 ms, 0))])
+*************************************************
+CT: 3
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Thermostat
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Thermostat/BMC_Thermostat_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Thermostat/BMC_Thermostat_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_Thermostat_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/Thermostat/BMC_Thermostat_NoViolation.ucl, line 517
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m5.161s
+user	0m14.098s
+sys	0m0.507s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m3.525s
+user	0m8.828s
+sys	0m0.330s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 1066
+ :arith-assert-diseq        28
+ :arith-assert-lower        48
+ :arith-assert-upper        92
+ :arith-bound-prop          44
+ :arith-eq-adapter          103
+ :arith-fixed-eqs           14
+ :arith-num-rows            78
+ :arith-offset-eqs          9
+ :arith-pivots              4
+ :arith-row-summations      6
+ :arith-tableau-max-columns 129
+ :arith-tableau-max-rows    78
+ :binary-propagations       329
+ :conflicts                 7
+ :datatype-accessor-ax      86
+ :datatype-constructor-ax   80
+ :decisions                 28
+ :del-clause                13
+ :eliminated-vars           1
+ :max-memory                4.62
+ :memory                    3.37
+ :mk-bool-var               957
+ :mk-clause                 247
+ :num-allocs                1974502
+ :num-checks                1
+ :propagations              367
+ :rlimit-count              106830
+ :time                      0.01)
+
+real	0m0.020s
+user	0m0.016s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[TrafficLight]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrafficLight.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrafficLight[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrafficLight.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrafficLight[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of TrafficLight.tl, reaction_1 of TrafficLight.chk], [(TrafficLight.tl.emitGreen, (1 s, 0)), (TrafficLight.ka.t, (100 s, 0))])
+*     => Advance time by 1 s
+* (Tail) state 1: (1 s, [reaction_2 of TrafficLight.chk, reaction_2 of TrafficLight.tl], [(TrafficLight.ka.t, (100 s, 0))])
+*************************************************
+CT: 4
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight/BMC_TrafficLight_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight/BMC_TrafficLight_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+0 assertions passed.
+1 assertions failed.
+0 assertions indeterminate.
+  FAILED -> v [Step #0] property bmc_TrafficLight_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight/BMC_TrafficLight_NoViolation.ucl, line 616
+=================================
+CEX for v [Step #0] property bmc_TrafficLight_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight/BMC_TrafficLight_NoViolation.ucl, line 616
+Generated CEX trace of length 1
+=================================
+Wrote CEX traces to file: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrafficLight/BMC_TrafficLight_NoViolation.ucl.json
+Finished execution for module: main.
+Not valid!
+============ Step 0 ============
+reactions: []
+tag: (0, 0)
+variables: {TrafficLight.ka.t=0, TrafficLight.ka.phase=0, TrafficLight.chk.sigGIn=0, TrafficLight.tl.sigG=0, TrafficLight.chk.lastState=0, TrafficLight.tl.emitGreen=0, TrafficLight.tl.stateOut=0, TrafficLight.chk.stateIn=0, TrafficLight.chk.violation=0, TrafficLight.tl.lightState=0}
+triggers: {TrafficLight.ka.t=false, TrafficLight.chk.sigGIn=false, TrafficLight.tl.sigG=false, TrafficLight.tl.emitGreen=false, TrafficLight.tl.stateOut=false, TrafficLight.chk.stateIn=false}
+scheduled: {TrafficLight.tl.emitGreen=false}
+payloads: {TrafficLight.tl.emitGreen=71}
+============ Step 1 ============
+reactions: [TrafficLight.tl.reaction_1]
+tag: (0, 0)
+variables: {TrafficLight.ka.t=10, TrafficLight.ka.phase=0, TrafficLight.chk.sigGIn=0, TrafficLight.tl.sigG=0, TrafficLight.chk.lastState=0, TrafficLight.tl.emitGreen=0, TrafficLight.tl.stateOut=0, TrafficLight.chk.stateIn=0, TrafficLight.chk.violation=0, TrafficLight.tl.lightState=0}
+triggers: {TrafficLight.ka.t=false, TrafficLight.chk.sigGIn=false, TrafficLight.tl.sigG=false, TrafficLight.tl.emitGreen=false, TrafficLight.tl.stateOut=true, TrafficLight.chk.stateIn=false}
+scheduled: {TrafficLight.tl.emitGreen=true}
+payloads: {TrafficLight.tl.emitGreen=0}
+============ Step 2 ============
+reactions: [TrafficLight.chk.reaction_1]
+tag: (0, 0)
+variables: {TrafficLight.ka.t=12, TrafficLight.ka.phase=0, TrafficLight.chk.sigGIn=0, TrafficLight.tl.sigG=0, TrafficLight.chk.lastState=0, TrafficLight.tl.emitGreen=0, TrafficLight.tl.stateOut=0, TrafficLight.chk.stateIn=0, TrafficLight.chk.violation=0, TrafficLight.tl.lightState=0}
+triggers: {TrafficLight.ka.t=false, TrafficLight.chk.sigGIn=false, TrafficLight.tl.sigG=false, TrafficLight.tl.emitGreen=false, TrafficLight.tl.stateOut=false, TrafficLight.chk.stateIn=true}
+scheduled: {TrafficLight.tl.emitGreen=false}
+payloads: {TrafficLight.tl.emitGreen=13}
+============ Step 3 ============
+reactions: [TrafficLight.tl.reaction_2]
+tag: (1 s, 0)
+variables: {TrafficLight.ka.t=15, TrafficLight.ka.phase=0, TrafficLight.chk.sigGIn=0, TrafficLight.tl.sigG=1, TrafficLight.chk.lastState=0, TrafficLight.tl.emitGreen=0, TrafficLight.tl.stateOut=0, TrafficLight.chk.stateIn=0, TrafficLight.chk.violation=0, TrafficLight.tl.lightState=0}
+triggers: {TrafficLight.ka.t=false, TrafficLight.chk.sigGIn=false, TrafficLight.tl.sigG=true, TrafficLight.tl.emitGreen=true, TrafficLight.tl.stateOut=false, TrafficLight.chk.stateIn=false}
+scheduled: {TrafficLight.tl.emitGreen=false}
+payloads: {TrafficLight.tl.emitGreen=16}
+============ Step 4 ============
+reactions: [TrafficLight.chk.reaction_2]
+tag: (1 s, 0)
+variables: {TrafficLight.ka.t=18, TrafficLight.ka.phase=0, TrafficLight.chk.sigGIn=1, TrafficLight.tl.sigG=0, TrafficLight.chk.lastState=0, TrafficLight.tl.emitGreen=0, TrafficLight.tl.stateOut=0, TrafficLight.chk.stateIn=0, TrafficLight.chk.violation=1, TrafficLight.tl.lightState=0}
+triggers: {TrafficLight.ka.t=false, TrafficLight.chk.sigGIn=true, TrafficLight.tl.sigG=false, TrafficLight.tl.emitGreen=false, TrafficLight.tl.stateOut=false, TrafficLight.chk.stateIn=false}
+scheduled: {TrafficLight.tl.emitGreen=false}
+payloads: {TrafficLight.tl.emitGreen=19}
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m6.357s
+user	0m15.726s
+sys	0m0.586s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m4.525s
+user	0m10.466s
+sys	0m0.410s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+sat
+(:added-eqs                 6069
+ :arith-assert-diseq        262
+ :arith-assert-lower        465
+ :arith-assert-upper        689
+ :arith-assume-eqs          2
+ :arith-bound-prop          256
+ :arith-conflicts           2
+ :arith-eq-adapter          281
+ :arith-fixed-eqs           252
+ :arith-num-rows            188
+ :arith-offset-eqs          418
+ :arith-pivots              42
+ :arith-row-summations      293
+ :arith-tableau-max-columns 274
+ :arith-tableau-max-rows    188
+ :binary-propagations       3674
+ :conflicts                 39
+ :datatype-accessor-ax      115
+ :datatype-constructor-ax   100
+ :datatype-occurs-check     27
+ :decisions                 1201
+ :del-clause                54
+ :eliminated-vars           1
+ :final-checks              3
+ :interface-eqs             2
+ :max-memory                6.02
+ :memory                    3.78
+ :minimized-lits            21
+ :mk-bool-var               1872
+ :mk-clause                 831
+ :num-allocs                4273149
+ :num-checks                1
+ :propagations              4829
+ :rlimit-count              264525
+ :time                      0.02)
+
+real	0m0.034s
+user	0m0.030s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[TrainDoor2]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoor2.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoor2[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoor2.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoor2[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor2
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of TrainDoor2.c], [(TrainDoor2.d.in, (1 s, 0)), (TrainDoor2.ka.t, (100 s, 0)), (TrainDoor2.t.in, (1 s, 0))])
+*     => Advance time by 1 s
+* (Tail) state 1: (1 s, [reaction_2 of TrainDoor2.s, reaction_1 of TrainDoor2.d, reaction_1 of TrainDoor2.s, reaction_1 of TrainDoor2.t, reaction_1 of TrainDoor2.chk], [(TrainDoor2.ka.t, (100 s, 0))])
+*************************************************
+CT: 6
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor2
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor2/BMC_TrainDoor2_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor2/BMC_TrainDoor2_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_TrainDoor2_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor2/BMC_TrainDoor2_NoViolation.ucl, line 981
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m11.261s
+user	0m22.034s
+sys	0m1.333s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m9.769s
+user	0m17.421s
+sys	0m1.073s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 7800
+ :arith-assert-diseq        295
+ :arith-assert-lower        969
+ :arith-assert-upper        1100
+ :arith-bound-prop          481
+ :arith-conflicts           1
+ :arith-eq-adapter          786
+ :arith-fixed-eqs           438
+ :arith-num-rows            525
+ :arith-offset-eqs          1153
+ :arith-pivots              112
+ :arith-row-summations      947
+ :arith-tableau-max-columns 705
+ :arith-tableau-max-rows    525
+ :binary-propagations       7036
+ :conflicts                 46
+ :datatype-accessor-ax      155
+ :datatype-constructor-ax   140
+ :decisions                 146
+ :del-clause                565
+ :eliminated-vars           1
+ :max-memory                9.04
+ :memory                    4.81
+ :minimized-lits            45
+ :mk-bool-var               4674
+ :mk-clause                 1983
+ :num-allocs                10702220
+ :num-checks                1
+ :propagations              8951
+ :rlimit-count              564872
+ :time                      0.05)
+
+real	0m0.062s
+user	0m0.059s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
+[TrainDoorFeedback]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoorFeedback.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoorFeedback[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoorFeedback.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoorFeedback[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoorFeedback
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of TrainDoorFeedback.c], [(TrainDoorFeedback.d.in, (1 s, 0)), (TrainDoorFeedback.d2.in, (1 s, 0)), (TrainDoorFeedback.t.in, (1 s, 0)), (TrainDoorFeedback.ka.t, (100 s, 0))])
+*     => Advance time by 1 s
+* (Tail) state 1: (1 s, [reaction_1 of TrainDoorFeedback.s123, reaction_1 of TrainDoorFeedback.d, reaction_1 of TrainDoorFeedback.d2, reaction_1 of TrainDoorFeedback.chk, reaction_1 of TrainDoorFeedback.t, reaction_1 of TrainDoorFeedback.s12], [(TrainDoorFeedback.ka.t, (100 s, 0))])
+*************************************************
+CT: 7
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoorFeedback
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoorFeedback/BMC_TrainDoorFeedback_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoorFeedback/BMC_TrainDoorFeedback_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+1 assertions passed.
+0 assertions failed.
+0 assertions indeterminate.
+  PASSED -> v [Step #0] property bmc_TrainDoorFeedback_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoorFeedback/BMC_TrainDoorFeedback_NoViolation.ucl, line 1196
+=================================
+Finished execution for module: main.
+Valid!
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m17.503s
+user	0m31.769s
+sys	0m1.856s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m15.232s
+user	0m25.688s
+sys	0m1.727s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+unsat
+(:added-eqs                 188496
+ :arith-assert-diseq        7633
+ :arith-assert-lower        35861
+ :arith-assert-upper        29644
+ :arith-bound-prop          2219
+ :arith-conflicts           13
+ :arith-eq-adapter          1724
+ :arith-fixed-eqs           14175
+ :arith-num-rows            912
+ :arith-offset-eqs          41155
+ :arith-pivots              585
+ :arith-row-summations      8978
+ :arith-tableau-max-columns 1163
+ :arith-tableau-max-rows    912
+ :binary-propagations       187881
+ :conflicts                 595
+ :datatype-accessor-ax      177
+ :datatype-constructor-ax   160
+ :decisions                 3495
+ :del-clause                1606
+ :dyn-ack                   3
+ :eliminated-vars           1
+ :max-memory                13.37
+ :memory                    6.20
+ :minimized-lits            1968
+ :mk-bool-var               8196
+ :mk-clause                 5877
+ :num-allocs                23178656
+ :num-checks                1
+ :propagations              281407
+ :restarts                  5
+ :rlimit-count              1751350
+ :time                      0.20)
+
+real	0m0.218s
+user	0m0.214s
+sys	0m0.004s
+z3_exit_code=0
+
+----------------------------
+
+[TrainDoor]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoor.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoor[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/TrainDoor.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/TrainDoor[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of TrainDoor.c, reaction_1 of TrainDoor.ka], [(TrainDoor.d.in, (1 s, 0)), (TrainDoor.t.in, (1 s, 0)), (TrainDoor.ka.tick, (100 s, 0))])
+*     => Advance time by 1 s
+* State 1: (1 s, [reaction_1 of TrainDoor.chk, reaction_1 of TrainDoor.d, reaction_1 of TrainDoor.t], [(TrainDoor.d.finishClose, (2 s, 0)), (TrainDoor.ka.tick, (100 s, 0))])
+*     => Advance time by 1 s
+* (Tail) state 2: (2 s, [reaction_1 of TrainDoor.chk, reaction_2 of TrainDoor.d], [(TrainDoor.ka.tick, (100 s, 0))])
+*************************************************
+CT: 7
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor/BMC_TrainDoor_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor/BMC_TrainDoor_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+0 assertions passed.
+1 assertions failed.
+0 assertions indeterminate.
+  FAILED -> v [Step #0] property bmc_TrainDoor_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor/BMC_TrainDoor_NoViolation.ucl, line 857
+=================================
+CEX for v [Step #0] property bmc_TrainDoor_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor/BMC_TrainDoor_NoViolation.ucl, line 857
+Generated CEX trace of length 1
+=================================
+Wrote CEX traces to file: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/TrainDoor/BMC_TrainDoor_NoViolation.ucl.json
+Finished execution for module: main.
+Not valid!
+============ Step 0 ============
+reactions: []
+tag: (0, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=0, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=18, TrainDoor.d.finishClose=17}
+============ Step 1 ============
+reactions: [TrainDoor.c.reaction_1]
+tag: (0, 0)
+variables: {TrainDoor.c.closeCmd=1, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=1, TrainDoor.chk.violation=0, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=true, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=true}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=16, TrainDoor.d.finishClose=15}
+============ Step 2 ============
+reactions: [TrainDoor.ka.reaction_1]
+tag: (0, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=0, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=true, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=0, TrainDoor.d.finishClose=19}
+============ Step 3 ============
+reactions: [TrainDoor.d.reaction_1]
+tag: (1 s, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=1, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=0, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=true, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=true}
+payloads: {TrainDoor.ka.tick=20, TrainDoor.d.finishClose=0}
+============ Step 4 ============
+reactions: [TrainDoor.t.reaction_1]
+tag: (1 s, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=1, TrainDoor.t.in=1, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=0, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=true, TrainDoor.t.in=true, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=22, TrainDoor.d.finishClose=21}
+============ Step 5 ============
+reactions: [TrainDoor.chk.reaction_1]
+tag: (1 s, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=1, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=1, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=true, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=24, TrainDoor.d.finishClose=23}
+============ Step 6 ============
+reactions: [TrainDoor.d.reaction_2]
+tag: (2 s, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=0, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=1, TrainDoor.chk.doorClosed=0, TrainDoor.d.closed=1, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=false, TrainDoor.ka.tick=false, TrainDoor.d.closed=true, TrainDoor.d.in=false, TrainDoor.d.finishClose=true, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=26, TrainDoor.d.finishClose=25}
+============ Step 7 ============
+reactions: [TrainDoor.chk.reaction_1]
+tag: (2 s, 0)
+variables: {TrainDoor.c.closeCmd=0, TrainDoor.chk.trainEvt=0, TrainDoor.t.moved=0, TrainDoor.t.in=0, TrainDoor.chk.doorEvt=1, TrainDoor.ka.tick=0, TrainDoor.d.in=0, TrainDoor.c.moveCmd=0, TrainDoor.chk.violation=1, TrainDoor.chk.doorClosed=1, TrainDoor.d.closed=0, TrainDoor.d.finishClose=0, TrainDoor.ka.phase=0}
+triggers: {TrainDoor.c.closeCmd=false, TrainDoor.chk.trainEvt=false, TrainDoor.t.moved=false, TrainDoor.t.in=false, TrainDoor.chk.doorEvt=true, TrainDoor.ka.tick=false, TrainDoor.d.closed=false, TrainDoor.d.in=false, TrainDoor.d.finishClose=false, TrainDoor.c.moveCmd=false}
+scheduled: {TrainDoor.ka.tick=false, TrainDoor.d.finishClose=false}
+payloads: {TrainDoor.ka.tick=28, TrainDoor.d.finishClose=27}
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m12.664s
+user	0m25.858s
+sys	0m1.304s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m10.859s
+user	0m19.620s
+sys	0m1.372s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+sat
+(:added-eqs                 44473
+ :arith-assert-diseq        2992
+ :arith-assert-lower        6742
+ :arith-assert-upper        8134
+ :arith-assume-eqs          2
+ :arith-bound-prop          1345
+ :arith-conflicts           10
+ :arith-eq-adapter          1870
+ :arith-fixed-eqs           3947
+ :arith-num-rows            676
+ :arith-offset-eqs          6709
+ :arith-pivots              148
+ :arith-row-summations      3378
+ :arith-tableau-max-columns 867
+ :arith-tableau-max-rows    676
+ :binary-propagations       37952
+ :conflicts                 180
+ :datatype-accessor-ax      185
+ :datatype-constructor-ax   150
+ :datatype-occurs-check     56
+ :decisions                 8324
+ :del-clause                749
+ :eliminated-vars           1
+ :final-checks              3
+ :interface-eqs             2
+ :max-memory                11.71
+ :memory                    5.83
+ :minimized-lits            91
+ :mk-bool-var               7008
+ :mk-clause                 4112
+ :num-allocs                18038763
+ :num-checks                1
+ :propagations              55944
+ :restarts                  1
+ :rlimit-count              1187498
+ :time                      0.09)
+
+real	0m0.111s
+user	0m0.105s
+sys	0m0.006s
+z3_exit_code=0
+
+----------------------------
+
+[UnsafeSend]
+*** Time for LF verification/model generation:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/UnsafeSend.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/UnsafeSend[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+lfc: [1minfo[0m[1m: Generating code for: file:/home/ali/lf-verifier-benchmarks/benchmarks/src/UnsafeSend.lf[0m
+lfc: [1minfo[0m[1m: Generation mode: STANDALONE[0m
+lfc: [1minfo[0m[1m: Generating sources into: /home/ali/lf-verifier-benchmarks/benchmarks/src-gen/UnsafeSend[0m
+lfc: [1minfo[0m[1m: Target Configuration:
+      - no-compile: true
+      - verify: true[0m
+The models will be located in: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend
+*************************************************
+* Pretty printing worst-case state space diagram:
+* State 0: (0, [reaction_1 of UnsafeSend.c], [(UnsafeSend.s.in, (10 ms, 0)), (UnsafeSend.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* State 1: (10 ms, [reaction_1 of UnsafeSend.s], [(UnsafeSend.s.err, (20 ms, 0)), (UnsafeSend.ka.t, (100 ms, 0))])
+*     => Advance time by 10 ms
+* State 2: (20 ms, [reaction_1 of UnsafeSend.chk, reaction_2 of UnsafeSend.s], [(UnsafeSend.chk.latch, (20000001 ns, 0)), (UnsafeSend.ka.t, (100 ms, 0))])
+*     => Advance time by 1 ns
+* (Tail) state 3: (20000001 ns, [reaction_2 of UnsafeSend.chk], [(UnsafeSend.ka.t, (100 ms, 0))])
+*************************************************
+CT: 5
+--- Current working directory: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend
+--- Executing command: uclid /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend/BMC_UnsafeSend_NoViolation.ucl --json-cex /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend/BMC_UnsafeSend_NoViolation.ucl
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+0 assertions passed.
+1 assertions failed.
+0 assertions indeterminate.
+  FAILED -> v [Step #0] property bmc_UnsafeSend_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend/BMC_UnsafeSend_NoViolation.ucl, line 669
+=================================
+CEX for v [Step #0] property bmc_UnsafeSend_NoViolation @ /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend/BMC_UnsafeSend_NoViolation.ucl, line 669
+Generated CEX trace of length 1
+=================================
+Wrote CEX traces to file: /home/ali/lf-verifier-benchmarks/benchmarks/mod-gen/UnsafeSend/BMC_UnsafeSend_NoViolation.ucl.json
+Finished execution for module: main.
+Not valid!
+============ Step 0 ============
+reactions: []
+tag: (0, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=0, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=0, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=0, UnsafeSend.chk.violation=0, UnsafeSend.chk.errorIn=0}
+triggers: {UnsafeSend.s.in=false, UnsafeSend.ka.t=false, UnsafeSend.s.err=false, UnsafeSend.chk.latch=false, UnsafeSend.c.in=false, UnsafeSend.c.out=false, UnsafeSend.s.errorOut=false, UnsafeSend.chk.errorIn=false}
+scheduled: {UnsafeSend.s.err=false, UnsafeSend.chk.latch=false}
+payloads: {UnsafeSend.s.err=16, UnsafeSend.chk.latch=17}
+============ Step 1 ============
+reactions: [UnsafeSend.c.reaction_1]
+tag: (0, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=13, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=12, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=0, UnsafeSend.chk.violation=0, UnsafeSend.chk.errorIn=0}
+triggers: {UnsafeSend.s.in=false, UnsafeSend.ka.t=false, UnsafeSend.s.err=false, UnsafeSend.chk.latch=false, UnsafeSend.c.in=false, UnsafeSend.c.out=true, UnsafeSend.s.errorOut=false, UnsafeSend.chk.errorIn=false}
+scheduled: {UnsafeSend.s.err=false, UnsafeSend.chk.latch=false}
+payloads: {UnsafeSend.s.err=14, UnsafeSend.chk.latch=15}
+============ Step 2 ============
+reactions: [UnsafeSend.s.reaction_1]
+tag: (10 ms, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=19, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=18, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=0, UnsafeSend.chk.violation=0, UnsafeSend.chk.errorIn=0}
+triggers: {UnsafeSend.s.in=true, UnsafeSend.ka.t=false, UnsafeSend.s.err=false, UnsafeSend.chk.latch=false, UnsafeSend.c.in=false, UnsafeSend.c.out=false, UnsafeSend.s.errorOut=false, UnsafeSend.chk.errorIn=false}
+scheduled: {UnsafeSend.s.err=true, UnsafeSend.chk.latch=false}
+payloads: {UnsafeSend.s.err=0, UnsafeSend.chk.latch=20}
+============ Step 3 ============
+reactions: [UnsafeSend.s.reaction_2]
+tag: (20 ms, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=22, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=21, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=1, UnsafeSend.chk.violation=0, UnsafeSend.chk.errorIn=0}
+triggers: {UnsafeSend.s.in=false, UnsafeSend.ka.t=false, UnsafeSend.s.err=true, UnsafeSend.chk.latch=false, UnsafeSend.c.in=false, UnsafeSend.c.out=false, UnsafeSend.s.errorOut=true, UnsafeSend.chk.errorIn=false}
+scheduled: {UnsafeSend.s.err=false, UnsafeSend.chk.latch=false}
+payloads: {UnsafeSend.s.err=23, UnsafeSend.chk.latch=24}
+============ Step 4 ============
+reactions: [UnsafeSend.chk.reaction_1]
+tag: (20 ms, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=26, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=25, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=0, UnsafeSend.chk.violation=0, UnsafeSend.chk.errorIn=1}
+triggers: {UnsafeSend.s.in=false, UnsafeSend.ka.t=false, UnsafeSend.s.err=false, UnsafeSend.chk.latch=false, UnsafeSend.c.in=false, UnsafeSend.c.out=false, UnsafeSend.s.errorOut=false, UnsafeSend.chk.errorIn=true}
+scheduled: {UnsafeSend.s.err=false, UnsafeSend.chk.latch=true}
+payloads: {UnsafeSend.s.err=27, UnsafeSend.chk.latch=0}
+============ Step 5 ============
+reactions: [UnsafeSend.chk.reaction_2]
+tag: (20000001 ns, 0)
+variables: {UnsafeSend.s.in=0, UnsafeSend.ka.t=29, UnsafeSend.s.err=0, UnsafeSend.chk.latch=0, UnsafeSend.c.in=28, UnsafeSend.ka.phase=0, UnsafeSend.c.out=0, UnsafeSend.s.errorOut=0, UnsafeSend.chk.violation=1, UnsafeSend.chk.errorIn=0}
+triggers: {UnsafeSend.s.in=false, UnsafeSend.ka.t=false, UnsafeSend.s.err=false, UnsafeSend.chk.latch=true, UnsafeSend.c.in=false, UnsafeSend.c.out=false, UnsafeSend.s.errorOut=false, UnsafeSend.chk.errorIn=false}
+scheduled: {UnsafeSend.s.err=false, UnsafeSend.chk.latch=false}
+payloads: {UnsafeSend.s.err=30, UnsafeSend.chk.latch=31}
+Cleaning /home/ali/lf-verifier-benchmarks/benchmarks/include
+lfc: [1;33mwarning[0m[1m: Verification using "@property" and "--verify" is an experimental feature. Use with caution.[0m
+lfc: [1minfo[0m[1m: Code generation finished.[0m
+
+real	0m7.968s
+user	0m18.525s
+sys	0m0.880s
+lfc_exit_code=0
+
+*** Time for generating SMT from Uclid:
+Picked up _JAVA_OPTIONS: -Xmx12G -Xss4m
+Successfully instantiated 1 module(s).
+Printed SMTlib file(s) for 1 assertions
+=================================
+Finished execution for module: main.
+
+real	0m6.266s
+user	0m12.919s
+sys	0m0.678s
+uclid_exit_code=0
+
+*** Time for solving SMT using Z3:
+sat
+(:added-eqs                 19832
+ :arith-assert-diseq        1324
+ :arith-assert-lower        2284
+ :arith-assert-upper        3096
+ :arith-assume-eqs          9
+ :arith-bound-prop          693
+ :arith-branch-var          1
+ :arith-conflicts           20
+ :arith-eq-adapter          624
+ :arith-fixed-eqs           940
+ :arith-gcd-tests           2
+ :arith-ineq-splits         1
+ :arith-num-rows            345
+ :arith-offset-eqs          2141
+ :arith-patches             1
+ :arith-pivots              160
+ :arith-row-summations      3696
+ :arith-tableau-max-columns 464
+ :arith-tableau-max-rows    345
+ :binary-propagations       16772
+ :conflicts                 147
+ :datatype-accessor-ax      189
+ :datatype-constructor-ax   156
+ :datatype-occurs-check     303
+ :decisions                 6237
+ :del-clause                343
+ :eliminated-vars           1
+ :final-checks              11
+ :interface-eqs             9
+ :max-memory                8.48
+ :memory                    4.40
+ :minimized-lits            88
+ :mk-bool-var               3425
+ :mk-clause                 1952
+ :num-allocs                8063784
+ :num-checks                1
+ :propagations              22945
+ :restarts                  1
+ :rlimit-count              703003
+ :time                      0.05)
+
+real	0m0.061s
+user	0m0.058s
+sys	0m0.003s
+z3_exit_code=0
+
+----------------------------
+
