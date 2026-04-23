@@ -33,32 +33,45 @@ verifier-benchmarks/
 │   ├── results/
 │   └── scripts/
 └── TR/
-    ├── AircraftDoor/
-    ├── Alarm/
-    ├── Election/
-    ├── Factorial/
-    ├── Fibonacci/
-    ├── Minimal/
-    ├── PingPong/
-    ├── Pipe/
-    ├── ProcessMsg/
-    ├── Ring/
-    ├── RoadsideUnit/
-    ├── SafeSend/
-    ├── Subway/
-    ├── Thermostat/
-    ├── TrafficLight/
-    ├── TrainDoor/
-    ├── TrainDoor2/
-    ├── TrainDoorFeedback/
-    └── UnsafeSend/
+    ├── src/
+    │   ├── AircraftDoor/
+    │   ├── Alarm/
+    │   ├── Election/
+    │   ├── Factorial/
+    │   ├── Fibonacci/
+    │   ├── Minimal/
+    │   ├── PingPong/
+    │   ├── Pipe/
+    │   ├── ProcessMsg/
+    │   ├── Ring/
+    │   ├── RoadsideUnit/
+    │   ├── SafeSend/
+    │   ├── Subway/
+    │   ├── Thermostat/
+    │   ├── TrafficLight/
+    │   ├── TrainDoor/
+    │   ├── TrainDoor2/
+    │   ├── TrainDoorFeedback/
+    │   └── UnsafeSend/
+    └── tools/
+        └── batch_rmc.py
 ````
 
 ### `TR/`
 
-This directory contains the **Timed Rebeca benchmark models**.
+This directory contains the **Timed Rebeca benchmark workflow**.
 
-Each subdirectory corresponds to one benchmark case and contains the Timed Rebeca-side artifact(s) used in the comparison.
+The Timed Rebeca benchmarks are organized as follows:
+
+* `TR/src/` contains one subdirectory per benchmark model.
+* Each benchmark directory contains the Timed Rebeca model file (`*.rebeca`) and its corresponding property file (`*.property`).
+* `TR/tools/` contains the command-line verification script:
+
+  * `batch_rmc.py`
+
+The RMC jar is **not included in this repository** and must be downloaded separately before running the TR-side workflow.
+
+When the Timed Rebeca benchmark script is run, it generates a `_cli_runs/` directory inside `TR/` containing generated C++ files, compiled executables, XML result files, logs, and a CSV summary.
 
 ### `LF/`
 
@@ -104,17 +117,96 @@ The comparison focuses on verification-related measures such as:
 
 ### Timed Rebeca side
 
-The **TR-side** results are obtained using the **Afra model checker**.
+The **TR-side** results are obtained using the **RMC command-line model checker**.
 
-The Timed Rebeca benchmark material is organized benchmark-by-benchmark under:
+The Timed Rebeca benchmark material is stored under:
 
 ```text
-TR/
+TR/src/
 ```
 
-This directory contains the Timed Rebeca models used as the comparison baseline.
+Each benchmark subdirectory contains:
 
-If you are reproducing the comparison, run the corresponding Timed Rebeca models with Afra and record the resulting verification outcomes, time, and resource usage alongside the LF-side results.
+* one Timed Rebeca model file (`*.rebeca`)
+* one property file (`*.property`)
+
+The CLI workflow is implemented in:
+
+```text
+TR/tools/batch_rmc.py
+```
+
+The RMC jar is **not bundled in this repository**. It should be downloaded from the official releases page:
+
+```text
+https://github.com/rebeca-lang/org.rebecalang.rmc/releases
+```
+
+The CLI workflow performs the following steps for each benchmark:
+
+1. generate C++ verification artifacts from the Timed Rebeca model,
+2. compile the generated C++ files into an executable,
+3. run the executable to perform model checking,
+4. store the resulting XML reports, generated state-space export, logs, and CSV summary.
+
+### Downloading the RMC jar
+
+Create the tools directory if needed and download the jar into `TR/tools/`:
+
+```bash
+curl -L \
+  -o TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+You can verify that it is in place with:
+
+```bash
+ls -l TR/tools/rmc-2.14.jar
+```
+
+### Running the TR benchmarks
+
+From inside `TR/`, run:
+
+```bash
+python3 tools/batch_rmc.py
+```
+
+To run a single benchmark only:
+
+```bash
+python3 tools/batch_rmc.py --only AircraftDoor
+```
+
+The script assumes:
+
+* `java` is available on the system path,
+* a C++ compiler is available on the system path as `c++`,
+* `rmc-2.14.jar` has been downloaded into `TR/tools/`.
+
+### TR outputs
+
+The Timed Rebeca workflow generates:
+
+* generated C++ verification code,
+* compiled executables,
+* `result.xml` model-checking reports,
+* `statespace.xml` exported state-space files,
+* raw stdout/stderr logs for generation, compilation, and verification,
+* summarized `.csv` results.
+
+These outputs are stored under:
+
+```text
+TR/_cli_runs/
+```
+
+The CSV summary is written to:
+
+```text
+TR/_cli_runs/results.csv
+```
 
 ### Lingua Franca side
 
@@ -176,7 +268,7 @@ If you reproduce the benchmark workflow on a different machine or OS, timing and
 A typical comparison workflow is:
 
 1. choose a benchmark pair,
-2. verify the Timed Rebeca version from `TR/` using Afra,
+2. verify the Timed Rebeca version from `TR/` using the CLI RMC workflow,
 3. verify the corresponding Lingua Franca version from `LF/`,
 4. compare:
 
@@ -198,6 +290,7 @@ It should therefore be read as a companion artifact to the main ReLico tool, rat
 
 * The LF-side workflow is based on previously published LF verification benchmark infrastructure and was adapted for this work.
 * The purpose of the adaptation is **comparative evaluation**, not republication of the original LF benchmark suite in isolation.
+* The TR-side workflow is repository-local and reproducible via the Python batch script plus an externally downloaded RMC jar.
 * The TR and LF sides should be interpreted together as paired verification artifacts for cross-framework comparison.
 
 ## Citation and attribution
