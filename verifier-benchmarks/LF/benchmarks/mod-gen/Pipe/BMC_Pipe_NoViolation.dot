@@ -1,9 +1,0 @@
-digraph G {
-    rankdir=LR;
-    node [shape=Mrecord]
-    S0 [label = "S0 | (0, 0) | Reactions invoked:\nPipe.node.reaction_1\nPipe.source.reaction_1\nPipe.chk.reaction_1 | Pending events:\n(Pipe.node.forward, (10 ms, 0))\n(Pipe.ka.t, (100 ms, 0))\n(Pipe.chk.decide, (11 ms, 0))"]
-    S1 [label = "S1 | (10 ms, 0) | Reactions invoked:\nPipe.chk.reaction_3\nPipe.sink.reaction_1\nPipe.chk.reaction_2\nPipe.node.reaction_2 | Pending events:\n(Pipe.chk.decide, (11 ms, 0))\n(Pipe.ka.t, (100 ms, 0))"]
-    S2 [label = "S2 | (11 ms, 0) | Reactions invoked:\nPipe.chk.reaction_4 | Pending events:\n(Pipe.ka.t, (100 ms, 0))"]
-    S0 -> S1 [label = "+10 ms"]
-    S1 -> S2 [label = "+1 ms"]
-}
