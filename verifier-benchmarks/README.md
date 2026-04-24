@@ -45,7 +45,6 @@ verifier-benchmarks/
     │   ├── Pipe/
     │   ├── ProcessMsg/
     │   ├── Ring/
-    │   ├── RoadsideUnit/
     │   ├── SafeSend/
     │   ├── Subway/
     │   ├── Thermostat/
@@ -134,7 +133,7 @@ Broadly, the benchmark names correspond to several informal categories:
 * **distributed coordination / protocol-like behavior**
   `Election`, `CheckpointBarrier2`, `WideBarrier24`
 * **control and cyber-physical scenarios**
-  `AircraftDoor`, `Alarm`, `RoadsideUnit`, `Subway`, `Thermostat`, `TrafficLight`, `TrainDoor`, `TrainDoor2`, `TrainDoorFeedback`
+  `AircraftDoor`, `Alarm`, `Subway`, `Thermostat`, `TrafficLight`, `TrainDoor`, `TrainDoor2`, `TrainDoorFeedback`
 
 These labels are only intended as a high-level guide to the benchmark mix; the authoritative artifacts are the actual TR and LF models included in the repository.
 
