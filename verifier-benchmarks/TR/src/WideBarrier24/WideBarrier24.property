@@ -1,0 +1,8 @@
+property {
+  define {
+    NoViolation = (coord.violation == 0);
+  }
+  Assertion {
+    WideBarrier24_NoViolation : NoViolation;
+  }
+}
