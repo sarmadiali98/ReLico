@@ -18,15 +18,14 @@ reactor RSU {
     output grant_2:int
     output released:int
 
-    logical action issue_grant_1(10 msec)
-    logical action issue_grant_2(10 msec)
+    logical action grant_to(10 msec):int
     logical action release(5 sec)
 
     state pending_1:int = 0
     state pending_2:int = 0
     state busy:int = 0
 
-    reaction(request_1, request_2) -> issue_grant_1, issue_grant_2 {=
+    reaction(request_1, request_2) -> grant_to {=
         if (request_1->is_present) {
             self->pending_1 = 1;
         }
@@ -38,37 +37,36 @@ reactor RSU {
             if (self->pending_1 == 1) {
                 self->busy = 1;
                 self->pending_1 = 0;
-                lf_schedule(issue_grant_1, 0);
+                lf_schedule_int(grant_to, 0, 1);
             } else if (self->pending_2 == 1) {
                 self->busy = 1;
                 self->pending_2 = 0;
-                lf_schedule(issue_grant_2, 0);
+                lf_schedule_int(grant_to, 0, 2);
             }
         }
     =}
 
-    reaction(issue_grant_1) -> grant_1, release {=
-        lf_set(grant_1, 1);
+    reaction(grant_to) -> grant_1, grant_2, release {=
+        if (grant_to->value == 1) {
+            lf_set(grant_1, 1);
+        } else if (grant_to->value == 2) {
+            lf_set(grant_2, 1);
+        }
         lf_schedule(release, 0);
     =}
 
-    reaction(issue_grant_2) -> grant_2, release {=
-        lf_set(grant_2, 1);
-        lf_schedule(release, 0);
-    =}
-
-    reaction(release) -> released, issue_grant_1, issue_grant_2 {=
+    reaction(release) -> released, grant_to {=
         self->busy = 0;
         lf_set(released, 1);
 
         if (self->pending_1 == 1) {
             self->busy = 1;
             self->pending_1 = 0;
-            lf_schedule(issue_grant_1, 0);
+            lf_schedule_int(grant_to, 0, 1);
         } else if (self->pending_2 == 1) {
             self->busy = 1;
             self->pending_2 = 0;
-            lf_schedule(issue_grant_2, 0);
+            lf_schedule_int(grant_to, 0, 2);
         }
     =}
 }
