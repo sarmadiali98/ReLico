@@ -18,7 +18,7 @@ The benchmark workflow in this directory was assembled to answer the following p
 
 The comparison is therefore centered on:
 
-- what properties can be checked successfully
+- what properties can be checked successfully,
 - the time and resource cost of verification.
 
 ## Directory structure
@@ -36,6 +36,7 @@ verifier-benchmarks/
     ├── src/
     │   ├── AircraftDoor/
     │   ├── Alarm/
+    │   ├── CheckpointBarrier2/
     │   ├── Election/
     │   ├── Factorial/
     │   ├── Fibonacci/
@@ -52,7 +53,8 @@ verifier-benchmarks/
     │   ├── TrainDoor/
     │   ├── TrainDoor2/
     │   ├── TrainDoorFeedback/
-    │   └── UnsafeSend/
+    │   ├── UnsafeSend/
+    │   └── WideBarrier24/
     └── tools/
         └── batch_rmc.py
 ````
@@ -113,6 +115,12 @@ The comparison focuses on verification-related measures such as:
 * the time needed for verification,
 * and the practical resource burden of the verification process.
 
+## Property coverage and comparison scope
+
+This comparison is restricted to the subset of verification tasks that could be executed in both toolchains under the configuration used in this repository.
+
+In particular, **LTL-property comparisons are not included**. While LTL verification was available in the LF-side workflow, we were not able to evaluate corresponding LTL properties on the RMC-based TR-side workflow used here. Therefore, the comparison reported in this benchmark suite should not be interpreted as covering LTL verification capabilities across the two frameworks.
+
 ## Benchmark set
 
 The included benchmark set covers a mix of small and medium-sized examples with different verification characteristics.
@@ -124,13 +132,48 @@ Broadly, the benchmark names correspond to several informal categories:
 * **message-passing and communication patterns**
   `PingPong`, `Pipe`, `ProcessMsg`, `Ring`, `SafeSend`, `UnsafeSend`
 * **distributed coordination / protocol-like behavior**
-  `Election`
+  `Election`, `CheckpointBarrier2`, `WideBarrier24`
 * **control and cyber-physical scenarios**
   `AircraftDoor`, `Alarm`, `RoadsideUnit`, `Subway`, `Thermostat`, `TrafficLight`, `TrainDoor`, `TrainDoor2`, `TrainDoorFeedback`
 
 These labels are only intended as a high-level guide to the benchmark mix; the authoritative artifacts are the actual TR and LF models included in the repository.
 
-## Verification toolchains
+Two of the more demanding benchmarks deserve special mention:
+
+* **WideBarrier24** produces a very large communication bound (`ct = 1301`) on the LF side and falls outside the practical LF verification criteria (`ct < 100`).
+* **CheckpointBarrier2** reaches `ct = 61` on the LF side and exceeded the memory limits of the included machine configuration during verification.
+
+Both of these benchmarks still run successfully on the TR side using RMC.
+
+## Included sample results
+
+This repository includes **sample result summaries for both TR and LF**.
+
+* The **TR** sample results are stored in:
+
+  * `TR/sample_results.csv`
+* The **LF** sample results are stored under:
+
+  * `LF/results/`
+
+These sample results are intended to document the benchmark outcomes used in the evaluation and to make the comparison setup easier to inspect and reproduce.
+
+## Machine and environment used for the included results
+
+The included **LF results** were produced on:
+
+* **Operating system:** Ubuntu 25.10
+* **Machine:** Lenovo IdeaPad 5
+* **Memory:** 8 GB RAM
+* **Processor:** Intel Core i5-1035G1
+
+The included **TR sample results** were produced on the **same machine and configuration** as the LF sample results, so the provided TR/LF timing and resource numbers should be interpreted as being gathered under the same hardware conditions.
+
+If you reproduce the benchmark workflow on a different machine or OS, timing and resource measurements may differ.
+
+## Reproducing the benchmark results
+
+This section collects the practical setup and run instructions for both the TR and LF sides.
 
 ### Timed Rebeca side
 
@@ -159,19 +202,17 @@ The RMC jar is **not bundled in this repository**. It should be downloaded from 
 https://github.com/rebeca-lang/org.rebecalang.rmc/releases
 ```
 
-The CLI workflow performs the following steps for each benchmark:
+A direct download link for the version used in this repository is:
 
-1. generate C++ verification artifacts from the Timed Rebeca model,
-2. compile the generated C++ files into an executable,
-3. run the executable to perform model checking,
-4. store the resulting XML reports, generated state-space export, logs, and CSV summary.
+```text
+https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
 
-### Downloading the RMC jar
+#### Downloading the RMC jar
 
 Download the jar into `TR/tools/`:
 
 ```bash
-cd TR/tools
 curl -L \
   -o TR/tools/rmc-2.14.jar \
   https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
@@ -183,7 +224,7 @@ You can verify that it is in place with:
 ls -l TR/tools/rmc-2.14.jar
 ```
 
-### Running the TR benchmarks
+#### Running the TR benchmarks
 
 From inside `TR/`, run:
 
@@ -203,7 +244,7 @@ The script assumes:
 * a C++ compiler is available on the system path as `c++`,
 * `rmc-2.14.jar` has been downloaded into `TR/tools/`.
 
-### TR outputs
+#### TR outputs
 
 The Timed Rebeca workflow generates:
 
@@ -238,12 +279,11 @@ The LF benchmark workflow assumes local installation of:
 
 Depending on your setup, `LF/env.bash` may also need to be sourced.
 
-## Running the LF benchmarks
+#### Running the LF benchmarks
 
 From inside `LF/`, run:
 
 ```bash
-cd LF
 ./scripts/run-benchmarks benchmarks
 ```
 
@@ -253,7 +293,7 @@ This executes the LF-side verification workflow over all benchmark files under:
 LF/benchmarks/src/
 ```
 
-## LF outputs
+#### LF outputs
 
 The LF workflow may generate or use:
 
@@ -270,47 +310,15 @@ Final benchmark logs and summaries are stored under:
 LF/results/
 ```
 
-## Included sample results
-
-This repository includes **sample result summaries for both TR and LF**.
-
-* The **TR** sample results are stored in:
-
-  * `TR/sample_results.csv`
-* The **LF** sample results are stored under:
-
-  * `LF/results/`
-
-These sample results are intended to document the benchmark outcomes used in the evaluation and to make the comparison setup easier to inspect and reproduce.
-
-## Machine and environment used for the included results
-
-The included **LF results** were produced on:
-
-* **Operating system:** Ubuntu 25.10
-* **Machine:** Lenovo IdeaPad 5
-* **Memory:** 8 GB RAM
-* **Processor:** Intel Core i5-1035G1
-
-The included **TR sample results** were produced on the **same machine and configuration** as the LF sample results, so the provided TR/LF timing and resource numbers should be interpreted as being gathered under the same hardware conditions.
-
-If you reproduce the benchmark workflow on a different machine or OS, timing and resource measurements may differ.
-
 ## Interpreting LF failures and `lfc_exit_code`
 
-In the LF sample results, the `lfc_exit_code` field should be interpreted carefully.
+Demanding LF benchmarks in the included sample results:
 
-In particular:
+* **CheckpointBarrier2** is marked **Not valid** with `lfc_exit_code = 1`. In the included setup, this corresponds to an out-of-memory condition during LF verification, so the LF result is not valid as a successful verification result on that machine.
+* **WideBarrier24** is marked **UNKNOWN** and has `ct = 1301`, with no successful downstream Uclid/Z3 verification stage in the included results. In practice, this benchmark is outside the verifiable LF range.
+* Both **CheckpointBarrier2** and **WideBarrier24** still produced valid TR-side results with RMC.
 
-* `lfc_exit_code = 0` means the LF benchmark workflow completed normally at the `lfc` stage.
-* `lfc_exit_code = 1` indicates that the LF verification workflow exceeded the practical hardware limits of the machine used for the sample results. In that case, the LF result should be treated as **not valid for comparison on that machine**.
-
-This is especially relevant for the **RoadsideUnit** benchmark:
-
-* on the LF side, the included sample results mark `RoadsideUnit` as **Not valid** with `lfc_exit_code = 1`
-* on the TR side, the included sample results still contain a completed RMC result for `RoadsideUnit`
-
-Accordingly, when comparing LF and TR results, an LF row with `lfc_exit_code = 1` should be interpreted as **out of hardware bounds on the reported machine**, not as a meaningful negative verification outcome.
+Accordingly, when comparing LF and TR results, LF rows that exceed the hardware limits of the documented machine should be interpreted as **resource-bound workflow failures**, not as meaningful semantic verification outcomes.
 
 ## Recommended comparison method
 
@@ -330,7 +338,7 @@ A typical comparison workflow is:
 When interpreting failures, distinguish between:
 
 * **semantic / property failures**, such as assertion violations or queue overflow,
-* and **resource-bound workflow failures**, such as LF cases where `lfc_exit_code = 1`.
+* and **resource-bound workflow failures**, such as LF cases that exceed the hardware limits of the documented machine.
 
 These are not the same kind of outcome and should not be conflated in the evaluation.
 
