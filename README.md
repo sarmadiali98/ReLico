@@ -142,7 +142,7 @@ Recommended minimum resources:
 Clone the repository:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/sarmadiali98/ReLico
 cd ReLico
 ````
 
@@ -481,5 +481,3 @@ For artifact-review purposes, the most important distinctions are:
 * the smart-home example is an end-to-end validation workflow
 * the hardware-backed LF program contains additional integration beyond the raw generated LF file
 * the verification benchmark workflow is a separate evaluation harness adapted from prior LF-verification-benchmark infrastructure and should be treated as such in reproduction and citation contexts
-
-```
