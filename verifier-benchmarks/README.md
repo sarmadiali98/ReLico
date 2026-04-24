@@ -140,7 +140,7 @@ These labels are only intended as a high-level guide to the benchmark mix; the a
 Two of the more demanding benchmarks deserve special mention:
 
 * **WideBarrier24** produces a very large communication bound (`ct = 1301`) on the LF side and falls outside the practical LF verification criteria (`ct < 100`).
-* **CheckpointBarrier2** reaches `ct = 61` on the LF side and exceeded the memory limits of the included machine configuration during verification.
+* **CheckpointBarrier2** reaches `ct = 61` and is a resource-bound LF workflow failure in the included setup. The LF run reports a failed/mismatched verification outcome and does not produce usable downstream SMT artifacts; the later Uclid SMT-generation step is killed with exit code 137.
 
 Both of these benchmarks still run successfully on the TR side using RMC.
 
@@ -161,10 +161,10 @@ These sample results are intended to document the benchmark outcomes used in the
 
 The included **LF results** were produced on:
 
-* **Operating system:** Ubuntu 25.10
+* **Operating system:** Ubuntu 24.04.4 LTS
 * **Machine:** Lenovo IdeaPad 5
 * **Memory:** 8 GB RAM
-* **Processor:** Intel Core i5-1035G1
+* **Processor:** Intel Core i3-1115G4
 
 The included **TR sample results** were produced on the **same machine and configuration** as the LF sample results, so the provided TR/LF timing and resource numbers should be interpreted as being gathered under the same hardware conditions.
 
