@@ -140,7 +140,7 @@ These labels are only intended as a high-level guide to the benchmark mix; the a
 Two of the more demanding benchmarks deserve special mention:
 
 * **WideBarrier24** produces a very large communication bound (`ct = 1301`) on the LF side and falls outside the practical LF verification criteria (`ct < 100`).
-* **CheckpointBarrier2** reaches `ct = 61` and is a resource-bound LF workflow failure in the included setup. The LF run reports a failed/mismatched verification outcome and does not produce usable downstream SMT artifacts; the later Uclid SMT-generation step is killed with exit code 137.
+* **CheckpointBarrier2** reaches `ct = 61` on the LF side and exceeded the memory limits of the included machine configuration during verification.
 
 Both of these benchmarks still run successfully on the TR side using RMC.
 
@@ -313,7 +313,7 @@ LF/results/
 
 Demanding LF benchmarks in the included sample results:
 
-* **CheckpointBarrier2** is marked **Not valid** with `lfc_exit_code = 1`. In the included setup, this corresponds to an out-of-memory condition during LF verification, so the LF result is not valid as a successful verification result on that machine.
+* **CheckpointBarrier2** is marked **Not valid** with `lfc_exit_code = 1`. This is a resource-bound LF workflow failure in the included setup. The LF run reports a failed/mismatched verification outcome and does not produce usable downstream SMT artifacts. The later Uclid SMT-generation step is killed with exit code 137.
 * **WideBarrier24** is marked **UNKNOWN** and has `ct = 1301`, with no successful downstream Uclid/Z3 verification stage in the included results. In practice, this benchmark is outside the verifiable LF range.
 * Both **CheckpointBarrier2** and **WideBarrier24** still produced valid TR-side results with RMC.
 
