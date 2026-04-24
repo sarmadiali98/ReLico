@@ -1,0 +1,83 @@
+target C;
+
+reactor Driver {
+    input next:int;
+
+    output s1:int;
+    output s2:int;
+
+    state epoch:int = 0;
+
+    reaction(startup, next) -> s1, s2 {=
+        if (self->epoch < 8) {
+            self->epoch++;
+            lf_set(s1, self->epoch);
+            lf_set(s2, self->epoch);
+        }
+    =}
+}
+
+reactor Worker {
+    input start:int;
+    output done:int;
+
+    logical action finish(1 msec):int;
+
+    reaction(start) -> finish {=
+        lf_schedule_int(finish, 0, start->value);
+    =}
+
+    reaction(finish) -> done {=
+        lf_set(done, finish->value);
+    =}
+}
+
+reactor Join {
+    input in1:int;
+    input in2:int;
+
+    output next:int;
+
+    state epochs_seen:int = 0;
+    state violation:int = 0;
+
+    reaction(in1, in2) -> next {=
+        self->epochs_seen++;
+        if (self->epochs_seen > 8) {
+            self->violation = 1;
+        }
+        lf_set(next, self->epochs_seen);
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 sec, 100 sec);
+    state phase:int = 0;
+
+    reaction(t) {=
+        self->phase = 1 - self->phase;
+    =}
+}
+
+@property(
+    name="CheckpointBarrier2_NoViolation",
+    tactic="bmc",
+    spec="G[0, 30 msec](CheckpointBarrier2_j_violation == 0)",
+    expect=true
+)
+main reactor CheckpointBarrier2 {
+    d = new Driver();
+    j = new Join();
+    ka = new KeepAlive();
+
+    w1 = new Worker();
+    w2 = new Worker();
+
+    d.s1 -> w1.start after 1 msec;
+    d.s2 -> w2.start after 1 msec;
+
+    w1.done -> j.in1;
+    w2.done -> j.in2;
+
+    j.next -> d.next after 1 msec;
+}
