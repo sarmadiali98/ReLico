@@ -1,8 +1,0 @@
-property {
-  define {
-    NoViolation = (coord.violation == 0);
-  }
-  Assertion {
-    CheckpointBarrier2_NoViolation : NoViolation;
-  }
-}

@@ -1,8 +1,0 @@
-property {
-  define {
-    NoViolation = (m.violation == 0);
-  }
-  Assertion {
-    VisionWorks_NoViolation : NoViolation;
-  }
-}
