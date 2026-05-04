@@ -1,0 +1,8 @@
+property {
+  define {
+    CorrectResult = (chk.violation == 0);
+  }
+  Assertion {
+    Fibonacci_CorrectResult : CorrectResult;
+  }
+}
