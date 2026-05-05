@@ -1,0 +1,62 @@
+reactiveclass Node(100) {
+    knownrebecs {
+        Switch sw;
+    }
+    Node(){
+        self.sendMsg(1);
+        self.sendMsg2(1) after(1);
+    }
+
+    @priority(1)
+    msgsrv sendMsg(int msg){
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
+    }
+
+    @priority(2)
+    msgsrv sendMsg2(int msg){
+        sw.rcvMsg(msg, true);
+        sw.rcvMsg2(msg, true);
+    }
+}
+
+reactiveclass Switch(100){
+    knownrebecs{
+        Router r0;
+    }
+    statevars {
+        boolean ke;
+        int kkkkk;
+    }
+
+    @priority(1)
+    msgsrv rcvMsg(int msg, boolean k){
+        ke = k;
+    }
+
+    @priority(2)
+    msgsrv rcvMsg2(int msg, boolean k){
+        while(k){
+            kkkkk = msg;
+            k = !k;
+        }
+        r0.blah(msg);
+
+        self.internalrcvMsg(msg);
+    }
+
+    @priority(3)
+    msgsrv internalrcvMsg(int msg){}
+}
+
+reactiveclass Router(100){
+    @priority(1)
+    msgsrv blah(int msg){
+    }
+}
+
+main {
+    Node node0(sw0):();
+    Switch sw0(r0):();
+    Router r0():();
+}

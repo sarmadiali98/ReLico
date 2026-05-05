@@ -1,0 +1,158 @@
+reactiveclass Sensor(7) {
+    knownrebecs {
+        Admin admin;
+    }
+
+    statevars {
+        int period;
+        byte netDelay;
+    }
+
+    Sensor(int myPeriod) {
+        period = myPeriod;
+        self.doReport();
+        netDelay = 1;
+    }
+
+    @priority(1)
+    msgsrv doReport() {
+        admin.report(4) after(3);
+        self.doReport() after(2);
+    }
+}
+
+reactiveclass Scientist(7) {
+    knownrebecs {
+        Admin admin;
+    }
+
+    statevars {
+        byte netDelay;
+    }
+
+    Scientist() {
+        netDelay = 1;
+    }
+
+    @priority(1)
+    msgsrv abortPlan() {
+        admin.ack() after(1);
+    }
+}
+
+reactiveclass Rescue(7) {
+    knownrebecs {
+        Admin admin;
+    }
+
+    statevars {
+        byte netDelay;
+        byte rescueDeadline;
+    }
+
+    Rescue() {
+        netDelay = 1;
+        rescueDeadline = 10;
+    }
+
+    @priority(1)
+    msgsrv go() {
+        admin.rescueReach() after(1);
+    }
+}
+
+reactiveclass Admin(13) {
+    knownrebecs {
+        Sensor sensor0;
+        Sensor sensor1;
+        Scientist scientist;
+        Rescue rescue;
+    }
+
+    statevars {
+        boolean reported0;
+        int sensorValue0;
+        boolean reported1;
+        int sensorValue1;
+        boolean sensorFailure;
+        boolean scientistAck;
+        boolean scientistReached;
+        boolean scientistDead;
+
+        byte rescueDeadline;
+        byte netDelay;
+        byte adminCheckDelay;
+        byte scientistDeadline;
+    }
+
+    Admin() {
+        rescueDeadline = 5;
+        netDelay = 1;
+        adminCheckDelay = 15;
+        scientistDeadline = 5;
+        self.checkSensors();
+    }
+
+    @priority(1)
+    msgsrv report(int value) {
+        if (sender == sensor0) {
+            reported0 = true;
+            sensorValue0 = value;
+        } else if (sender == sensor1) {
+            reported1 = true;
+            sensorValue1 = value;
+        }
+    }
+
+    @priority(2)
+    msgsrv rescueReach() {
+        scientistReached = true;
+    }
+
+    @priority(3)
+    msgsrv checkSensors() {
+        if (reported0) reported0 = false;
+        else sensorFailure = true;
+
+        if (reported1) reported1 = false;
+        else sensorFailure = true;
+
+        if ((sensorValue0 > 3) || (sensorValue1 > 3)) {
+            scientist.abortPlan() after(1);
+            self.checkScientistAck() after(2);
+        }
+
+        self.checkSensors() after(2);
+    }
+
+    @priority(4)
+    msgsrv checkRescue() {
+        if (!scientistReached) {
+            scientistDead = true;
+        } else {
+            scientistReached = false;
+        }
+    }
+
+    @priority(5)
+    msgsrv ack() {
+        scientistAck = true;
+    }
+
+    @priority(6)
+    msgsrv checkScientistAck() {
+        if (!scientistAck) {
+            rescue.go() after(1);
+            self.checkRescue() after(2);
+        }
+        scientistAck = false;
+    }
+}
+
+main {
+    Sensor sensor0(admin):(10);
+    Sensor sensor1(admin):(10);
+    Scientist scientist(admin):();
+    Rescue rescue(admin):();
+    Admin admin(sensor0, sensor1, scientist, rescue):();
+}

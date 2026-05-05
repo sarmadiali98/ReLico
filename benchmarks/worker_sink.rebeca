@@ -1,0 +1,31 @@
+reactiveclass Worker(10) {
+ knownrebecs { Sink s; }
+ statevars { int base; }
+
+ Worker(int a) {
+  base = a;
+  self.high(base, true);
+  self.low(base);
+ }
+
+ @priority(1)
+ msgsrv high(int x, boolean ok) {
+  s.report(x, ok) after(2);
+ }
+
+ @priority(2)
+ msgsrv low(int x) {
+  self.high(x + 1, false) after(5);
+ }
+}
+
+reactiveclass Sink(10) {
+ msgsrv report(int value, boolean ok) {
+  // receive result
+ }
+}
+
+main {
+ @priority(1) Worker w(sink):(10);
+ @priority(2) Sink sink():();
+}
