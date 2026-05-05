@@ -22,6 +22,10 @@ public class LinguaFrancaCodeGenerator {
 
     /** Stores environment variables (global definitions) from the model. */
     private final Map<String, String> envVariables = new HashMap<>();
+    /** Special keys used inside parameter-mapping contexts for sender translation. */
+    private static final String SENDER_INSTANCE_KEY = "__relico_sender_instance__";
+    private static final String RECEIVER_INSTANCE_KEY = "__relico_receiver_instance__";
+    private static final String KNOWN_REBEC_INSTANCE_PREFIX = "__relico_known_rebec_instance__:";
 
 
     /* ----------------------------------------------------------------------
@@ -82,6 +86,20 @@ public class LinguaFrancaCodeGenerator {
         Set<String> usedPorts = new LinkedHashSet<>();
     }
 
+    /** A generated LF reaction plus the ordering metadata used for declaration order. */
+    private static class GeneratedReaction {
+        final String trigger;
+        final ReactionContent content;
+        final int priority;
+        final int declarationIndex;
+
+        GeneratedReaction(String trigger, ReactionContent content, int priority, int declarationIndex) {
+            this.trigger = trigger;
+            this.content = content;
+            this.priority = priority;
+            this.declarationIndex = declarationIndex;
+        }
+    }
 
     /* ----------------------------------------------------------------------
      * Constructor
@@ -173,37 +191,57 @@ public class LinguaFrancaCodeGenerator {
         }
         analyzeAllCalls(instanceToClass, callsByInstance, classToKnownRebecs, instanceKnownRebecs);
 
-        // 7) Generate struct definitions for external calls
+        // 7) Generate struct definitions for message payloads.
+        // External parameterized sends use typed ports.
+        // Internal self-calls with more than one parameter use typed logical-action payload structs.
         lfCode.append("public preamble {=\n");
+        Set<String> emittedStructs = new LinkedHashSet<>();
+
         for (ReactiveClassDeclaration rc : classes) {
             String className = rc.getName();
             ConstructorInfo cInfo = constructorInfoMap.get(className);
+            Set<String> internalServers = internalMsgsrvs.getOrDefault(className, Collections.emptySet());
 
             for (String msgsrvName : cInfo.msgsrvToParams.keySet()) {
                 if (msgsrvName.startsWith("constructorOf")) {
                     continue;
                 }
-                boolean isUsedExternally = isMsgsrvExternallyUsed(msgsrvName, className, callsByInstance, instanceToClass);
-                if (isUsedExternally) {
-                    List<FormalParameterDeclaration> params = cInfo.msgsrvToParams.get(msgsrvName);
-                    lfCode.append("    struct ")
-                            .append(className).append("_").append(msgsrvName)
-                            .append(" {\n");
-                    if (params.isEmpty()) {
-                        lfCode.append("        int default_arg;\n");
-                    } else {
-                        for (FormalParameterDeclaration p : params) {
-                            lfCode.append("        ")
-                                    .append(mapRebecaTypeToLF(p.getType().getTypeName()))
-                                    .append(" ")
-                                    .append(p.getName())
-                                    .append(";\n");
+
+                List<FormalParameterDeclaration> params =
+                        cInfo.msgsrvToParams.getOrDefault(msgsrvName, Collections.emptyList());
+
+                boolean isUsedExternally =
+                        isMsgsrvExternallyUsed(msgsrvName, className, callsByInstance, instanceToClass);
+
+                boolean needsInternalPayloadStruct =
+                        internalServers.contains(msgsrvName) && params.size() > 1;
+
+                if (isUsedExternally || needsInternalPayloadStruct) {
+                    String structName = className + "_" + msgsrvName;
+
+                    if (emittedStructs.add(structName)) {
+                        lfCode.append("    struct ")
+                                .append(structName)
+                                .append(" {\n");
+
+                        if (params.isEmpty()) {
+                            lfCode.append("        int default_arg;\n");
+                        } else {
+                            for (FormalParameterDeclaration p : params) {
+                                lfCode.append("        ")
+                                        .append(mapRebecaTypeToLF(p.getType().getTypeName()))
+                                        .append(" ")
+                                        .append(p.getName())
+                                        .append(";\n");
+                            }
                         }
+
+                        lfCode.append("    };\n");
                     }
-                    lfCode.append("    };\n");
                 }
             }
         }
+
         lfCode.append("=}\n\n");
 
         Map<String, Set<String>> unusedMsgsrvs = findUnusedMsgServers(
@@ -301,55 +339,97 @@ public class LinguaFrancaCodeGenerator {
             }
 
             Set<String> internalServers = internalMsgsrvs.getOrDefault(className, Collections.emptySet());
-            for (String m : internalServers) {
-                if (m.startsWith("constructorOf")) {
-                    continue;
-                }
-                MsgsrvDeclaration md = findMsgsrv(rc, m);
-                if (md != null) {
-                    for (FormalParameterDeclaration fp : md.getFormalParameters()) {
-                        lfCode.append("    state ")
-                                .append(fp.getName())
-                                .append("_for_").append(m)
-                                .append(": ")
-                                .append(mapRebecaTypeToLF(fp.getType().getTypeName()))
-                                .append("\n");
-                    }
-                }
-            }
 
-            // C) Logical actions for internal msgSrvs
+            // C) Logical actions for internal msgSrvs.
+            // Parameterless internal msgSrvs use untyped logical actions.
+            // Parameterized internal msgSrvs use typed logical actions whose payload carries the arguments.
             for (String m : internalServers) {
                 if (!m.startsWith("constructorOf")) {
-                    lfCode.append("    logical action ").append(m).append(";\n");
+                    MsgsrvDeclaration md = findMsgsrv(rc, m);
+                    List<FormalParameterDeclaration> fps =
+                            (md == null) ? Collections.emptyList() : md.getFormalParameters();
+
+                    lfCode.append("    logical action ").append(m);
+
+                    if (fps.size() == 1) {
+                        lfCode.append(": ")
+                                .append(mapRebecaTypeToLF(fps.get(0).getType().getTypeName()));
+                    } else if (fps.size() > 1) {
+                        lfCode.append(": ")
+                                .append(className)
+                                .append("_")
+                                .append(m);
+                    }
+
+                    lfCode.append(";\n");
                 }
             }
 
-            // D) Reaction for each internal msgsrv
+            // D) Reactions for message servers.
+            // DTR local message-server priority is encoded by the textual order of
+            // LF reactions inside the same reactor. Smaller @priority values are emitted earlier.
+            List<GeneratedReaction> generatedReactions = new ArrayList<>();
+
+            // D1) Internal msgSrvs => one reaction per logical action
             for (String m : internalServers) {
                 if (m.startsWith("constructorOf")) {
                     continue;
                 }
-                ReactionContent rContent = generateMsgsrvReactionBody(rc, m, className, cInfo, instanceToClass, callsByInstance);
-                lfCode.append("    reaction(").append(m).append(")");
-                if (!rContent.scheduledActions.isEmpty() || !rContent.usedPorts.isEmpty()) {
-                    lfCode.append(" -> ");
-                    List<String> outputs = new ArrayList<>();
-                    outputs.addAll(rContent.scheduledActions);
-                    outputs.addAll(rContent.usedPorts);
-                    for (int i = 0; i < outputs.size(); i++) {
-                        if (i > 0) {
-                            lfCode.append(", ");
-                        }
-                        lfCode.append(outputs.get(i));
-                    }
-                }
-                lfCode.append(" {=\n");
-                lfCode.append(rContent.code);
-                lfCode.append("    =}\n");
+
+                ReactionContent rContent = generateMsgsrvReactionBody(
+                        rc, m, className, cInfo, instanceToClass, callsByInstance
+                );
+
+                generatedReactions.add(new GeneratedReaction(
+                        m,
+                        rContent,
+                        getMsgsrvPriority(rc, m),
+                        getMsgsrvDeclarationIndex(rc, m)
+                ));
             }
 
-            // D2) Commented stubs for unused msgsrvs
+            // D2) External msgSrvs => one reaction per input port
+            for (Map.Entry<String, Set<String>> entry : inputsByMsgsrv.entrySet()) {
+                String externalMsgsrvName = entry.getKey();
+                Set<String> portNames = entry.getValue();
+                if (portNames.isEmpty()) {
+                    continue;
+                }
+
+                MsgsrvDeclaration mDecl = findMsgsrv(rc, externalMsgsrvName);
+                int priority = getMsgsrvPriority(rc, externalMsgsrvName);
+                int declarationIndex = getMsgsrvDeclarationIndex(rc, externalMsgsrvName);
+
+                for (String portName : portNames) {
+                    ReactionContent rContent;
+                    if (mDecl != null && mDecl.getBlock() != null) {
+                        rContent = generateExternalMsgsrvReactionBody(
+                                mDecl, portName, className, cInfo, instanceToClass, callsByInstance
+                        );
+                    } else {
+                        rContent = new ReactionContent();
+                    }
+
+                    generatedReactions.add(new GeneratedReaction(
+                            portName,
+                            rContent,
+                            priority,
+                            declarationIndex
+                    ));
+                }
+            }
+
+            generatedReactions.sort(
+                    Comparator.comparingInt((GeneratedReaction gr) -> gr.priority)
+                            .thenComparingInt(gr -> gr.declarationIndex)
+                            .thenComparing(gr -> gr.trigger)
+            );
+
+            for (GeneratedReaction gr : generatedReactions) {
+                lfCode.append(renderReaction(gr.trigger, gr.content));
+            }
+
+            // D3) Commented stubs for unused msgSrvs
             Set<String> unusedServers = unusedMsgsrvs.getOrDefault(className, Collections.emptySet());
             if (!unusedServers.isEmpty()) {
                 lfCode.append("\n");
@@ -369,7 +449,6 @@ public class LinguaFrancaCodeGenerator {
                         ;
 
                         if (!rContent.code.isEmpty()) {
-                            //lfCode.append("    /*\n");
                             lfCode.append("    reaction()");
                             if (!rContent.usedPorts.isEmpty()) {
                                 lfCode.append(" -> ");
@@ -378,7 +457,6 @@ public class LinguaFrancaCodeGenerator {
                             lfCode.append(" {=\n");
                             lfCode.append(rContent.code);
                             lfCode.append("    =}\n");
-                            //lfCode.append("    */\n");
                         }
                     }
                 }
@@ -409,51 +487,6 @@ public class LinguaFrancaCodeGenerator {
                     }
                     lfCode.append(" {=\n");
                     lfCode.append(rContent.code);
-                    lfCode.append("    =}\n");
-                }
-            }
-
-            // F) External msgSrvs => one reaction per input port
-            // F) External msgSrvs => one reaction per input port
-            for (Map.Entry<String, Set<String>> entry : inputsByMsgsrv.entrySet()) {
-                String externalMsgsrvName = entry.getKey();
-                Set<String> portNames = entry.getValue();
-                if (portNames.isEmpty()) {
-                    continue;
-                }
-                MsgsrvDeclaration mDecl = findMsgsrv(rc, externalMsgsrvName);
-                for (String portName : portNames) {
-                    if (mDecl != null && mDecl.getBlock() != null) {
-                        // Generate the reaction content FIRST
-                        ReactionContent rContent = generateExternalMsgsrvReactionBody(
-                                mDecl, portName, className, cInfo, instanceToClass, callsByInstance
-                        );
-
-                        // Start reaction declaration
-                        lfCode.append("    reaction(").append(portName).append(")");
-
-                        // Add outputs if any ports or actions are used
-                        if (!rContent.scheduledActions.isEmpty() || !rContent.usedPorts.isEmpty()) {
-                            lfCode.append(" -> ");
-                            List<String> outputs = new ArrayList<>();
-                            outputs.addAll(rContent.scheduledActions);
-                            outputs.addAll(rContent.usedPorts);
-                            for (int i = 0; i < outputs.size(); i++) {
-                                if (i > 0) {
-                                    lfCode.append(", ");
-                                }
-                                lfCode.append(outputs.get(i));
-                            }
-                        }
-
-                        // Now add the body
-                        lfCode.append(" {=\n");
-                        lfCode.append(rContent.code);
-                    } else {
-                        // No body, just empty reaction
-                        lfCode.append("    reaction(").append(portName).append(") {=\n");
-                    }
-
                     lfCode.append("    =}\n");
                 }
             }
@@ -758,7 +791,24 @@ public class LinguaFrancaCodeGenerator {
         if (found == null || found.getBlock() == null) {
             return rContent;
         }
-        rContent.code = parseBlockStatementInline(
+
+        Map<String, String> internalParamMapping = new HashMap<>();
+        List<FormalParameterDeclaration> fps =
+                cInfo.msgsrvToParams.getOrDefault(msgsrvName, Collections.emptyList());
+
+        String localParamDeclarations = buildLocalParamDeclarations(
+                fps,
+                msgsrvName,
+                internalParamMapping,
+                fp -> {
+                    if (fps.size() == 1) {
+                        return "(*" + msgsrvName + ".get())";
+                    }
+                    return "(*" + msgsrvName + ".get())." + fp.getName();
+                }
+        );
+
+        String bodyCode = parseBlockStatementInline(
                 found.getBlock(),
                 className,
                 msgsrvName,
@@ -767,9 +817,43 @@ public class LinguaFrancaCodeGenerator {
                 callsByInstance,
                 rContent.scheduledActions,
                 rContent.usedPorts,
-                null
+                internalParamMapping
         );
+
+        rContent.code = localParamDeclarations + bodyCode;
         return rContent;
+    }
+
+    /**
+     * Create local variables for message-server parameters at the beginning of a reaction body.
+     * This is necessary because DTR message-server parameters are mutable local variables,
+     * while LF input/action payloads are immutable values accessed through get().
+     */
+    private String buildLocalParamDeclarations(
+            List<FormalParameterDeclaration> fps,
+            String msgsrvName,
+            Map<String, String> paramMapping,
+            java.util.function.Function<FormalParameterDeclaration, String> payloadAccessor
+    ) {
+        StringBuilder declarations = new StringBuilder();
+
+        for (FormalParameterDeclaration fp : fps) {
+            String lfType = mapRebecaTypeToLF(fp.getType().getTypeName());
+            String localName = "relParam_" + msgsrvName + "_" + fp.getName();
+            String accessor = payloadAccessor.apply(fp);
+
+            paramMapping.put(fp.getName(), localName);
+
+            declarations.append("        ")
+                    .append(lfType)
+                    .append(" ")
+                    .append(localName)
+                    .append(" = ")
+                    .append(accessor)
+                    .append(";\n");
+        }
+
+        return declarations.toString();
     }
 
     /**
@@ -823,15 +907,26 @@ public class LinguaFrancaCodeGenerator {
         if (externalMsgSrvDecl == null || externalMsgSrvDecl.getBlock() == null) {
             return rc;
         }
+
         Map<String, String> externalParamMapping = new HashMap<>();
+
+        // Add sender context so conditions such as "sender == forkL" can be
+        // reduced to true/false for this particular input-port reaction.
+        externalParamMapping.putAll(
+                buildSenderContextForExternalPort(className, portName, instanceToClass)
+        );
+
         List<FormalParameterDeclaration> fps = cInfo.msgsrvToParams
                 .getOrDefault(externalMsgSrvDecl.getName(), Collections.emptyList());
 
-        for (FormalParameterDeclaration fp : fps) {
-            externalParamMapping.put(fp.getName(), "(*" + portName + ".get())." + fp.getName());
-        }
+        String localParamDeclarations = buildLocalParamDeclarations(
+                fps,
+                externalMsgSrvDecl.getName(),
+                externalParamMapping,
+                fp -> "(*" + portName + ".get())." + fp.getName()
+        );
 
-        rc.code = parseBlockStatementInline(
+        String bodyCode = parseBlockStatementInline(
                 externalMsgSrvDecl.getBlock(),
                 className,
                 externalMsgSrvDecl.getName(),
@@ -842,6 +937,8 @@ public class LinguaFrancaCodeGenerator {
                 rc.usedPorts,
                 externalParamMapping
         );
+
+        rc.code = localParamDeclarations + bodyCode;
         return rc;
     }
 
@@ -988,12 +1085,20 @@ public class LinguaFrancaCodeGenerator {
         StringBuilder sb = new StringBuilder();
 
         if (expr instanceof BinaryExpression be) {
-            if ("=".equals(be.getOperator())) {
+            String op = be.getOperator();
+
+            if (isAssignmentOperator(op)) {
                 String leftStr = transformExpression(be.getLeft(), currentMsgsrvName, cInfo, externalParamMapping);
                 String rightStr = transformExpression(be.getRight(), currentMsgsrvName, cInfo, externalParamMapping);
-                sb.append("        ").append(leftStr).append(" = ").append(rightStr).append(";\n");
+                sb.append("        ")
+                        .append(leftStr)
+                        .append(" ")
+                        .append(op)
+                        .append(" ")
+                        .append(rightStr)
+                        .append(";\n");
             } else {
-                // For other binary operators, we just parse sub-expressions to see if they contain calls.
+                // For non-assignment binary expressions, parse sub-expressions to detect calls.
                 sb.append(processExpressionInline(
                         be.getLeft(),
                         className,
@@ -1057,28 +1162,43 @@ public class LinguaFrancaCodeGenerator {
                         for (CallDetail cd : e.getValue()) {
                             if (cd.isInternal && cd.msgName.equals(methodName)
                                     && currentMsgsrvName.equals(cd.callerMsgsrvName)) {
+
                                 List<FormalParameterDeclaration> fps =
                                         cInfo.msgsrvToParams.getOrDefault(methodName, Collections.emptyList());
+
+                                List<String> payloadArgs = new ArrayList<>();
                                 for (int i = 0; i < fps.size(); i++) {
                                     FormalParameterDeclaration fpd = fps.get(i);
-                                    String paramName = fpd.getName() + "_for_" + methodName;
                                     String paramVal = (i < argList.size())
                                             ? transformExpression(argList.get(i), currentMsgsrvName, cInfo, externalParamMapping)
                                             : getDefaultValueForType(mapRebecaTypeToLF(fpd.getType().getTypeName()));
-                                    sb.append("        ")
-                                            .append(paramName)
-                                            .append(" = ")
-                                            .append(paramVal)
-                                            .append(";\n");
+                                    payloadArgs.add(paramVal);
                                 }
+
                                 String scheduleTime = (cd.afterDelayMs != null && !cd.afterDelayMs.isEmpty())
                                         ? cd.afterDelayMs + "ms"
                                         : "0ms";
+
                                 sb.append("        ")
                                         .append(methodName)
-                                        .append(".schedule(")
-                                        .append(scheduleTime)
-                                        .append(");\n");
+                                        .append(".schedule(");
+
+                                if (fps.size() == 0) {
+                                    sb.append(scheduleTime);
+                                } else if (fps.size() == 1) {
+                                    sb.append(payloadArgs.get(0))
+                                            .append(", ")
+                                            .append(scheduleTime);
+                                } else {
+                                    String payloadType = className + "_" + methodName;
+                                    sb.append(payloadType)
+                                            .append("{")
+                                            .append(String.join(", ", payloadArgs))
+                                            .append("}, ")
+                                            .append(scheduleTime);
+                                }
+
+                                sb.append(");\n");
                                 scheduledActions.add(methodName);
                             }
                         }
@@ -1150,6 +1270,24 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
+     * Returns true for assignment and compound-assignment operators that should
+     * be emitted as standalone statements in LF/C++ reaction bodies.
+     */
+    private boolean isAssignmentOperator(String op) {
+        return "=".equals(op)
+                || "+=".equals(op)
+                || "-=".equals(op)
+                || "*=".equals(op)
+                || "/=".equals(op)
+                || "%=".equals(op)
+                || "&=".equals(op)
+                || "|=".equals(op)
+                || "^=".equals(op)
+                || "<<=".equals(op)
+                || ">>=".equals(op);
+    }
+
+    /**
      * Locate the instance name that made this CallDetail, if any.
      */
     private String findCallerInstanceFor(CallDetail cd, Map<String, List<CallDetail>> callsByInstance) {
@@ -1171,6 +1309,237 @@ public class LinguaFrancaCodeGenerator {
                 return m;
             }
         }
+        return null;
+    }
+
+    /**
+     * Render an LF reaction in a single place so reaction ordering can be controlled
+     * independently from reaction body generation.
+     */
+    private String renderReaction(String trigger, ReactionContent rContent) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("    reaction(").append(trigger).append(")");
+
+        if (!rContent.scheduledActions.isEmpty() || !rContent.usedPorts.isEmpty()) {
+            sb.append(" -> ");
+            List<String> outputs = new ArrayList<>();
+            outputs.addAll(rContent.scheduledActions);
+            outputs.addAll(rContent.usedPorts);
+            for (int i = 0; i < outputs.size(); i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(outputs.get(i));
+            }
+        }
+
+        sb.append(" {=\n");
+        sb.append(rContent.code);
+        sb.append("    =}\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * Return the source declaration index of a message server. This is used as a
+     * stable tie-breaker when two message servers have the same priority or no priority.
+     */
+    private int getMsgsrvDeclarationIndex(ReactiveClassDeclaration rc, String msgsrvName) {
+        int index = 0;
+
+        for (MsgsrvDeclaration m : rc.getMsgsrvs()) {
+            if (m.getName().equals(msgsrvName)) {
+                return index;
+            }
+            index++;
+        }
+
+        for (MethodDeclaration m : rc.getSynchMethods()) {
+            if (m.getName().equals(msgsrvName)) {
+                return index;
+            }
+            index++;
+        }
+
+        return Integer.MAX_VALUE;
+    }
+
+    /**
+     * Extract DTR @priority from a message server. Lower numbers mean higher priority.
+     * If no priority annotation can be found, fall back to Integer.MAX_VALUE so
+     * explicitly prioritized message servers are emitted first.
+     *
+     * This method uses reflection because Rebeca object-model versions expose
+     * annotations/priorities using slightly different accessor names.
+     */
+    private int getMsgsrvPriority(ReactiveClassDeclaration rc, String msgsrvName) {
+        MsgsrvDeclaration md = findMsgsrv(rc, msgsrvName);
+        if (md == null) {
+            return Integer.MAX_VALUE;
+        }
+
+        Integer priority = extractPriority(md);
+        return priority == null ? Integer.MAX_VALUE : priority;
+    }
+
+    private Integer extractPriority(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        // First try direct getter-like methods whose name contains "priority".
+        for (java.lang.reflect.Method method : obj.getClass().getMethods()) {
+            if (method.getParameterCount() != 0) {
+                continue;
+            }
+
+            String name = method.getName().toLowerCase(Locale.ROOT);
+            if (!name.contains("priority")) {
+                continue;
+            }
+
+            try {
+                Object value = method.invoke(obj);
+                Integer parsed = parsePriorityValue(value);
+                if (parsed != null) {
+                    return parsed;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Try other accessors below.
+            }
+        }
+
+        // Then try annotation accessors such as getAnnotations().
+        for (java.lang.reflect.Method method : obj.getClass().getMethods()) {
+            if (method.getParameterCount() != 0) {
+                continue;
+            }
+
+            String name = method.getName().toLowerCase(Locale.ROOT);
+            if (!name.contains("annotation")) {
+                continue;
+            }
+
+            try {
+                Object value = method.invoke(obj);
+                Integer parsed = parsePriorityValue(value);
+                if (parsed != null) {
+                    return parsed;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Fall through to toString parsing.
+            }
+        }
+
+        return parsePriorityFromString(obj.toString());
+    }
+
+    private Integer parsePriorityValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number n) {
+            return n.intValue();
+        }
+
+        if (value instanceof Collection<?> collection) {
+            for (Object item : collection) {
+                Integer parsed = parsePriorityValue(item);
+                if (parsed != null) {
+                    return parsed;
+                }
+            }
+            return null;
+        }
+
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                Integer parsed = parsePriorityValue(java.lang.reflect.Array.get(value, i));
+                if (parsed != null) {
+                    return parsed;
+                }
+            }
+            return null;
+        }
+
+        String text = value.toString();
+        Integer fromText = parsePriorityFromString(text);
+        if (fromText != null) {
+            return fromText;
+        }
+
+        boolean looksLikePriorityAnnotation = false;
+        for (java.lang.reflect.Method method : value.getClass().getMethods()) {
+            if (method.getParameterCount() != 0) {
+                continue;
+            }
+
+            String methodName = method.getName().toLowerCase(Locale.ROOT);
+            if (!(methodName.contains("name") || methodName.contains("key") || methodName.contains("id"))) {
+                continue;
+            }
+
+            try {
+                Object nameValue = method.invoke(value);
+                if (nameValue != null && nameValue.toString().equalsIgnoreCase("priority")) {
+                    looksLikePriorityAnnotation = true;
+                    break;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Try the next method.
+            }
+        }
+
+        if (looksLikePriorityAnnotation) {
+            for (java.lang.reflect.Method method : value.getClass().getMethods()) {
+                if (method.getParameterCount() != 0) {
+                    continue;
+                }
+
+                String methodName = method.getName().toLowerCase(Locale.ROOT);
+                if (!(methodName.contains("value") || methodName.contains("literal") || methodName.contains("arg"))) {
+                    continue;
+                }
+
+                try {
+                    Object annotationValue = method.invoke(value);
+                    Integer parsed = parsePriorityValue(annotationValue);
+                    if (parsed != null) {
+                        return parsed;
+                    }
+                } catch (ReflectiveOperationException ignored) {
+                    // Try the next method.
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Integer parsePriorityFromString(String text) {
+        if (text == null) {
+            return null;
+        }
+
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(?i)@?priority\\s*\\(?\\s*(\\d+)\\s*\\)?")
+                .matcher(text);
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+
+        matcher = java.util.regex.Pattern
+                .compile("(?i)priority\\D+(\\d+)")
+                .matcher(text);
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+
         return null;
     }
 
@@ -1197,7 +1566,7 @@ public class LinguaFrancaCodeGenerator {
                     if (cd.afterDelayMs != null && !cd.afterDelayMs.isEmpty()) {
                         connection += " after " + cd.afterDelayMs + "ms";
                     } else {
-                        connection += " after 0";
+                        connection += " after 0ms";
                     }
                     uniqueConnections.add(connection);
                 }
@@ -1734,13 +2103,28 @@ public class LinguaFrancaCodeGenerator {
             if (externalParamMapping != null && externalParamMapping.containsKey(raw)) {
                 return externalParamMapping.get(raw);
             }
-            return renameIfParam(raw, msgsrvName, cInfo);
+            return raw;
         }
 
         if (expr instanceof BinaryExpression be) {
+            String op = be.getOperator();
+
+            if ("==".equals(op) || "!=".equals(op)) {
+                String senderComparison = transformSenderComparison(
+                        be.getLeft(),
+                        be.getRight(),
+                        op,
+                        externalParamMapping
+                );
+
+                if (senderComparison != null) {
+                    return senderComparison;
+                }
+            }
+
             String l = transformExpression(be.getLeft(), msgsrvName, cInfo, externalParamMapping);
             String r = transformExpression(be.getRight(), msgsrvName, cInfo, externalParamMapping);
-            return l + " " + be.getOperator() + " " + r;
+            return l + " " + op + " " + r;
         }
         if (expr instanceof UnaryExpression ue) {
             String sub = transformExpression(ue.getExpression(), msgsrvName, cInfo, externalParamMapping);
@@ -1758,20 +2142,151 @@ public class LinguaFrancaCodeGenerator {
     }
 
     /**
-     * Rename a msgSrv parameter in local usage, e.g. param -> param_for_msgSrvName.
+     * Build sender/known-rebec context for a generated external input-port reaction.
+     *
+     * The generated input port name has the form:
+     *     msg_to_TARGET_from_SENDER_in
+     *
+     * For example:
+     *     permit_to_phil0_from_fork0_in
+     *
+     * In that reaction, sender is fork0 and receiver is phil0. We use the receiver's
+     * known-rebec bindings to decide whether sender == forkL, sender == philL, etc.
      */
-    private String renameIfParam(String rawName, String msgsrvName, ConstructorInfo cInfo) {
-        if (msgsrvName == null || msgsrvName.isEmpty()) {
-            return rawName;
+    private Map<String, String> buildSenderContextForExternalPort(
+            String receiverClassName,
+            String portName,
+            Map<String, String> instanceToClass
+    ) {
+        Map<String, String> context = new HashMap<>();
+
+        String[] endpoints = parseExternalInputPortName(portName);
+        if (endpoints == null) {
+            return context;
         }
-        List<FormalParameterDeclaration> fps = cInfo.msgsrvToParams
-                .getOrDefault(msgsrvName, Collections.emptyList());
-        for (FormalParameterDeclaration fp : fps) {
-            if (fp.getName().equals(rawName)) {
-                return rawName + "_for_" + msgsrvName;
-            }
+
+        String receiverInstance = endpoints[0];
+        String senderInstance = endpoints[1];
+
+        context.put(RECEIVER_INSTANCE_KEY, receiverInstance);
+        context.put(SENDER_INSTANCE_KEY, senderInstance);
+
+        Map<String, List<String>> classToKnownRebecs = buildClassToKnownRebecsMap();
+        Map<String, List<String>> instanceKnownRebecs = buildInstanceKnownRebecsMap(instanceToClass);
+
+        List<String> knownFieldNames =
+                classToKnownRebecs.getOrDefault(receiverClassName, Collections.emptyList());
+
+        List<String> knownInstances =
+                instanceKnownRebecs.getOrDefault(receiverInstance, Collections.emptyList());
+
+        int count = Math.min(knownFieldNames.size(), knownInstances.size());
+        for (int i = 0; i < count; i++) {
+            context.put(
+                    KNOWN_REBEC_INSTANCE_PREFIX + knownFieldNames.get(i),
+                    knownInstances.get(i)
+            );
         }
-        return rawName;
+
+        return context;
+    }
+
+    /**
+     * Parse generated external input-port names:
+     *     msg_to_TARGET_from_SENDER_in
+     *
+     * Returns [TARGET, SENDER], or null if the name does not match.
+     */
+    private String[] parseExternalInputPortName(String portName) {
+        if (portName == null || !portName.endsWith("_in")) {
+            return null;
+        }
+
+        int fromIdx = portName.lastIndexOf("_from_");
+        if (fromIdx < 0) {
+            return null;
+        }
+
+        int toIdx = portName.lastIndexOf("_to_", fromIdx - 1);
+        if (toIdx < 0) {
+            return null;
+        }
+
+        String receiverInstance = portName.substring(toIdx + "_to_".length(), fromIdx);
+        String senderInstance = portName.substring(
+                fromIdx + "_from_".length(),
+                portName.length() - "_in".length()
+        );
+
+        if (receiverInstance.isEmpty() || senderInstance.isEmpty()) {
+            return null;
+        }
+
+        return new String[]{receiverInstance, senderInstance};
+    }
+
+    /**
+     * Reduce sender comparisons to true/false when possible.
+     *
+     * Examples:
+     *     sender == forkL
+     *     sender != philR
+     */
+    private String transformSenderComparison(
+            Expression left,
+            Expression right,
+            String op,
+            Map<String, String> context
+    ) {
+        String leftName = getSimpleTermName(left);
+        String rightName = getSimpleTermName(right);
+
+        if (leftName == null || rightName == null) {
+            return null;
+        }
+
+        Boolean equalsResult = null;
+
+        if ("sender".equals(leftName)) {
+            equalsResult = isSenderEqualToKnownRebec(rightName, context);
+        } else if ("sender".equals(rightName)) {
+            equalsResult = isSenderEqualToKnownRebec(leftName, context);
+        }
+
+        if (equalsResult == null) {
+            return null;
+        }
+
+        if ("!=".equals(op)) {
+            equalsResult = !equalsResult;
+        }
+
+        return equalsResult ? "true" : "false";
+    }
+
+    private String getSimpleTermName(Expression expr) {
+        if (expr instanceof TermPrimary tp) {
+            return tp.getName();
+        }
+        return null;
+    }
+
+    private Boolean isSenderEqualToKnownRebec(String knownRebecFieldName, Map<String, String> context) {
+        if (context == null) {
+            return null;
+        }
+
+        String senderInstance = context.get(SENDER_INSTANCE_KEY);
+        if (senderInstance == null) {
+            return null;
+        }
+
+        String knownInstance = context.get(KNOWN_REBEC_INSTANCE_PREFIX + knownRebecFieldName);
+        if (knownInstance == null) {
+            return null;
+        }
+
+        return senderInstance.equals(knownInstance);
     }
 
     /**
@@ -1846,8 +2361,17 @@ public class LinguaFrancaCodeGenerator {
             return rc;
         }
 
-        // Parameters skipped because unused msgsrvs have no triggering inputs
-        Map<String, String> emptyParamMapping = new HashMap<>();
+        // Unused msgsrvs have no triggering inputs. If their body refers to formal
+        // parameters, map those parameters to default values so we do not emit
+        // obsolete param_for_msgsrv state-variable references.
+        Map<String, String> unusedParamMapping = new HashMap<>();
+        List<FormalParameterDeclaration> fps =
+                cInfo.msgsrvToParams.getOrDefault(unusedMsgSrvDecl.getName(), Collections.emptyList());
+
+        for (FormalParameterDeclaration fp : fps) {
+            String lfType = mapRebecaTypeToLF(fp.getType().getTypeName());
+            unusedParamMapping.put(fp.getName(), getDefaultValueForType(lfType));
+        }
 
         rc.code = parseBlockStatementInline(
                 unusedMsgSrvDecl.getBlock(),
@@ -1858,10 +2382,8 @@ public class LinguaFrancaCodeGenerator {
                 callsByInstance,
                 rc.scheduledActions,
                 rc.usedPorts,
-                emptyParamMapping
+                unusedParamMapping
         );
         return rc;
     }
-
-
 }
