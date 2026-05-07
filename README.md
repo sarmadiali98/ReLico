@@ -7,7 +7,28 @@ This repository accompanies the ReLico work on bridging **formally verified Time
 In addition to the core translator, this repository also contains:
 
 - a **hardware-backed smart-home validation workflow**, and
-- an **verification benchmark workflow for equivalent TR and LF codes** used to study and compare the Lingua Franca verifier toolchain with the Timed Rebeca verifier.
+- a **verification benchmark workflow for equivalent TR and LF models** used to study and compare the Lingua Franca verifier toolchain with the Timed Rebeca verifier.
+
+## Artifact overview
+
+This repository contains the artifact for the ReLico paper. ReLico translates deterministic Timed Rebeca models to Lingua Franca programs.
+
+The artifact has three main parts:
+
+1. **Core translator**
+   - Java/Maven implementation of the Timed Rebeca to Lingua Franca translator.
+   - Source code is under `src/`.
+   - Example input models are under `benchmarks/`.
+
+2. **Verification benchmark workflows**
+   - Timed Rebeca/RMC benchmarks are under `verifier-benchmarks/TR/`.
+   - Lingua Franca/Uclid/Z3 benchmarks are under `verifier-benchmarks/LF/`.
+   - These workflows reproduce the model-level verification comparison reported in the paper.
+
+3. **Smart-home hardware/replay example**
+   - Located under `examples/hardware/smarthome/`.
+   - Contains the Timed Rebeca model, generated LF code, hardware-adapted LF code, ESP32 firmware, serial bridge, replay script, sample data, and scenario logs.
+   - Live hardware reproduction is optional. The included replay script and logs allow reviewers to inspect the reported behavior without physical hardware.
 
 ## Overview
 
@@ -55,7 +76,9 @@ Typical contents of this repository are:
   - generated LF,
   - hardware-adapted LF,
   - Python serial bridge,
-  - ESP32 firmware created with PlatformIO.
+  - ESP32 firmware created with PlatformIO,
+  - hardware-free replay script,
+  - recorded scenario logs.
 
 - `verifier-benchmarks/`  
   Verification-oriented evaluation material organized into:
@@ -103,7 +126,7 @@ At a high level, ReLico maps the source and target languages as follows:
 - external message servers → input ports + reactions
 - `self.m() after(t)` → action scheduling
 - `r.m() after(t)` → connection `after t`
-- `@priority(n)` → reaction declaration order
+- `@priority(n)` → reaction declaration order or generated reaction order where applicable
 
 ## Important semantic notes and limitations
 
@@ -128,8 +151,31 @@ A known out-of-scope case is the transmission of identical simultaneous back-to-
 
 Tested configurations:
 
-- macOS Sequoia 15.1.1 with Java 21.0.1
-- Ubuntu 24.04.1 with Java 21.0.5
+- macOS on Apple Silicon:
+  - Java 21.0.1
+  - Maven 3.9.9
+  - Lingua Franca compiler (`lfc`) 0.11.0
+  - used for the core translator build/smoke test and the smart-home hardware/replay workflow
+
+- Ubuntu 24.04:
+  - Java/Javac 17.0.18
+  - Python 3.12.3
+  - Lingua Franca compiler (`lfc`) 0.11.1-SNAPSHOT
+  - Z3 4.8.8
+  - RMC 2.14
+  - used for the Timed Rebeca/RMC and Lingua Franca/Uclid/Z3 verification benchmark workflows
+
+The RMC jar is not bundled with this repository because it is an external tool. To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` as described in `verifier-benchmarks/README.md` and place it under:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+The RMC jar used in our Ubuntu test had the following SHA256 checksum:
+
+```text
+a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5
+```
 
 Recommended minimum resources:
 
@@ -144,7 +190,7 @@ Clone the repository:
 ```bash
 git clone https://github.com/sarmadiali98/ReLico
 cd ReLico
-````
+```
 
 Check Java and Maven:
 
@@ -156,7 +202,7 @@ mvn -version
 Build the project:
 
 ```bash
-mvn clean install
+mvn clean package -DskipTests
 ```
 
 ## Running the compiler
@@ -169,8 +215,8 @@ Place `.rebeca` input files in the repository’s benchmark/input-model location
 
 In the current codebase and examples, you may see input models in locations such as:
 
-* `benchmarks/`
-* `src/test/resources/org/rebecalang/compiler/modelcompiler/models/`
+- `benchmarks/`
+- `src/test/resources/org/rebecalang/compiler/modelcompiler/models/`
 
 Use the location expected by your current project configuration.
 
@@ -186,16 +232,17 @@ mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
 
 A successful run should:
 
-* finish with `BUILD SUCCESS`
-* process the discovered `.rebeca` input files
-* generate corresponding `.lf` output files in the output directory
+- finish with `BUILD SUCCESS`
+- process the discovered `.rebeca` input files
+- generate corresponding `.lf` output files in the output directory
 
 ### Output location
 
-Generated LF files are written to:
+Generated LF files are written to one of the following output directories, depending on the execution environment and filesystem behavior:
 
 ```text
 compiledLF/
+CompiledLF/
 ```
 
 ## Quick smoke test
@@ -204,13 +251,23 @@ A simple smoke test is:
 
 1. ensure at least one sample `.rebeca` file is available,
 2. run the compiler,
-3. confirm that a corresponding `.lf` file appears in `compiledLF/`.
+3. confirm that a corresponding `.lf` file appears in `compiledLF/` or `CompiledLF/`.
 
 Example expectations:
 
-* `pingpong.rebeca` produces a corresponding LF output
-* sample node/switch/router or sender/receiver benchmarks are translated successfully
-* the build ends with `BUILD SUCCESS`
+- `pingpong.rebeca` produces a corresponding LF output
+- sample node/switch/router or sender/receiver benchmarks are translated successfully
+- the build ends with `BUILD SUCCESS`
+
+A complete core-translator smoke test is:
+
+```bash
+mvn clean package -DskipTests
+mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
+find compiledLF CompiledLF -maxdepth 2 -name "*.lf" 2>/dev/null
+```
+
+In our macOS smoke test, all `.rebeca` models under `benchmarks/` were processed and corresponding `.lf` files were generated.
 
 ## Hardware validation example
 
@@ -224,32 +281,34 @@ This example is included to support the hardware-validation part of the paper. I
 
 The smart-home example includes:
 
-* a Timed Rebeca source model
-* a property file
-* a directly generated LF file
-* a hardware-adapted LF file
-* a Python serial bridge
-* ESP32 firmware
-* PlatformIO project configuration
+- a Timed Rebeca source model
+- a property file
+- a directly generated LF file
+- a hardware-adapted LF file
+- a Python serial bridge
+- ESP32 firmware
+- PlatformIO project configuration
+- a hardware-free replay script
+- recorded scenario logs
 
 ### Hardware/software stack
 
 The example uses:
 
-* **ESP32-WROOM-32 / esp32dev-style setup**
-* **DHT22** on GPIO 27
-* **LDR/light sensor** on GPIO 34
-* **PIR motion detector** on GPIO 35
-* **PlatformIO** with the **Arduino** framework
-* serial output at **115200 baud**
-* a Python bridge that stores the latest sensor readings in `sensor_data.jsonl`
+- **ESP32-WROOM-32 / esp32dev-style setup**
+- **DHT22** on GPIO 27
+- **LDR/light sensor** on GPIO 34
+- **PIR motion detector** on GPIO 35
+- **PlatformIO** with the **Arduino** framework
+- serial output at **115200 baud**
+- a Python bridge that stores the latest sensor readings in `sensor_data.jsonl`
 
 ### Important distinction
 
 Two LF files may be present in the smart-home example:
 
-* a **generated LF file** produced directly by ReLico
-* a **hardware-adapted LF file** used for the live sensor experiment
+- a **generated LF file** produced directly by ReLico
+- a **hardware-adapted LF file** used for the live sensor experiment
 
 The hardware-backed execution path uses the adapted LF version, which includes the extra integration needed to consume runtime sensor data. This should not be confused with the raw translator output.
 
@@ -257,15 +316,27 @@ The hardware-backed execution path uses the adapted LF version, which includes t
 
 The ESP32 firmware for the smart-home example was created and used with **PlatformIO**. If you want to reproduce that path, see the README inside the smart-home example directory.
 
+### Hardware-free replay note
+
+Live ESP32 reproduction is optional for artifact review. The smart-home directory also contains a replay script and recorded scenario logs. This allows reviewers to inspect the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers without physically connecting the ESP32 setup.
+
+See:
+
+```text
+examples/hardware/smarthome/README.md
+examples/hardware/smarthome/run_scenario.sh
+examples/hardware/smarthome/logs/
+```
+
 ## Expected smart-home behavior
 
 The smart-home example is designed around five validated properties:
 
-* `FireKeepsDoorOpen`
-* `FireOverridesIntrusion`
-* `HeaterOffDuringFire`
-* `EmergencyImpliesAlarmOrHistory`
-* `LightOffDuringIntrusionOverride`
+- `FireKeepsDoorOpen`
+- `FireOverridesIntrusion`
+- `HeaterOffDuringFire`
+- `EmergencyImpliesAlarmOrHistory`
+- `LightOffDuringIntrusionOverride`
 
 The evaluation scenarios include:
 
@@ -283,28 +354,58 @@ This repository also contains an **LF verification benchmark workflow** that sup
 
 This part of the artifact is included to document how selected Timed Rebeca benchmarks were translated to Lingua Franca and then checked using the LF verifier toolchain. It is **not** required to use the core Timed Rebeca → Lingua Franca translator.
 
+The paired verification benchmark material has two sides:
+
+- the Timed Rebeca/RMC workflow under `verifier-benchmarks/TR/`, and
+- the Lingua Franca/Uclid/Z3 workflow under `verifier-benchmarks/LF/`.
+
+A minimal Timed Rebeca/RMC smoke test is:
+
+```bash
+cd verifier-benchmarks/TR
+python3 tools/batch_rmc.py --only AircraftDoor
+```
+
+A successful run writes a CSV summary under:
+
+```text
+verifier-benchmarks/TR/_cli_runs/results.csv
+```
+
+A minimal Lingua Franca/Uclid/Z3 smoke test is:
+
+```bash
+cd verifier-benchmarks/LF
+./scripts/run-benchmarks benchmarks/src/AircraftDoor.lf
+```
+
+If the LF benchmark script is not executable on your system, run:
+
+```bash
+chmod +x scripts/run-benchmarks
+```
+
 ### Verification benchmark contents
 
 The verification benchmark material is organized into two parts:
 
-* `verifier-benchmarks/TR/`
+- `verifier-benchmarks/TR/`  
   Timed Rebeca benchmark models.
 
-* `verifier-benchmarks/LF/`
+- `verifier-benchmarks/LF/`  
   Lingua Franca benchmark models and the supporting verification workflow, including:
-
-  * generated or adapted LF benchmark programs,
-  * benchmark-running scripts,
-  * environment configuration,
-  * raw result logs,
-  * CSV summaries of the final benchmark run.
+  - generated or adapted LF benchmark programs,
+  - benchmark-running scripts,
+  - environment configuration,
+  - raw result logs,
+  - CSV summaries of the final benchmark run.
 
 ### Provenance note
 
 The LF-side benchmark workflow in this repository is **adapted** from the public **LF Verifier Benchmarks** repository maintained by the Lingua Franca project:
 
-* Repository: `https://github.com/lf-lang/lf-verifier-benchmarks`
-* Associated paper: `https://dl.acm.org/doi/full/10.1145/3609134`
+- Repository: `https://github.com/lf-lang/lf-verifier-benchmarks`
+- Associated paper: `https://dl.acm.org/doi/full/10.1145/3609134`
 
 That benchmark suite was developed for prior work on Lingua Franca property verification. In this repository, the benchmark infrastructure is reused and adapted for the purposes of the present work.
 
@@ -312,9 +413,10 @@ That benchmark suite was developed for prior work on Lingua Franca property veri
 
 The verification benchmark workflow assumes a local installation of:
 
-* **Lingua Franca (`lfc`)**
-* **Uclid5**
-* **Z3**
+- **Lingua Franca (`lfc`)**
+- **Uclid5**
+- **Z3**
+- **RMC 2.14** for the Timed Rebeca/RMC side
 
 The benchmark script runs the LF verifier pipeline on the benchmark set and records generated verification artifacts and timing summaries.
 
@@ -322,21 +424,21 @@ The benchmark script runs the LF verifier pipeline on the benchmark set and reco
 
 This benchmark workflow should be distinguished from both:
 
-* the **core translation workflow**, whose purpose is to generate LF from Timed Rebeca, and
-* the **hardware-backed smart-home workflow**, whose purpose is runtime validation on physical hardware.
+- the **core translation workflow**, whose purpose is to generate LF from Timed Rebeca, and
+- the **hardware-backed smart-home workflow**, whose purpose is runtime validation on physical hardware.
 
-The verification benchmark workflow is specifically for **offline property-checking experiments** on LF models.
+The verification benchmark workflow is specifically for **offline property-checking experiments** on TR and LF models.
 
 ### Expected benchmark artifacts
 
 Depending on the benchmark and the verifier outcome, the LF verification workflow may generate:
 
-* `.ucl` verification models
-* `.dot` state-space or model graphs
-* `.smt` formulas produced from Uclid5
-* `.json` counterexample traces for violated properties
-* raw `.txt` timing/result logs
-* summarized `.csv` result tables
+- `.ucl` verification models
+- `.dot` state-space or model graphs
+- `.smt` formulas produced from Uclid5
+- `.json` counterexample traces for violated properties
+- raw `.txt` timing/result logs
+- summarized `.csv` result tables
 
 ### Reproducing the verification benchmark run
 
@@ -357,11 +459,11 @@ verifier-benchmarks/LF/results/
 
 If you are evaluating the translation itself, the main compiler workflow is sufficient.
 
-If you want to inspect the verification-oriented evaluation used in the paper, use the LF verification benchmark workflow and the accompanying result files.
+If you want to inspect the verification-oriented evaluation used in the paper, use the TR/RMC and LF/Uclid/Z3 verification benchmark workflows and the accompanying result files.
 
 ## Reproducing paper-related results
 
-This repository supports three different levels of use:
+This repository supports three different levels of use.
 
 ### 1. Core translation workflow
 
@@ -369,18 +471,37 @@ Use the translator on example or benchmark Timed Rebeca inputs and inspect the g
 
 ### 2. End-to-end smart-home workflow
 
-Use the smart-home directory to reproduce the hardware-backed example with:
+Use the smart-home directory to reproduce or inspect the hardware-backed example with:
 
-* ESP32 firmware
-* PlatformIO upload/monitor
-* Python serial bridge
-* hardware-adapted LF program
+- ESP32 firmware
+- PlatformIO upload/monitor
+- Python serial bridge
+- hardware-adapted LF program
+- hardware-free replay script
+- recorded event/property logs
 
-### 3. LF verification benchmark workflow
+Live ESP32 reproduction is optional for artifact review. The replay script and included logs are sufficient to inspect the event and property markers reported in the paper.
 
-Use the verification benchmark directory to reproduce the LF-side verification experiments and inspect the generated logs, timing summaries, and derived benchmark data.
+### 3. Verification benchmark workflows
+
+Use the verification benchmark directory to reproduce the TR/RMC and LF/Uclid/Z3 verification experiments and inspect the generated logs, timing summaries, and derived benchmark data.
 
 If you only want to evaluate the translator itself, the first workflow is sufficient.
+
+## Artifact contents not included in Git
+
+The repository intentionally does not include generated build outputs, virtual environments, local environment logs, or external binary tools.
+
+In particular, the following are not committed:
+
+- Maven `target/` directories
+- generated Lingua Franca build directories
+- Python virtual environments
+- PlatformIO build directories
+- local `artifact-env-info*` logs/tarballs
+- `rmc-2.14.jar`
+
+The RMC jar must be downloaded separately following the instructions in `verifier-benchmarks/README.md`.
 
 ## Common issues
 
@@ -414,9 +535,9 @@ Make sure `java -version` reports JDK 17 or newer.
 
 Check that:
 
-* input `.rebeca` files are placed in the expected input directory
-* the project builds successfully
-* the compiler is using the directory layout you expect
+- input `.rebeca` files are placed in the expected input directory
+- the project builds successfully
+- the compiler is using the directory layout you expect
 
 ### Smart-home serial bridge does not connect
 
@@ -425,6 +546,14 @@ If you are using the hardware example, edit the serial port in `serial_bridge.py
 ### LF benchmark script cannot find tools
 
 If you are using the verification benchmark workflow, make sure `lfc`, `uclid`, and `z3` are installed and available on your `PATH`, and confirm that the benchmark-side `env.bash` is sourced if your setup depends on it.
+
+### RMC jar is missing
+
+If the TR/RMC workflow fails because `rmc-2.14.jar` is missing, download it according to the instructions in `verifier-benchmarks/README.md` and place it at:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
 
 ## License
 
@@ -440,14 +569,15 @@ This repository may rely on third-party software and libraries that remain under
 
 Examples include:
 
-* Maven dependencies used by the Java compiler project
-* PlatformIO
-* Arduino framework for ESP32
-* Adafruit DHT Sensor Library
-* Adafruit Unified Sensor
-* Lingua Franca
-* Uclid5
-* Z3
+- Maven dependencies used by the Java compiler project
+- PlatformIO
+- Arduino framework for ESP32
+- Adafruit DHT Sensor Library
+- Adafruit Unified Sensor
+- Lingua Franca
+- Uclid5
+- Z3
+- RMC
 
 These dependencies are not relicensed by this repository.
 
@@ -460,14 +590,14 @@ If you use ReLico in academic work, please cite:
 
 The LF-side verification benchmark workflow included here is adapted from:
 
-* **LF Verifier Benchmarks**
+- **LF Verifier Benchmarks**  
   `https://github.com/lf-lang/lf-verifier-benchmarks`
 
 The adapted benchmark workflow is associated with the prior paper:
 
-* **Towards Building Verifiable CPS using Lingua Franca**
-  ACM Transactions on Embedded Computing Systems, 2023
-  DOI: `10.1145/3609134`
+- **Towards Building Verifiable CPS using Lingua Franca**  
+  ACM Transactions on Embedded Computing Systems, 2023  
+  DOI: `10.1145/3609134`  
   URL: `https://dl.acm.org/doi/full/10.1145/3609134`
 
 If you use the verification benchmark portion of this repository, cite that paper in addition to the present work.
@@ -476,8 +606,16 @@ If you use the verification benchmark portion of this repository, cite that pape
 
 For artifact-review purposes, the most important distinctions are:
 
-* the core contribution is the Timed Rebeca → Lingua Franca translator
-* the supported source language is a deterministic subset of Timed Rebeca
-* the smart-home example is an end-to-end validation workflow
-* the hardware-backed LF program contains additional integration beyond the raw generated LF file
-* the verification benchmark workflow is a separate evaluation harness adapted from prior LF-verification-benchmark infrastructure and should be treated as such in reproduction and citation contexts
+- the core contribution is the Timed Rebeca → Lingua Franca translator
+- the supported source language is a deterministic subset of Timed Rebeca
+- the smart-home example is an end-to-end validation workflow
+- the hardware-backed LF program contains additional integration beyond the raw generated LF file
+- live ESP32 reproduction is optional because hardware-free replay logs are included
+- the verification benchmark workflow is a separate evaluation harness adapted from prior LF-verification-benchmark infrastructure and should be treated as such in reproduction and citation contexts
+
+The main reproducibility paths are:
+
+1. build and run the core ReLico translator,
+2. run the Timed Rebeca/RMC smoke test,
+3. run the Lingua Franca/Uclid/Z3 smoke test,
+4. inspect or rerun the smart-home replay scenarios.
