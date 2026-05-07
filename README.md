@@ -19,10 +19,12 @@ The artifact has three main parts:
    - Java/Maven implementation of the Timed Rebeca to Lingua Franca translator.
    - Source code is under `src/`.
    - Example input models are under `benchmarks/`.
+   - The Docker quickstart runs this part of the artifact.
 
 2. **Verification benchmark workflows**
    - Timed Rebeca/RMC benchmarks are under `verifier-benchmarks/TR/`.
    - Lingua Franca/Uclid/Z3 benchmarks are under `verifier-benchmarks/LF/`.
+   - Helper scripts under `verifier-benchmarks/scripts/` check the environment and run a representative smoke test.
    - These workflows reproduce the model-level verification comparison reported in the paper.
 
 3. **Smart-home hardware/replay example**
@@ -32,11 +34,46 @@ The artifact has three main parts:
 
 ## Recommended reviewer paths
 
-The artifact can be evaluated at three levels.
+The artifact can be evaluated at several levels. The recommended first path is the Docker quickstart for the core translator.
 
-### Path 1: Core translator smoke test
+### Path 1: Docker core-translator smoke test
 
-This is the recommended first check. It requires Java and Maven.
+This is the easiest first check. It builds the ReLico translator inside a container and runs it on the benchmark `.rebeca` models.
+
+From the repository root:
+
+```bash
+docker build -t relico-artifact .
+docker run --rm relico-artifact
+```
+
+Expected result:
+
+- the Java/Maven build succeeds,
+- the ReLico compiler processes the `.rebeca` files under `benchmarks/`,
+- generated `.lf` files appear under `compiledLF/` or `CompiledLF/`,
+- the script prints a final success message such as `SUCCESS: generated ... LF files.`
+
+After the image has been built, the smoke test can also be run without network access:
+
+```bash
+docker run --rm --network none relico-artifact
+```
+
+The Docker image is intentionally limited to the **core translator smoke test**. It does not include the optional verifier toolchains (`RMC`, `lfc`, `Uclid5`, `Z3`) or the optional ESP32/PlatformIO live-hardware workflow.
+
+On macOS, the Docker commands can be run using Docker Desktop or a Docker-compatible runtime such as Colima.
+
+### Path 2: Native core translator smoke test
+
+This path runs the core translator directly on the host machine. It requires Java and Maven.
+
+```bash
+mvn clean package -DskipTests
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java \
+  -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
+find compiledLF CompiledLF -maxdepth 2 -name "*.lf" 2>/dev/null
+```
 
 Expected result:
 
@@ -44,7 +81,7 @@ Expected result:
 - the ReLico compiler processes the `.rebeca` files under `benchmarks/`,
 - generated `.lf` files appear under `compiledLF/` or `CompiledLF/`.
 
-### Path 2: Verifier benchmark smoke test
+### Path 3: Verifier benchmark smoke test
 
 This checks one representative benchmark through both verifier workflows:
 
@@ -64,7 +101,13 @@ Expected result:
 - the TR/RMC CSV reports `analysis_result=satisfied`, and
 - the LF/Uclid/Z3 CSV reports `AircraftDoor,...,Valid,0,0,0,...`.
 
-### Path 3: Smart-home replay
+The RMC jar is not included in this repository. To run the TR/RMC workflow, place `rmc-2.14.jar` under:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+### Path 4: Smart-home replay
 
 This checks the hardware case study without requiring physical ESP32 hardware.
 
@@ -78,7 +121,21 @@ lfc smarthome.lf
 
 Expected result: the log contains `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers, including fire-overriding-intrusion behavior.
 
-The live ESP32 workflow is optional.
+The live ESP32 workflow is optional because replay logs and replay scripts are included.
+
+## Expected runtimes
+
+These times are approximate and machine-dependent.
+
+| Task | Command | Expected time |
+|---|---|---:|
+| Docker core translator smoke test | `docker run --rm relico-artifact` | about 1-3 minutes after image build |
+| Native core translator smoke test | Maven build + compiler run | about 1-3 minutes |
+| Verifier smoke test | `cd verifier-benchmarks && ./scripts/run_smoke.sh` | about 1 minute on the tested Ubuntu machine |
+| Smart-home replay, one scenario | `./run_scenario.sh ...` | 6-10 seconds plus LF compilation |
+| Smart-home replay, all scenarios | five `run_scenario.sh` commands | about 1 minute plus LF compilation |
+| Full LF verifier benchmark rerun | `cd verifier-benchmarks/LF && ./scripts/run-benchmarks benchmarks` | several minutes; demanding cases may hit resource limits |
+| Full TR/RMC benchmark rerun | `cd verifier-benchmarks/TR && python3 tools/batch_rmc.py` | several minutes, machine-dependent |
 
 ## Overview
 
@@ -86,11 +143,11 @@ Timed Rebeca is an actor-based language for modeling and verifying concurrent an
 
 In particular, ReLico:
 
-- translates **Deterministic Timed Rebeca (DTR)** models into **Lingua Franca**
-- maps actor/message-server structure to reactors, ports, actions, and reactions
-- preserves local message-server priority using LF reaction declaration order
-- translates timing behavior based on the `after(...)` construct
-- generates LF code targeting the **C++ runtime**
+- translates **Deterministic Timed Rebeca (DTR)** models into **Lingua Franca**,
+- maps actor/message-server structure to reactors, ports, actions, and reactions,
+- preserves local message-server priority using LF reaction declaration order,
+- translates timing behavior based on the `after(...)` construct,
+- generates LF code targeting the **C++ runtime**.
 
 ## Relation to the paper
 
@@ -132,8 +189,15 @@ Typical contents of this repository are:
 
 - `verifier-benchmarks/`  
   Verification-oriented evaluation material organized into:
-  - `verifier-benchmarks/TR/` for Timed Rebeca benchmark models, and
-  - `verifier-benchmarks/LF/` for Lingua Franca benchmark models, benchmark scripts, environment configuration, and recorded results.
+  - `verifier-benchmarks/TR/` for Timed Rebeca benchmark models,
+  - `verifier-benchmarks/LF/` for Lingua Franca benchmark models,
+  - `verifier-benchmarks/scripts/` for verifier smoke-test helper scripts.
+
+- `Dockerfile`  
+  Container setup for the core translator smoke test.
+
+- `scripts/docker_smoke_test.sh`  
+  Docker entrypoint script that builds the translator, runs the compiler on benchmark models, and checks that LF files were generated.
 
 If your local layout differs slightly, treat the above as the logical organization of the artifact.
 
@@ -145,21 +209,21 @@ ReLico currently targets a **deterministic subset of Timed Rebeca** and a corres
 
 The supported source subset is **Deterministic Timed Rebeca (DTR)**:
 
-- actor execution is deterministic
-- scheduling conflicts are resolved by explicit `@priority(...)`
-- the `after(...)` timing primitive is supported
-- `delay` and `deadline` are not part of the supported subset
+- actor execution is deterministic,
+- scheduling conflicts are resolved by explicit `@priority(...)`,
+- the `after(...)` timing primitive is supported,
+- `delay` and `deadline` are not part of the supported subset.
 
 ### Lingua Franca assumptions
 
 The generated LF targets a subset centered on:
 
-- reactors
-- input and output ports
-- state
-- logical actions
-- reactions
-- main-reactor connections
+- reactors,
+- input and output ports,
+- state,
+- logical actions,
+- reactions,
+- main-reactor connections.
 
 The mapping does **not** rely on full LF features such as timers, physical actions, methods, or hierarchical models.
 
@@ -196,50 +260,86 @@ A known out-of-scope case is the transmission of identical simultaneous back-to-
 
 ## Requirements
 
-The minimal requirements for the core translator are:
+### Minimal core translator requirements
+
+For the native core translator workflow:
 
 - **Java Development Kit (JDK)**: version 17 or later
 - **Maven**: for dependency resolution and building
 
-Additional requirements depend on the workflow being run:
+For the Docker core translator workflow:
 
-- **Verifier benchmark smoke/full rerun**
-  - Python 3
-  - RMC 2.14
-  - Lingua Franca compiler (`lfc`)
-  - Uclid5
-  - Z3
-  - C++ compiler
+- Docker or a Docker-compatible container runtime
 
-- **Smart-home replay**
-  - Lingua Franca compiler (`lfc`)
-  - C++ compiler
+### Additional requirements for verifier benchmark reruns
 
-- **Optional live ESP32 hardware workflow**
-  - ESP32 development board
-  - PlatformIO
-  - Arduino framework for ESP32
-  - Adafruit DHT Sensor Library
-  - Adafruit Unified Sensor
-  - Python 3 and `pyserial`
+The verifier benchmark smoke/full rerun requires:
 
-Tested configurations:
+- Python 3
+- Java and Javac
+- a C++ compiler available as `c++`
+- RMC 2.14
+- Lingua Franca compiler (`lfc`)
+- Uclid5
+- Z3
 
-- macOS on Apple Silicon:
-  - Java 21.0.1
-  - Maven 3.9.9
-  - Lingua Franca compiler (`lfc`) 0.11.0
-  - used for the core translator build/smoke test and the smart-home hardware/replay workflow
+The helper script checks these requirements:
 
-- Ubuntu 24.04:
-  - Java/Javac 17.0.18
-  - Python 3.12.3
-  - Maven 3.9.9
-  - Lingua Franca compiler (`lfc`) 0.11.1-SNAPSHOT
-  - Uclid 0.9.5
-  - Z3 4.8.8
-  - RMC 2.14
-  - used for the core translator build/smoke test, Timed Rebeca/RMC workflow, and Lingua Franca/Uclid/Z3 workflow
+```bash
+cd verifier-benchmarks
+./scripts/check_env.sh
+```
+
+### Additional requirements for smart-home replay
+
+The hardware-free smart-home replay requires:
+
+- Lingua Franca compiler (`lfc`)
+- C++ compiler supported by the LF C++ target
+
+### Additional requirements for optional live ESP32 workflow
+
+The live ESP32 hardware workflow is optional and requires:
+
+- ESP32 development board
+- PlatformIO
+- Arduino framework for ESP32
+- Adafruit DHT Sensor Library
+- Adafruit Unified Sensor
+- Python 3 and `pyserial`
+
+## Tested configurations
+
+### macOS
+
+- macOS on Apple Silicon
+- Java 21.0.1
+- Maven 3.9.9
+- Lingua Franca compiler (`lfc`) 0.11.0
+- Docker-compatible runtime tested through Colima/Docker CLI for the core Docker path
+- Used for:
+  - core translator build/smoke test,
+  - Docker core translator smoke test,
+  - smart-home replay,
+  - live ESP32 hardware workflow.
+
+### Ubuntu
+
+- Ubuntu 24.04.4 LTS
+- Lenovo IdeaPad 5
+- Intel Core i3-1115G4
+- 8 GB RAM
+- Java/Javac 17.0.18
+- Python 3.12.3
+- Maven 3.9.9
+- Lingua Franca compiler (`lfc`) 0.11.1-SNAPSHOT
+- Uclid 0.9.5
+- Z3 4.8.8
+- RMC 2.14
+- Used for:
+  - core translator build/smoke test,
+  - Timed Rebeca/RMC verifier smoke test,
+  - Lingua Franca/Uclid/Z3 verifier smoke test.
 
 The RMC jar is not bundled with this repository because it is an external tool. To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` as described in `verifier-benchmarks/README.md` and place it under:
 
@@ -259,6 +359,8 @@ Recommended minimum resources:
 - 8 GB RAM
 - 2 GB free disk space
 
+The full verifier benchmark reruns may require more time and memory than the smoke tests. Some LF-side benchmarks are intentionally retained as resource-bound cases and may exceed the practical limits of the tested 8 GB machine.
+
 ## Installation
 
 Clone the repository:
@@ -268,18 +370,51 @@ git clone https://github.com/sarmadiali98/ReLico
 cd ReLico
 ```
 
-Check Java and Maven:
+Check Java and Maven for native execution:
 
 ```bash
 java -version
 mvn -version
 ```
 
-Build the project:
+Build the project natively:
 
 ```bash
 mvn clean package -DskipTests
 ```
+
+## Docker quickstart
+
+The Docker quickstart is the recommended first artifact check for reviewers who want to avoid installing Java and Maven on the host system.
+
+Build the image:
+
+```bash
+docker build -t relico-artifact .
+```
+
+Run the core translator smoke test:
+
+```bash
+docker run --rm relico-artifact
+```
+
+Expected result:
+
+- the Java/Maven build succeeds inside the container,
+- the ReLico compiler processes the benchmark `.rebeca` files,
+- generated `.lf` files appear under `compiledLF/` or `CompiledLF/`,
+- the script prints a final success message.
+
+To check that the already-built image can run without network access:
+
+```bash
+docker run --rm --network none relico-artifact
+```
+
+This Docker image does **not** include the optional verifier toolchains or live ESP32 hardware dependencies. The verifier and hardware/replay workflows are documented separately below.
+
+On macOS, the Docker commands can be run through Docker Desktop or through a Docker-compatible runtime such as Colima.
 
 ## Running the compiler
 
@@ -309,9 +444,9 @@ mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java \
 
 A successful run should:
 
-- finish with `BUILD SUCCESS`
-- process the discovered `.rebeca` input files
-- generate corresponding `.lf` output files in the output directory
+- finish with `BUILD SUCCESS`,
+- process the discovered `.rebeca` input files,
+- generate corresponding `.lf` output files in the output directory.
 
 ### Output location
 
@@ -332,11 +467,11 @@ A simple smoke test is:
 
 Example expectations:
 
-- `pingpong.rebeca` produces a corresponding LF output
-- sample node/switch/router or sender/receiver benchmarks are translated successfully
-- the build ends with `BUILD SUCCESS`
+- `pingpong.rebeca` produces a corresponding LF output,
+- sample node/switch/router or sender/receiver benchmarks are translated successfully,
+- the build ends with `BUILD SUCCESS`.
 
-A complete core-translator smoke test is:
+A complete native core-translator smoke test is:
 
 ```bash
 mvn clean package -DskipTests
@@ -359,19 +494,19 @@ This example is included to support the hardware-validation part of the paper. I
 
 The smart-home example includes:
 
-- a Timed Rebeca source model
-- a property file
-- a directly generated LF file
-- a hardware-adapted LF file
-- a Python serial bridge
-- ESP32 firmware
-- PlatformIO project configuration
-- a hardware-free replay script
-- recorded scenario logs
+- a Timed Rebeca source model,
+- a property file,
+- a directly generated LF file,
+- a hardware-adapted LF file,
+- a Python serial bridge,
+- ESP32 firmware,
+- PlatformIO project configuration,
+- a hardware-free replay script,
+- recorded scenario logs.
 
 ### Hardware/software stack
 
-The example uses:
+The optional live hardware setup uses:
 
 - **ESP32-WROOM-32 / esp32dev-style setup**
 - **DHT22** on GPIO 27
@@ -390,13 +525,9 @@ Two LF files are included in the smart-home example:
 
 The hardware-backed execution path uses the adapted LF version, which includes the extra integration needed to consume runtime sensor data. This should not be confused with the raw translator output.
 
-### PlatformIO note
-
-The ESP32 firmware for the smart-home example was created and used with **PlatformIO**. If you want to reproduce that path, see the README inside the smart-home example directory.
-
 ### Hardware-free replay note
 
-Live ESP32 reproduction is optional for artifact review. The smart-home directory also contains a replay script and recorded scenario logs. This allows reviewers to inspect the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers without physically connecting the ESP32 setup.
+Live ESP32 reproduction is optional for artifact review. The smart-home directory contains a replay script and recorded scenario logs. This allows reviewers to inspect the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers without physically connecting the ESP32 setup.
 
 See:
 
@@ -418,11 +549,11 @@ The smart-home example is designed around five validated properties:
 
 The evaluation scenarios include:
 
-1. fire emergency
-2. intrusion with stealth mode
-3. fire overriding intrusion
-4. normal baseline operation
-5. cold-temperature heater activation
+1. fire emergency,
+2. intrusion with stealth mode,
+3. fire overriding intrusion,
+4. normal baseline operation,
+5. cold-temperature heater activation.
 
 These scenarios are validated through runtime event and property markers in the adapted LF execution path.
 
@@ -522,12 +653,12 @@ The verification benchmark workflow is specifically for **offline property-check
 
 Depending on the benchmark and the verifier outcome, the LF verification workflow may generate:
 
-- `.ucl` verification models
-- `.dot` state-space or model graphs
-- `.smt` formulas produced from Uclid5
-- `.json` counterexample traces for violated properties
-- raw `.txt` timing/result logs
-- summarized `.csv` result tables
+- `.ucl` verification models,
+- `.dot` state-space or model graphs,
+- `.smt` formulas produced from Uclid5,
+- `.json` counterexample traces for violated properties,
+- raw `.txt` timing/result logs,
+- summarized `.csv` result tables.
 
 ### Reproducing the verification benchmark run
 
@@ -570,6 +701,46 @@ If you are evaluating the translation itself, the main compiler workflow is suff
 
 If you want to inspect the verification-oriented evaluation used in the paper, first run the verifier smoke-test scripts and then use the TR/RMC and LF/Uclid/Z3 full benchmark workflows if needed.
 
+## Result files and paper-related tables
+
+The repository includes result summaries that support the verification comparison in the paper.
+
+Verification result summaries are stored in:
+
+```text
+verifier-benchmarks/TR/sample_results.csv
+verifier-benchmarks/LF/results/
+```
+
+The paper’s verification comparison table is derived from the CSV fields for:
+
+- benchmark name,
+- verification outcome,
+- exit codes,
+- generated model size or communication-bound fields,
+- timing measurements,
+- and whether downstream verification artifacts were generated successfully.
+
+The full verifier reruns regenerate these CSV files:
+
+```bash
+cd verifier-benchmarks/TR
+python3 tools/batch_rmc.py
+
+cd ../LF
+./scripts/run-benchmarks benchmarks
+```
+
+The smart-home validation claims are supported by:
+
+```text
+examples/hardware/smarthome/logs/hardware-scenarios/*.log
+examples/hardware/smarthome/logs/hardware-property-markers.log
+examples/hardware/smarthome/logs/hardware-scenarios-summary.log
+```
+
+These logs contain the `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers used to validate the five reported smart-home scenarios.
+
 ## Reproducing paper-related results
 
 This repository supports three different levels of use.
@@ -582,12 +753,12 @@ Use the translator on example or benchmark Timed Rebeca inputs and inspect the g
 
 Use the smart-home directory to reproduce or inspect the hardware-backed example with:
 
-- ESP32 firmware
-- PlatformIO upload/monitor
-- Python serial bridge
-- hardware-adapted LF program
-- hardware-free replay script
-- recorded event/property logs
+- ESP32 firmware,
+- PlatformIO upload/monitor,
+- Python serial bridge,
+- hardware-adapted LF program,
+- hardware-free replay script,
+- recorded event/property logs.
 
 Live ESP32 reproduction is optional for artifact review. The replay script and included logs are sufficient to inspect the event and property markers reported in the paper.
 
@@ -611,10 +782,29 @@ In particular, the following are not committed:
 - `rmc-2.14.jar`
 - generated RMC run directories such as `verifier-benchmarks/TR/_cli_runs/`
 - generated LF smoke-test directories such as `verifier-benchmarks/LF/_smoke/`
+- generated translator output directories such as `compiledLF/` or `CompiledLF/`
 
 The RMC jar must be downloaded separately following the instructions in `verifier-benchmarks/README.md`.
 
 ## Common issues
+
+### Docker is not installed
+
+Install Docker Desktop or another Docker-compatible runtime.
+
+On macOS, Docker Desktop or Colima can be used. With Colima, the standard Docker CLI commands still apply after starting the runtime:
+
+```bash
+colima start --runtime docker
+docker run hello-world
+```
+
+Then rerun:
+
+```bash
+docker build -t relico-artifact .
+docker run --rm relico-artifact
+```
 
 ### Maven not installed
 
@@ -629,6 +819,8 @@ or:
 ```bash
 sudo apt install maven
 ```
+
+Alternatively, use the Docker quickstart, which does not require Maven to be installed on the host.
 
 ### Dependency resolution issues
 
@@ -646,9 +838,9 @@ Make sure `java -version` reports JDK 17 or newer.
 
 Check that:
 
-- input `.rebeca` files are placed in the expected input directory
-- the project builds successfully
-- the compiler is using the directory layout you expect
+- input `.rebeca` files are placed in the expected input directory,
+- the project builds successfully,
+- the compiler is using the directory layout you expect.
 
 ### Smart-home serial bridge does not connect
 
@@ -687,15 +879,16 @@ This repository may rely on third-party software and libraries that remain under
 
 Examples include:
 
-- Maven dependencies used by the Java compiler project
-- PlatformIO
-- Arduino framework for ESP32
-- Adafruit DHT Sensor Library
-- Adafruit Unified Sensor
-- Lingua Franca
-- Uclid5
-- Z3
-- RMC
+- Docker or a Docker-compatible runtime,
+- Maven dependencies used by the Java compiler project,
+- PlatformIO,
+- Arduino framework for ESP32,
+- Adafruit DHT Sensor Library,
+- Adafruit Unified Sensor,
+- Lingua Franca,
+- Uclid5,
+- Z3,
+- RMC.
 
 These dependencies are not relicensed by this repository.
 
@@ -724,19 +917,28 @@ If you use the verification benchmark portion of this repository, cite that pape
 
 For artifact-review purposes, the most important distinctions are:
 
-- the core contribution is the Timed Rebeca → Lingua Franca translator
-- the supported source language is a deterministic subset of Timed Rebeca
-- the smart-home example is an end-to-end validation workflow
-- the hardware-backed LF program contains additional integration beyond the raw generated LF file
-- live ESP32 reproduction is optional because hardware-free replay logs are included
-- the verification benchmark workflow is a separate evaluation harness adapted from prior LF-verification-benchmark infrastructure and should be treated as such in reproduction and citation contexts
+- the core contribution is the Timed Rebeca → Lingua Franca translator,
+- the Docker quickstart covers the core translator smoke test,
+- the supported source language is a deterministic subset of Timed Rebeca,
+- the smart-home example is an end-to-end validation workflow,
+- the hardware-backed LF program contains additional integration beyond the raw generated LF file,
+- live ESP32 reproduction is optional because hardware-free replay logs are included,
+- the verification benchmark workflow is a separate evaluation harness adapted from prior LF-verification-benchmark infrastructure and should be treated as such in reproduction and citation contexts.
 
 The main reproducibility paths are:
 
-1. build and run the core ReLico translator,
-2. run the Timed Rebeca/RMC smoke test,
-3. run the Lingua Franca/Uclid/Z3 smoke test,
-4. inspect or rerun the smart-home replay scenarios.
+1. build and run the core ReLico translator with Docker,
+2. build and run the core ReLico translator natively with Java/Maven,
+3. run the Timed Rebeca/RMC smoke test,
+4. run the Lingua Franca/Uclid/Z3 smoke test,
+5. inspect or rerun the smart-home replay scenarios.
+
+The recommended first reviewer command for the core translator is:
+
+```bash
+docker build -t relico-artifact .
+docker run --rm relico-artifact
+```
 
 The recommended first reviewer command for the verifier workflows is:
 
