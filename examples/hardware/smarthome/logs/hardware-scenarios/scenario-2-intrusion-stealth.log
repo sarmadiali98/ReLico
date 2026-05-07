@@ -1,0 +1,44 @@
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[EVENT] Unwanted person alert at Central -> set emergency mode, schedule delayed CLOSE DOOR, activate light override
+[INFO] Intrusion auto-clear scheduled in 30 seconds
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, intrusionActive=true ✓
+[EVENT] Delayed door close request executing (fire not active) -> CLOSE DOOR
+[EVENT] Light override ACTIVATED (stealth mode)
+[EVENT] Door CLOSED
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)
+[EVENT] Motion detected -> unwanted person alert to Central
+[INFO] Light override ACTIVE -> ignoring light sensor update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+[EVENT] 20 <= Temp <= 25 -> request Heater OFF
+[INFO] Unwanted person alert received while intrusion already active (no action)

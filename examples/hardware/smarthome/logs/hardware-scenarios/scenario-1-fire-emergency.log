@@ -1,0 +1,30 @@
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] FIRE ALERT at Central -> OPEN DOOR, cancel door close request, deactivate light override
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓
+[EVENT] Door OPENED
+[EVENT] Light ON
+[INFO] Light notified ON, tracking lightIsOn=true
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓

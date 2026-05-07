@@ -1,0 +1,15 @@
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON
+[EVENT] Light ON
+[EVENT] Heater ON
+[INFO] Light notified ON, tracking lightIsOn=true
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON
+[EVENT] Light is DARK (override NOT active) -> request Light ON
+[EVENT] Temp < 20 -> request Heater ON

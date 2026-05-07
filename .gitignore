@@ -1,0 +1,57 @@
+
+# macOS
+.DS_Store
+
+# Local artifact/environment logs
+artifact-env-info/
+artifact-env-info-macos/
+artifact-env-info*.tar.gz
+
+# Python virtualenvs
+.venv/
+examples/hardware/smarthome/.venv/
+
+# PlatformIO generated files
+examples/hardware/smarthome/firmware/.pio/
+
+# LF generated build outputs
+examples/hardware/smarthome/bin/
+examples/hardware/smarthome/build/
+examples/hardware/smarthome/lib/
+examples/hardware/smarthome/src-gen/
+
+# Runtime sensor data generated during hardware/replay runs
+examples/hardware/smarthome/sensor_data.jsonl
+
+# Java/Maven build output
+target/
+
+# ReLico generated LF output
+CompiledLF/
+compiledLF/
+
+# macOS
+.DS_Store
+
+# Local artifact/environment logs
+artifact-env-info/
+artifact-env-info-macos/
+artifact-env-info*.tar.gz
+
+# Python virtualenvs
+.venv/
+examples/hardware/smarthome/.venv/
+
+# PlatformIO generated files
+examples/hardware/smarthome/firmware/.pio/
+
+# LF generated build/runtime outputs
+examples/hardware/smarthome/bin/
+examples/hardware/smarthome/build/
+examples/hardware/smarthome/lib/
+examples/hardware/smarthome/src-gen/
+examples/hardware/smarthome/include/
+examples/hardware/smarthome/share/
+
+# Runtime sensor data generated during hardware/replay runs
+examples/hardware/smarthome/sensor_data.jsonl

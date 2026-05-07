@@ -1,0 +1,74 @@
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[EVENT] FIRE ALERT at Central -> OPEN DOOR, cancel door close request, deactivate light override
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Door OPENED
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓

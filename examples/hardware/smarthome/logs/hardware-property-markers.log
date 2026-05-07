@@ -1,0 +1,50 @@
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-1-fire-emergency.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, intrusionActive=true ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-2-intrusion-stealth.log:[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, preventing light control ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED ✓
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log:[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN ✓
