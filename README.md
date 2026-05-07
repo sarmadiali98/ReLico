@@ -34,7 +34,9 @@ The artifact has three main parts:
 
 ## Recommended reviewer paths
 
-The artifact can be evaluated at several levels. The recommended first path is the Docker quickstart for the core translator.
+The artifact can be evaluated at several levels.
+
+The recommended first path is the **Docker core-translator smoke test**, because it does not require Java or Maven to be installed manually on the host system.
 
 ### Path 1: Docker core-translator smoke test
 
@@ -62,8 +64,6 @@ docker run --rm --network none relico-artifact
 
 The Docker image is intentionally limited to the **core translator smoke test**. It does not include the optional verifier toolchains (`RMC`, `lfc`, `Uclid5`, `Z3`) or the optional ESP32/PlatformIO live-hardware workflow.
 
-On macOS, the Docker commands can be run using Docker Desktop or a Docker-compatible runtime such as Colima.
-
 ### Path 2: Native core translator smoke test
 
 This path runs the core translator directly on the host machine. It requires Java and Maven.
@@ -88,7 +88,23 @@ This checks one representative benchmark through both verifier workflows:
 - `AircraftDoor` through the Timed Rebeca/RMC workflow, and
 - `AircraftDoor.lf` through the Lingua Franca/Uclid/Z3 workflow.
 
-Run:
+The RMC jar is not included in this repository because it is an external tool. Before running this path, download `rmc-2.14.jar` and place it at:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+From the repository root, one way to download it is:
+
+```bash
+mkdir -p verifier-benchmarks/TR/tools
+
+curl -L \
+  -o verifier-benchmarks/TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+Then run:
 
 ```bash
 cd verifier-benchmarks
@@ -100,12 +116,6 @@ Expected result:
 
 - the TR/RMC CSV reports `analysis_result=satisfied`, and
 - the LF/Uclid/Z3 CSV reports `AircraftDoor,...,Valid,0,0,0,...`.
-
-The RMC jar is not included in this repository. To run the TR/RMC workflow, place `rmc-2.14.jar` under:
-
-```text
-verifier-benchmarks/TR/tools/rmc-2.14.jar
-```
 
 ### Path 4: Smart-home replay
 
@@ -129,6 +139,7 @@ These times are approximate and machine-dependent.
 
 | Task | Command | Expected time |
 |---|---|---:|
+| Docker image build | `docker build -t relico-artifact .` | several minutes, depending on network and Docker cache |
 | Docker core translator smoke test | `docker run --rm relico-artifact` | about 1-3 minutes after image build |
 | Native core translator smoke test | Maven build + compiler run | about 1-3 minutes |
 | Verifier smoke test | `cd verifier-benchmarks && ./scripts/run_smoke.sh` | about 1 minute on the tested Ubuntu machine |
@@ -260,16 +271,18 @@ A known out-of-scope case is the transmission of identical simultaneous back-to-
 
 ## Requirements
 
+The artifact is organized so that reviewers do **not** need to install every tool for every path.
+
 ### Minimal core translator requirements
-
-For the native core translator workflow:
-
-- **Java Development Kit (JDK)**: version 17 or later
-- **Maven**: for dependency resolution and building
 
 For the Docker core translator workflow:
 
-- Docker or a Docker-compatible container runtime
+- Docker or a Docker-compatible container runtime.
+
+For the native core translator workflow:
+
+- **Java Development Kit (JDK)**: version 17 or later.
+- **Maven**: for dependency resolution and building.
 
 ### Additional requirements for verifier benchmark reruns
 
@@ -341,18 +354,6 @@ The live ESP32 hardware workflow is optional and requires:
   - Timed Rebeca/RMC verifier smoke test,
   - Lingua Franca/Uclid/Z3 verifier smoke test.
 
-The RMC jar is not bundled with this repository because it is an external tool. To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` as described in `verifier-benchmarks/README.md` and place it under:
-
-```text
-verifier-benchmarks/TR/tools/rmc-2.14.jar
-```
-
-The RMC jar used in our Ubuntu test had the following SHA256 checksum:
-
-```text
-a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5
-```
-
 Recommended minimum resources:
 
 - 2 CPU cores
@@ -361,7 +362,92 @@ Recommended minimum resources:
 
 The full verifier benchmark reruns may require more time and memory than the smoke tests. Some LF-side benchmarks are intentionally retained as resource-bound cases and may exceed the practical limits of the tested 8 GB machine.
 
-## Installation
+## RMC setup for verifier benchmarks
+
+The RMC jar is not bundled with this repository because it is an external tool.
+
+To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` and place it under:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+From the repository root:
+
+```bash
+mkdir -p verifier-benchmarks/TR/tools
+
+curl -L \
+  -o verifier-benchmarks/TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+You can verify that it is in place with:
+
+```bash
+ls -lh verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+The RMC jar used in our Ubuntu test had the following SHA256 checksum:
+
+```text
+a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5
+```
+
+To verify the checksum on Linux:
+
+```bash
+sha256sum verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+To verify the checksum on macOS:
+
+```bash
+shasum -a 256 verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+## Installing Docker or a Docker-compatible runtime
+
+The recommended first artifact check uses Docker. Docker lets the artifact run in a container so that Java and Maven do not need to be installed manually on the host machine.
+
+Install one of the following:
+
+- Docker Desktop: `https://www.docker.com/products/docker-desktop/`
+- On macOS, a Docker-compatible alternative such as Colima can also be used.
+
+After installing Docker or starting a Docker-compatible runtime, check that the `docker` command works:
+
+```bash
+docker --version
+docker run hello-world
+```
+
+If using Colima on macOS, one setup path is:
+
+```bash
+brew install colima docker
+colima start --runtime docker
+docker run hello-world
+```
+
+Then build and run the ReLico artifact image from the repository root:
+
+```bash
+docker build -t relico-artifact .
+docker run --rm relico-artifact
+```
+
+The first command builds the image. The second command runs the core translator smoke test inside the image.
+
+Expected final output includes a success message of the form:
+
+```text
+SUCCESS: generated ... LF files.
+```
+
+The Docker image covers the core translator smoke test only. It does not include the optional verifier tools (`RMC`, `lfc`, `Uclid5`, `Z3`) or the optional ESP32 hardware workflow.
+
+## Installation for native execution
 
 Clone the repository:
 
@@ -412,24 +498,19 @@ To check that the already-built image can run without network access:
 docker run --rm --network none relico-artifact
 ```
 
-This Docker image does **not** include the optional verifier toolchains or live ESP32 hardware dependencies. The verifier and hardware/replay workflows are documented separately below.
+This Docker image does **not** include the optional verifier toolchains or live ESP32 hardware dependencies. The verifier and hardware/replay workflows are documented separately.
 
-On macOS, the Docker commands can be run through Docker Desktop or through a Docker-compatible runtime such as Colima.
-
-## Running the compiler
+## Running the compiler natively
 
 The compiler processes Timed Rebeca input models and generates corresponding Lingua Franca files.
 
 ### Input models
 
-Place `.rebeca` input files in the repository’s benchmark/input-model location.
+Input `.rebeca` files are located under:
 
-In the current codebase and examples, you may see input models in locations such as:
-
-- `benchmarks/`
-- `src/test/resources/org/rebecalang/compiler/modelcompiler/models/`
-
-Use the location expected by your current project configuration.
+```text
+benchmarks/
+```
 
 ### Run command
 
@@ -459,18 +540,6 @@ CompiledLF/
 
 ## Quick smoke test
 
-A simple smoke test is:
-
-1. ensure at least one sample `.rebeca` file is available,
-2. run the compiler,
-3. confirm that a corresponding `.lf` file appears in `compiledLF/` or `CompiledLF/`.
-
-Example expectations:
-
-- `pingpong.rebeca` produces a corresponding LF output,
-- sample node/switch/router or sender/receiver benchmarks are translated successfully,
-- the build ends with `BUILD SUCCESS`.
-
 A complete native core-translator smoke test is:
 
 ```bash
@@ -479,6 +548,12 @@ mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java \
   -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
 find compiledLF CompiledLF -maxdepth 2 -name "*.lf" 2>/dev/null
 ```
+
+Example expectations:
+
+- `pingpong.rebeca` produces a corresponding LF output,
+- sample node/switch/router or sender/receiver benchmarks are translated successfully,
+- the build ends with `BUILD SUCCESS`.
 
 In our smoke tests, the `.rebeca` models under `benchmarks/` were processed and corresponding `.lf` files were generated.
 
@@ -572,7 +647,13 @@ The paired verification benchmark material has two sides:
 
 The verifier benchmark directory includes helper scripts for checking the environment and running one representative TR/RMC and LF/Uclid/Z3 benchmark.
 
-From the repository root:
+Before running this path, make sure the RMC jar is present:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+Then, from the repository root:
 
 ```bash
 cd verifier-benchmarks
@@ -597,12 +678,6 @@ verifier-benchmarks/scripts/check_env.sh
 verifier-benchmarks/scripts/run_tr_smoke.sh
 verifier-benchmarks/scripts/run_lf_smoke.sh
 verifier-benchmarks/scripts/run_smoke.sh
-```
-
-The RMC jar must be available at:
-
-```text
-verifier-benchmarks/TR/tools/rmc-2.14.jar
 ```
 
 ### Verification benchmark contents
@@ -784,7 +859,7 @@ In particular, the following are not committed:
 - generated LF smoke-test directories such as `verifier-benchmarks/LF/_smoke/`
 - generated translator output directories such as `compiledLF/` or `CompiledLF/`
 
-The RMC jar must be downloaded separately following the instructions in `verifier-benchmarks/README.md`.
+The RMC jar must be downloaded separately following the instructions above and in `verifier-benchmarks/README.md`.
 
 ## Common issues
 
@@ -804,6 +879,20 @@ Then rerun:
 ```bash
 docker build -t relico-artifact .
 docker run --rm relico-artifact
+```
+
+### Docker cannot pull base images or download packages
+
+The first Docker build may require network access to download the Ubuntu base image and package dependencies. If the build fails due to network instability, rerun:
+
+```bash
+docker build -t relico-artifact .
+```
+
+After the image has been built successfully, the core smoke test can be run without network access:
+
+```bash
+docker run --rm --network none relico-artifact
 ```
 
 ### Maven not installed
@@ -859,10 +948,21 @@ The checker reports whether `java`, `javac`, `python3`, `c++`, `lfc`, `uclid`, `
 
 ### RMC jar is missing
 
-If the TR/RMC workflow fails because `rmc-2.14.jar` is missing, download it according to the instructions in `verifier-benchmarks/README.md` and place it at:
+If the TR/RMC workflow fails because `rmc-2.14.jar` is missing, download it with:
 
-```text
-verifier-benchmarks/TR/tools/rmc-2.14.jar
+```bash
+mkdir -p verifier-benchmarks/TR/tools
+
+curl -L \
+  -o verifier-benchmarks/TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+Then rerun:
+
+```bash
+cd verifier-benchmarks
+./scripts/check_env.sh
 ```
 
 ## License
