@@ -278,6 +278,68 @@ The paper evaluates five hardware/replay scenarios:
 
 Expected runtime output includes `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers indicating both control actions and property validation.
 
+## Result files and paper-related table
+
+The smart-home validation table in the paper is derived from the committed replay logs.
+
+The relevant files are:
+
+```text
+logs/hardware-scenarios/*.log
+logs/hardware-property-markers.log
+logs/hardware-scenarios-summary.log
+```
+
+The paper table is titled:
+
+```text
+Hardware validation scenarios and observed properties
+```
+
+The property-to-scenario mapping is:
+
+| Property | Purpose | Scenario(s) | Observed |
+|---|---|---:|---:|
+| `FireKeepsDoorOpen` | Fire safety | 1, 3 | yes |
+| `FireOverridesIntrusion` | Priority handling | 3 | yes |
+| `HeaterOffDuringFire` | Actuator safety | 1, 3 | yes |
+| `EmergencyImpliesAlarmOrHistory` | State consistency | 1, 2, 3 | yes |
+| `LightOffDuringIntrusionOverride` | Security behavior | 2 | yes |
+
+To verify the mapping from the included logs, run:
+
+```bash
+grep -R "FireKeepsDoorOpen" logs/hardware-scenarios
+grep -R "FireOverridesIntrusion" logs/hardware-scenarios
+grep -R "HeaterOffDuringFire" logs/hardware-scenarios
+grep -R "EmergencyImpliesAlarmOrHistory" logs/hardware-scenarios
+grep -R "LightOffDuringIntrusionOverride" logs/hardware-scenarios
+```
+
+The representative trace in the paper is taken from the fire-overriding-intrusion scenario:
+
+```text
+logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log
+```
+
+A representative excerpt is:
+
+```text
+[EVENT] Motion detected -> unwanted person alert to Central
+[EVENT] Light is BRIGHT (override NOT active) -> request Light OFF
+[EVENT] Temp > 35 -> FIRE ALERT + request Heater OFF
+[PROPERTY] HeaterOffDuringFire: Fire detected, heater turning OFF
+[EVENT] FIRE ALERT at Central -> OPEN DOOR, cancel door close request, deactivate light override
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true
+[INFO] Unwanted person alert IGNORED (fire is active) -> DOOR REMAINS OPEN
+[PROPERTY] FireOverridesIntrusion: fireActive=true, intrusion alert IGNORED
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door remains OPEN
+[EVENT] Door OPENED
+```
+
+The exact committed log may contain repeated cycles because the LF program continues reading the replayed sensor values for the requested duration.
+
 ## Live ESP32 hardware workflow
 
 The live hardware workflow is optional for artifact review. It is included to document the physical validation path used for the smart-home case study.
