@@ -8,23 +8,13 @@ Its purpose is to support a **comparison between equivalent Timed Rebeca (TR) an
 - resource requirements,
 - time consumed during verification.
 
-In other words, this benchmark set is used to study how equivalent models behave when verified in the two ecosystems, rather than to demonstrate the core translation alone.
-
-## Goal
-
-The benchmark workflow in this directory was assembled to answer the following practical question:
-
-> Given equivalent TR and LF models, how do the two verification workflows compare in what they can verify, how much time they consume, and what computational cost they incur?
-
-The comparison is therefore centered on:
-
-- what properties can be checked successfully,
-- the time and resource cost of verification,
-- the practical limits encountered by each verification workflow.
+In other words, this benchmark set is used to study how equivalent models behave when verified in the two ecosystems. It is an evaluation harness, not the core ReLico translator itself.
 
 ## Recommended reviewer path
 
-The recommended first reviewer path is the smoke-test workflow:
+The recommended first check is the smoke-test workflow.
+
+From the repository root:
 
 ```bash
 cd verifier-benchmarks
@@ -52,6 +42,154 @@ verifier-benchmarks/scripts/run_smoke.sh
 ```
 
 These scripts are intended to avoid requiring reviewers to manually reconstruct the benchmark commands.
+
+## RMC setup
+
+The RMC jar is **not bundled in this repository**. It is an external tool.
+
+To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` and place it at:
+
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+From the repository root:
+
+```bash
+mkdir -p verifier-benchmarks/TR/tools
+
+curl -L \
+  -o verifier-benchmarks/TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+Or, from inside `verifier-benchmarks/`:
+
+```bash
+mkdir -p TR/tools
+
+curl -L \
+  -o TR/tools/rmc-2.14.jar \
+  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
+```
+
+You can verify that it is in place with:
+
+```bash
+ls -lh verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+or, from inside `verifier-benchmarks/`:
+
+```bash
+ls -lh TR/tools/rmc-2.14.jar
+```
+
+The RMC jar used in our Ubuntu test had the following SHA256 checksum:
+
+```text
+a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5
+```
+
+To verify the checksum on Linux:
+
+```bash
+sha256sum verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+To verify the checksum on macOS:
+
+```bash
+shasum -a 256 verifier-benchmarks/TR/tools/rmc-2.14.jar
+```
+
+## Required tools
+
+The smoke-test and full benchmark workflows require:
+
+- `java`
+- `javac`
+- `python3`
+- `c++`
+- `lfc`
+- `uclid`
+- `z3`
+- `rmc-2.14.jar`
+
+The helper script checks the required command-line tools:
+
+```bash
+cd verifier-benchmarks
+./scripts/check_env.sh
+```
+
+If a tool is missing, install it or place it on your `PATH` before running the verifier workflows.
+
+The expected command names are:
+
+```text
+java
+javac
+python3
+c++
+lfc
+uclid
+z3
+```
+
+The RMC jar is checked separately at:
+
+```text
+TR/tools/rmc-2.14.jar
+```
+
+## Known-good environment
+
+The included results and smoke-test validation were produced on the following Ubuntu setup:
+
+- **Operating system:** Ubuntu 24.04.4 LTS
+- **Machine:** Lenovo IdeaPad 5
+- **Memory:** 8 GB RAM
+- **Processor:** Intel Core i3-1115G4
+- **Java/Javac:** 17.0.18
+- **Python:** 3.12.3
+- **Maven:** 3.9.9
+- **Lingua Franca compiler (`lfc`):** 0.11.1-SNAPSHOT
+- **Uclid:** 0.9.5
+- **Z3:** 4.8.8
+- **RMC:** 2.14
+
+The TR and LF timing/resource numbers should be interpreted as being gathered under the same hardware conditions.
+
+If you reproduce the benchmark workflow on a different machine or operating system, timing and resource measurements may differ.
+
+## Expected runtimes
+
+These times are approximate and machine-dependent.
+
+| Task | Command | Expected time |
+|---|---|---:|
+| Environment check | `./scripts/check_env.sh` | under 1 minute |
+| Verifier smoke test | `./scripts/run_smoke.sh` | about 1 minute on the tested Ubuntu machine |
+| TR/RMC smoke test only | `./scripts/run_tr_smoke.sh` | a few seconds on the tested Ubuntu machine |
+| LF/Uclid/Z3 smoke test only | `./scripts/run_lf_smoke.sh` | about 15-30 seconds on the tested Ubuntu machine |
+| Full TR/RMC benchmark rerun | `cd TR && python3 tools/batch_rmc.py` | several minutes, machine-dependent |
+| Full LF/Uclid/Z3 benchmark rerun | `cd LF && ./scripts/run-benchmarks benchmarks` | several minutes; demanding cases may hit resource limits |
+
+The smoke test is intentionally small. It is meant to confirm that the verifier toolchain is configured correctly before launching the full benchmark reruns.
+
+## Goal
+
+The benchmark workflow in this directory was assembled to answer the following practical question:
+
+> Given equivalent TR and LF models, how do the two verification workflows compare in what they can verify, how much time they consume, and what computational cost they incur?
+
+The comparison is centered on:
+
+- what properties can be checked successfully,
+- the verification outcome,
+- the time and resource cost of verification,
+- the practical limits encountered by each verification workflow.
 
 ## Directory structure
 
@@ -110,8 +248,6 @@ The Timed Rebeca benchmarks are organized as follows:
 - `TR/tools/` contains the command-line verification script:
   - `batch_rmc.py`.
 
-The RMC jar is **not included in this repository** and must be downloaded separately before running the TR-side workflow.
-
 When the Timed Rebeca benchmark script is run, it generates a `_cli_runs/` directory inside `TR/` containing generated C++ files, compiled executables, XML result files, logs, and a CSV summary.
 
 ### `LF/`
@@ -129,172 +265,6 @@ The main LF benchmark runner is:
 
 ```text
 LF/scripts/run-benchmarks
-```
-
-## Provenance and adaptation
-
-The LF-side benchmark workflow in this directory is **adapted from** the public repository:
-
-- **LF Verifier Benchmarks**  
-  `https://github.com/lf-lang/lf-verifier-benchmarks`
-
-That benchmark suite accompanies the paper:
-
-- **Towards Building Verifiable CPS using Lingua Franca**  
-  ACM Transactions on Embedded Computing Systems, 2023  
-  DOI: `10.1145/3609134`  
-  URL: `https://dl.acm.org/doi/full/10.1145/3609134`
-
-In the present repository, that benchmark infrastructure has been adapted to support comparison against **Timed Rebeca verification artifacts** for equivalent models.
-
-## What is being compared
-
-For each benchmark pair, the intended comparison is between:
-
-- a **Timed Rebeca model** in `TR/`,
-- an **equivalent Lingua Franca model** in `LF/`.
-
-The comparison focuses on verification-related measures such as:
-
-- whether the property could be checked successfully,
-- the verification outcome,
-- the time needed for verification,
-- generated artifact complexity,
-- and the practical resource burden of the verification process.
-
-## Property coverage and comparison scope
-
-This comparison is restricted to the subset of verification tasks that could be executed in both toolchains under the configuration used in this repository.
-
-In particular, **LTL-property comparisons are not included**. While LTL verification was available in the LF-side workflow, we were not able to evaluate corresponding LTL properties on the RMC-based TR-side workflow used here. Therefore, the comparison reported in this benchmark suite should not be interpreted as covering LTL verification capabilities across the two frameworks.
-
-## Benchmark set
-
-The included benchmark set covers a mix of small and medium-sized examples with different verification characteristics.
-
-Broadly, the benchmark names correspond to several informal categories:
-
-- **toy / arithmetic / minimal examples**  
-  `Minimal`, `Factorial`, `Fibonacci`
-
-- **message-passing and communication patterns**  
-  `PingPong`, `Pipe`, `ProcessMsg`, `Ring`, `SafeSend`, `UnsafeSend`
-
-- **distributed coordination / protocol-like behavior**  
-  `Election`, `CheckpointBarrier2`, `WideBarrier24`
-
-- **control and cyber-physical scenarios**  
-  `AircraftDoor`, `Alarm`, `Subway`, `Thermostat`, `TrafficLight`, `TrainDoor`, `TrainDoor2`, `TrainDoorFeedback`
-
-These labels are only intended as a high-level guide to the benchmark mix; the authoritative artifacts are the actual TR and LF models included in the repository.
-
-Two of the more demanding benchmarks deserve special mention:
-
-- **WideBarrier24** produces a very large communication bound (`ct = 1301`) on the LF side and falls outside the practical LF verification criteria (`ct < 100`).
-- **CheckpointBarrier2** reaches `ct = 61` on the LF side and exceeded the memory limits of the included machine configuration during verification.
-
-Both of these benchmarks still run successfully on the TR side using RMC.
-
-## Included sample results
-
-This repository includes **sample result summaries for both TR and LF**.
-
-The **TR** sample results are stored in:
-
-```text
-TR/sample_results.csv
-```
-
-The **LF** sample results are stored under:
-
-```text
-LF/results/
-```
-
-These sample results are intended to document the benchmark outcomes used in the evaluation and to make the comparison setup easier to inspect and reproduce.
-
-Generated run directories such as `TR/_cli_runs/` and LF temporary smoke-test directories are not committed to the repository.
-
-## Machine and environment used for the included results
-
-The included results were produced on the following Ubuntu setup:
-
-- **Operating system:** Ubuntu 24.04.4 LTS
-- **Machine:** Lenovo IdeaPad 5
-- **Memory:** 8 GB RAM
-- **Processor:** Intel Core i3-1115G4
-- **Java/Javac:** 17.0.18
-- **Python:** 3.12.3
-- **Maven:** 3.9.9
-- **Lingua Franca compiler (`lfc`):** 0.11.1-SNAPSHOT
-- **Uclid:** 0.9.5
-- **Z3:** 4.8.8
-- **RMC:** 2.14
-
-The TR and LF timing/resource numbers should be interpreted as being gathered under the same hardware conditions.
-
-If you reproduce the benchmark workflow on a different machine or operating system, timing and resource measurements may differ.
-
-## Required tools for verifier reruns
-
-The smoke-test and full benchmark workflows require:
-
-- `java`
-- `javac`
-- `python3`
-- `c++`
-- `lfc`
-- `uclid`
-- `z3`
-- `rmc-2.14.jar`
-
-The helper script checks the required command-line tools:
-
-```bash
-cd verifier-benchmarks
-./scripts/check_env.sh
-```
-
-If a tool is missing, install it or place it on your `PATH` before running the verifier workflows.
-
-## RMC setup
-
-The RMC jar is **not bundled in this repository**. It should be downloaded from the official releases page:
-
-```text
-https://github.com/rebeca-lang/org.rebecalang.rmc/releases
-```
-
-The version used in this repository is:
-
-```text
-https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
-```
-
-Download the jar into:
-
-```text
-TR/tools/rmc-2.14.jar
-```
-
-From inside `verifier-benchmarks/`, this can be done with:
-
-```bash
-curl -L \
-  -o TR/tools/rmc-2.14.jar \
-  https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar
-```
-
-You can verify that it is in place with:
-
-```bash
-ls -l TR/tools/rmc-2.14.jar
-```
-
-The RMC jar used in our Ubuntu test had the following SHA256 checksum:
-
-```text
-a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5
 ```
 
 ## Smoke-test workflow
@@ -324,7 +294,15 @@ Expected LF smoke result:
 AircraftDoor,...,Valid,0,0,0,...
 ```
 
-The smoke test is intentionally small. It is meant to confirm that the verifier toolchain is configured correctly before launching the full benchmark reruns.
+The LF smoke wrapper creates a temporary directory:
+
+```text
+LF/_smoke/
+```
+
+and copies only `AircraftDoor.lf` into it before running the LF benchmark script.
+
+Generated smoke-test files are not committed.
 
 ## Timed Rebeca side
 
@@ -390,6 +368,12 @@ The CSV summary is written to:
 
 ```text
 TR/_cli_runs/results.csv
+```
+
+The repository includes a sample TR result summary at:
+
+```text
+TR/sample_results.csv
 ```
 
 ## Lingua Franca side
@@ -459,6 +443,195 @@ LF/_smoke/
 ```
 
 These generated smoke-test files are not committed.
+
+## Included sample results
+
+This repository includes **sample result summaries for both TR and LF**.
+
+The **TR** sample results are stored in:
+
+```text
+TR/sample_results.csv
+```
+
+The **LF** sample results are stored under:
+
+```text
+LF/results/
+```
+
+These sample results document the benchmark outcomes used in the evaluation and make the comparison setup easier to inspect and reproduce.
+
+Generated run directories such as `TR/_cli_runs/` and LF temporary smoke-test directories are not committed to the repository.
+
+## Result files and paper-related tables
+
+The verification comparison in Table V of the paper is derived from the committed TR and LF result summaries.
+
+Table V is titled:
+
+```text
+Model-level verification outcome, timing, and verification size indicators comparison
+```
+
+The relevant result files are:
+
+```text
+TR/sample_results.csv
+LF/results/result-*.csv
+LF/results/result-*.txt
+```
+
+### Timed Rebeca/RMC side
+
+Source file:
+
+```text
+TR/sample_results.csv
+```
+
+Column mapping:
+
+| Paper column | CSV field |
+|---|---|
+| Benchmark | `model` |
+| Res. | `analysis_result` |
+| Gen. | `generation_seconds` |
+| Comp. | `compile_seconds` |
+| Ver. | `verification_seconds` |
+| States | `reached_states` |
+| Trans. | `reached_transitions` |
+
+Result abbreviation:
+
+- `satisfied` → `Sat.`
+- counterexample / violated result → `C.EX`
+
+### Lingua Franca/Uclid/Z3 side
+
+Source files:
+
+```text
+LF/results/result-*.csv
+LF/results/result-*.txt
+```
+
+Column mapping:
+
+| Paper column | CSV field |
+|---|---|
+| Benchmark | `benchmark` |
+| Res. | `lf_validity` |
+| `ct` | `ct` |
+| LFC | `lfc_real_sec` |
+| Uclid | `uclid_real_sec` |
+| Z3 | `z3_real_sec` |
+
+Result abbreviation:
+
+- `Valid` with expected-valid benchmark → `Sat.`
+- `Not valid` with expected-counterexample benchmark → `C.EX`
+- resource-bound or failed workflow → `Fail`
+- unknown or unsupported verifier outcome → `UNK`
+
+In the paper table:
+
+- `CheckpointBarrier2` is reported as `Fail` on the LF side because the workflow reaches a resource-bound failure.
+- `WideBarrier24` is reported as `UNK` on the LF side because it has a very large communication bound (`ct = 1301`) and falls outside the practical LF verification range used in this evaluation.
+
+### Regenerating the table inputs
+
+To regenerate the TR/RMC result CSV:
+
+```bash
+cd verifier-benchmarks/TR
+python3 tools/batch_rmc.py
+```
+
+This writes:
+
+```text
+TR/_cli_runs/results.csv
+```
+
+To regenerate the LF/Uclid/Z3 result CSV and raw log:
+
+```bash
+cd verifier-benchmarks/LF
+./scripts/run-benchmarks benchmarks
+```
+
+This writes timestamped files under:
+
+```text
+LF/results/
+```
+
+The timing values are machine-dependent. The committed results correspond to the Ubuntu setup described above.
+
+## Provenance and adaptation
+
+The LF-side benchmark workflow in this directory is **adapted from** the public repository:
+
+- **LF Verifier Benchmarks**  
+  `https://github.com/lf-lang/lf-verifier-benchmarks`
+
+That benchmark suite accompanies the paper:
+
+- **Towards Building Verifiable CPS using Lingua Franca**  
+  ACM Transactions on Embedded Computing Systems, 2023  
+  DOI: `10.1145/3609134`  
+  URL: `https://dl.acm.org/doi/full/10.1145/3609134`
+
+In the present repository, that benchmark infrastructure has been adapted to support comparison against **Timed Rebeca verification artifacts** for equivalent models.
+
+## What is being compared
+
+For each benchmark pair, the intended comparison is between:
+
+- a **Timed Rebeca model** in `TR/`,
+- an **equivalent Lingua Franca model** in `LF/`.
+
+The comparison focuses on verification-related measures such as:
+
+- whether the property could be checked successfully,
+- the verification outcome,
+- the time needed for verification,
+- generated artifact complexity,
+- and the practical resource burden of the verification process.
+
+## Property coverage and comparison scope
+
+This comparison is restricted to the subset of verification tasks that could be executed in both toolchains under the configuration used in this repository.
+
+In particular, **LTL-property comparisons are not included**. While LTL verification was available in the LF-side workflow, we were not able to evaluate corresponding LTL properties on the RMC-based TR-side workflow used here. Therefore, the comparison reported in this benchmark suite should not be interpreted as covering LTL verification capabilities across the two frameworks.
+
+## Benchmark set
+
+The included benchmark set covers a mix of small and medium-sized examples with different verification characteristics.
+
+Broadly, the benchmark names correspond to several informal categories:
+
+- **toy / arithmetic / minimal examples**  
+  `Minimal`, `Factorial`, `Fibonacci`
+
+- **message-passing and communication patterns**  
+  `PingPong`, `Pipe`, `ProcessMsg`, `Ring`, `SafeSend`, `UnsafeSend`
+
+- **distributed coordination / protocol-like behavior**  
+  `Election`, `CheckpointBarrier2`, `WideBarrier24`
+
+- **control and cyber-physical scenarios**  
+  `AircraftDoor`, `Alarm`, `Subway`, `Thermostat`, `TrafficLight`, `TrainDoor`, `TrainDoor2`, `TrainDoorFeedback`
+
+These labels are only intended as a high-level guide to the benchmark mix; the authoritative artifacts are the actual TR and LF models included in the repository.
+
+Two of the more demanding benchmarks deserve special mention:
+
+- **WideBarrier24** produces a very large communication bound (`ct = 1301`) on the LF side and falls outside the practical LF verification criteria (`ct < 100`).
+- **CheckpointBarrier2** reaches `ct = 61` on the LF side and exceeded the memory limits of the included machine configuration during verification.
+
+Both of these benchmarks still run successfully on the TR side using RMC.
 
 ## Interpreting LF failures and `lfc_exit_code`
 
