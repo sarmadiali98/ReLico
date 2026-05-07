@@ -32,6 +32,12 @@ The artifact has three main parts:
    - Contains the Timed Rebeca model, generated LF code, hardware-adapted LF code, ESP32 firmware, serial bridge, replay script, sample data, and scenario logs.
    - Live hardware reproduction is optional. The included replay script and logs allow reviewers to inspect the reported behavior without physical hardware.
 
+For complete workflow-specific instructions, see:
+
+- Core translator and Docker smoke test: this root `README.md`
+- Verifier benchmark workflows: `verifier-benchmarks/README.md`
+- Smart-home replay and optional live hardware workflow: `examples/hardware/smarthome/README.md`
+
 ## Recommended reviewer paths
 
 The artifact can be evaluated at several levels.
@@ -565,6 +571,8 @@ Timed Rebeca model → generated LF → adapted LF runtime → ESP32 sensor inpu
 
 This example is included to support the hardware-validation part of the paper. It is **not** required to use the core translator.
 
+For complete replay, logging, and optional live ESP32 instructions, see `examples/hardware/smarthome/README.md`.
+
 ### Smart-home example contents
 
 The smart-home example includes:
@@ -642,6 +650,8 @@ The paired verification benchmark material has two sides:
 
 - the Timed Rebeca/RMC workflow under `verifier-benchmarks/TR/`, and
 - the Lingua Franca/Uclid/Z3 workflow under `verifier-benchmarks/LF/`.
+
+For complete setup, RMC download, smoke-test, full-rerun, and result-table mapping instructions, see `verifier-benchmarks/README.md`.
 
 ### Verifier smoke-test scripts
 
