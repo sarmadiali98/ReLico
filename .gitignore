@@ -33,3 +33,6 @@ examples/hardware/smarthome/sensor_data.jsonl
 
 # External tools not owned by this repo
 verifier-benchmarks/TR/tools/rmc-*.jar
+
+# RMC generated run outputs
+verifier-benchmarks/TR/_cli_runs/

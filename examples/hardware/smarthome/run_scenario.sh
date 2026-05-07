@@ -17,7 +17,7 @@ EOF
 
 LOG="$OUTDIR/${NAME}.log"
 
-./bin/smart_home > "$LOG" 2>&1 &
+./bin/smarthome > "$LOG" 2>&1 &
 PID=$!
 sleep "$SECONDS_TO_RUN"
 kill "$PID" 2>/dev/null || true
