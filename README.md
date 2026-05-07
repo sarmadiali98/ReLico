@@ -30,6 +30,56 @@ The artifact has three main parts:
    - Contains the Timed Rebeca model, generated LF code, hardware-adapted LF code, ESP32 firmware, serial bridge, replay script, sample data, and scenario logs.
    - Live hardware reproduction is optional. The included replay script and logs allow reviewers to inspect the reported behavior without physical hardware.
 
+## Recommended reviewer paths
+
+The artifact can be evaluated at three levels.
+
+### Path 1: Core translator smoke test
+
+This is the recommended first check. It requires Java and Maven.
+
+Expected result:
+
+- the Java/Maven build succeeds,
+- the ReLico compiler processes the `.rebeca` files under `benchmarks/`,
+- generated `.lf` files appear under `compiledLF/` or `CompiledLF/`.
+
+### Path 2: Verifier benchmark smoke test
+
+This checks one representative benchmark through both verifier workflows:
+
+- `AircraftDoor` through the Timed Rebeca/RMC workflow, and
+- `AircraftDoor.lf` through the Lingua Franca/Uclid/Z3 workflow.
+
+Run:
+
+```bash
+cd verifier-benchmarks
+./scripts/check_env.sh
+./scripts/run_smoke.sh
+```
+
+Expected result:
+
+- the TR/RMC CSV reports `analysis_result=satisfied`, and
+- the LF/Uclid/Z3 CSV reports `AircraftDoor,...,Valid,0,0,0,...`.
+
+### Path 3: Smart-home replay
+
+This checks the hardware case study without requiring physical ESP32 hardware.
+
+Run:
+
+```bash
+cd examples/hardware/smarthome
+lfc smarthome.lf
+./run_scenario.sh scenario-3-fire-overrides-intrusion 38.0 40.0 1 1 10
+```
+
+Expected result: the log contains `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers, including fire-overriding-intrusion behavior.
+
+The live ESP32 workflow is optional.
+
 ## Overview
 
 Timed Rebeca is an actor-based language for modeling and verifying concurrent and real-time systems. Lingua Franca is a deterministic coordination language based on the reactor model. ReLico translates a deterministic subset of Timed Rebeca into Lingua Franca while preserving the timing and scheduling structure needed for execution and analysis.
@@ -146,8 +196,32 @@ A known out-of-scope case is the transmission of identical simultaneous back-to-
 
 ## Requirements
 
+The minimal requirements for the core translator are:
+
 - **Java Development Kit (JDK)**: version 17 or later
 - **Maven**: for dependency resolution and building
+
+Additional requirements depend on the workflow being run:
+
+- **Verifier benchmark smoke/full rerun**
+  - Python 3
+  - RMC 2.14
+  - Lingua Franca compiler (`lfc`)
+  - Uclid5
+  - Z3
+  - C++ compiler
+
+- **Smart-home replay**
+  - Lingua Franca compiler (`lfc`)
+  - C++ compiler
+
+- **Optional live ESP32 hardware workflow**
+  - ESP32 development board
+  - PlatformIO
+  - Arduino framework for ESP32
+  - Adafruit DHT Sensor Library
+  - Adafruit Unified Sensor
+  - Python 3 and `pyserial`
 
 Tested configurations:
 
@@ -160,10 +234,12 @@ Tested configurations:
 - Ubuntu 24.04:
   - Java/Javac 17.0.18
   - Python 3.12.3
+  - Maven 3.9.9
   - Lingua Franca compiler (`lfc`) 0.11.1-SNAPSHOT
+  - Uclid 0.9.5
   - Z3 4.8.8
   - RMC 2.14
-  - used for the Timed Rebeca/RMC and Lingua Franca/Uclid/Z3 verification benchmark workflows
+  - used for the core translator build/smoke test, Timed Rebeca/RMC workflow, and Lingua Franca/Uclid/Z3 workflow
 
 The RMC jar is not bundled with this repository because it is an external tool. To run the Timed Rebeca/RMC workflow, download `rmc-2.14.jar` as described in `verifier-benchmarks/README.md` and place it under:
 
@@ -225,7 +301,8 @@ Use the location expected by your current project configuration.
 Run the main class with Maven:
 
 ```bash
-mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java \
+  -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
 ```
 
 ### Expected result
@@ -263,11 +340,12 @@ A complete core-translator smoke test is:
 
 ```bash
 mvn clean package -DskipTests
-mvn exec:java -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
+mvn org.codehaus.mojo:exec-maven-plugin:3.1.0:java \
+  -Dexec.mainClass="org.rebecalang.compiler.RebecaCompilerMain"
 find compiledLF CompiledLF -maxdepth 2 -name "*.lf" 2>/dev/null
 ```
 
-In our macOS smoke test, all `.rebeca` models under `benchmarks/` were processed and corresponding `.lf` files were generated.
+In our smoke tests, the `.rebeca` models under `benchmarks/` were processed and corresponding `.lf` files were generated.
 
 ## Hardware validation example
 
@@ -305,10 +383,10 @@ The example uses:
 
 ### Important distinction
 
-Two LF files may be present in the smart-home example:
+Two LF files are included in the smart-home example:
 
-- a **generated LF file** produced directly by ReLico
-- a **hardware-adapted LF file** used for the live sensor experiment
+- `generated_smarthome.lf` is the raw LF file produced directly by ReLico.
+- `smarthome.lf` is the hardware-adapted LF file used for replay and live sensor experiments.
 
 The hardware-backed execution path uses the adapted LF version, which includes the extra integration needed to consume runtime sensor data. This should not be confused with the raw translator output.
 
@@ -348,41 +426,52 @@ The evaluation scenarios include:
 
 These scenarios are validated through runtime event and property markers in the adapted LF execution path.
 
-## LF verification benchmark workflow
+## Verification benchmark workflow
 
-This repository also contains an **LF verification benchmark workflow** that supports the verification-oriented evaluation in the paper.
+This repository also contains a **verification benchmark workflow** that supports the verification-oriented evaluation in the paper.
 
-This part of the artifact is included to document how selected Timed Rebeca benchmarks were translated to Lingua Franca and then checked using the LF verifier toolchain. It is **not** required to use the core Timed Rebeca → Lingua Franca translator.
+This part of the artifact is included to document how selected Timed Rebeca benchmarks were checked with RMC and how corresponding Lingua Franca benchmarks were checked using the LF/Uclid/Z3 verifier toolchain. It is **not** required to use the core Timed Rebeca → Lingua Franca translator.
 
 The paired verification benchmark material has two sides:
 
 - the Timed Rebeca/RMC workflow under `verifier-benchmarks/TR/`, and
 - the Lingua Franca/Uclid/Z3 workflow under `verifier-benchmarks/LF/`.
 
-A minimal Timed Rebeca/RMC smoke test is:
+### Verifier smoke-test scripts
+
+The verifier benchmark directory includes helper scripts for checking the environment and running one representative TR/RMC and LF/Uclid/Z3 benchmark.
+
+From the repository root:
 
 ```bash
-cd verifier-benchmarks/TR
-python3 tools/batch_rmc.py --only AircraftDoor
+cd verifier-benchmarks
+./scripts/check_env.sh
+./scripts/run_smoke.sh
 ```
 
-A successful run writes a CSV summary under:
+The smoke test runs:
+
+- `AircraftDoor` through the Timed Rebeca/RMC workflow, and
+- `AircraftDoor.lf` through the Lingua Franca/Uclid/Z3 workflow.
+
+Expected results:
+
+- the TR/RMC CSV reports `analysis_result=satisfied`, and
+- the LF/Uclid/Z3 CSV reports `AircraftDoor,...,Valid,0,0,0,...`.
+
+The smoke-test scripts are:
 
 ```text
-verifier-benchmarks/TR/_cli_runs/results.csv
+verifier-benchmarks/scripts/check_env.sh
+verifier-benchmarks/scripts/run_tr_smoke.sh
+verifier-benchmarks/scripts/run_lf_smoke.sh
+verifier-benchmarks/scripts/run_smoke.sh
 ```
 
-A minimal Lingua Franca/Uclid/Z3 smoke test is:
+The RMC jar must be available at:
 
-```bash
-cd verifier-benchmarks/LF
-./scripts/run-benchmarks benchmarks/src/AircraftDoor.lf
-```
-
-If the LF benchmark script is not executable on your system, run:
-
-```bash
-chmod +x scripts/run-benchmarks
+```text
+verifier-benchmarks/TR/tools/rmc-2.14.jar
 ```
 
 ### Verification benchmark contents
@@ -418,7 +507,7 @@ The verification benchmark workflow assumes a local installation of:
 - **Z3**
 - **RMC 2.14** for the Timed Rebeca/RMC side
 
-The benchmark script runs the LF verifier pipeline on the benchmark set and records generated verification artifacts and timing summaries.
+The helper script `verifier-benchmarks/scripts/check_env.sh` checks whether the expected tools are available on the current machine.
 
 ### Important distinction
 
@@ -442,14 +531,34 @@ Depending on the benchmark and the verifier outcome, the LF verification workflo
 
 ### Reproducing the verification benchmark run
 
-From the LF benchmark directory, run:
+The smoke-test path is recommended first:
+
+```bash
+cd verifier-benchmarks
+./scripts/run_smoke.sh
+```
+
+To rerun the full Timed Rebeca/RMC benchmark set:
+
+```bash
+cd verifier-benchmarks/TR
+python3 tools/batch_rmc.py
+```
+
+A successful TR/RMC run writes a CSV summary under:
+
+```text
+verifier-benchmarks/TR/_cli_runs/results.csv
+```
+
+To rerun the full Lingua Franca/Uclid/Z3 benchmark set:
 
 ```bash
 cd verifier-benchmarks/LF
 ./scripts/run-benchmarks benchmarks
 ```
 
-A successful run should produce benchmark logs and a CSV summary under:
+A successful LF/Uclid/Z3 run writes benchmark logs and a CSV summary under:
 
 ```text
 verifier-benchmarks/LF/results/
@@ -459,7 +568,7 @@ verifier-benchmarks/LF/results/
 
 If you are evaluating the translation itself, the main compiler workflow is sufficient.
 
-If you want to inspect the verification-oriented evaluation used in the paper, use the TR/RMC and LF/Uclid/Z3 verification benchmark workflows and the accompanying result files.
+If you want to inspect the verification-oriented evaluation used in the paper, first run the verifier smoke-test scripts and then use the TR/RMC and LF/Uclid/Z3 full benchmark workflows if needed.
 
 ## Reproducing paper-related results
 
@@ -500,6 +609,8 @@ In particular, the following are not committed:
 - PlatformIO build directories
 - local `artifact-env-info*` logs/tarballs
 - `rmc-2.14.jar`
+- generated RMC run directories such as `verifier-benchmarks/TR/_cli_runs/`
+- generated LF smoke-test directories such as `verifier-benchmarks/LF/_smoke/`
 
 The RMC jar must be downloaded separately following the instructions in `verifier-benchmarks/README.md`.
 
@@ -545,7 +656,14 @@ If you are using the hardware example, edit the serial port in `serial_bridge.py
 
 ### LF benchmark script cannot find tools
 
-If you are using the verification benchmark workflow, make sure `lfc`, `uclid`, and `z3` are installed and available on your `PATH`, and confirm that the benchmark-side `env.bash` is sourced if your setup depends on it.
+If you are using the verification benchmark workflow, first run:
+
+```bash
+cd verifier-benchmarks
+./scripts/check_env.sh
+```
+
+The checker reports whether `java`, `javac`, `python3`, `c++`, `lfc`, `uclid`, `z3`, and `rmc-2.14.jar` are available. If any tool is missing, install or place it on your `PATH` before running the verifier smoke tests.
 
 ### RMC jar is missing
 
@@ -619,3 +737,12 @@ The main reproducibility paths are:
 2. run the Timed Rebeca/RMC smoke test,
 3. run the Lingua Franca/Uclid/Z3 smoke test,
 4. inspect or rerun the smart-home replay scenarios.
+
+The recommended first reviewer command for the verifier workflows is:
+
+```bash
+cd verifier-benchmarks
+./scripts/run_smoke.sh
+```
+
+This avoids requiring reviewers to manually reconstruct the benchmark commands. The script checks the environment, runs the TR/RMC `AircraftDoor` benchmark, and runs the LF/Uclid/Z3 `AircraftDoor` benchmark using a temporary one-benchmark LF directory.
