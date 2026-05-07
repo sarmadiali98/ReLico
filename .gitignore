@@ -36,3 +36,10 @@ verifier-benchmarks/TR/tools/rmc-*.jar
 
 # RMC generated run outputs
 verifier-benchmarks/TR/_cli_runs/
+
+# Verifier benchmark generated outputs
+verifier-benchmarks/TR/_cli_runs/
+verifier-benchmarks/LF/_smoke/
+verifier-benchmarks/LF/benchmarks/mod-gen/
+verifier-benchmarks/LF/benchmarks/src-gen/
+verifier-benchmarks/LF/benchmarks/include/
