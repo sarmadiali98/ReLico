@@ -1,0 +1,40 @@
+.git
+.gitignore
+
+# Java/Maven build output
+target/
+
+# ReLico generated LF output
+CompiledLF/
+compiledLF/
+
+# Local artifact/environment logs
+artifact-env-info/
+artifact-env-info-macos/
+artifact-env-info-ubuntu/
+artifact-env-info*.tar.gz
+
+# Python virtualenvs
+.venv/
+examples/hardware/smarthome/.venv/
+
+# PlatformIO generated files
+examples/hardware/smarthome/firmware/.pio/
+
+# LF generated build/runtime outputs
+examples/hardware/smarthome/bin/
+examples/hardware/smarthome/build/
+examples/hardware/smarthome/lib/
+examples/hardware/smarthome/src-gen/
+examples/hardware/smarthome/include/
+examples/hardware/smarthome/share/
+
+# Runtime sensor data
+examples/hardware/smarthome/sensor_data.jsonl
+
+# RMC generated outputs and external jar
+verifier-benchmarks/TR/_cli_runs/
+verifier-benchmarks/TR/tools/rmc-*.jar
+
+# macOS
+.DS_Store
