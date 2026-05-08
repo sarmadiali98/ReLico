@@ -11,6 +11,8 @@ It demonstrates an end-to-end workflow:
 
 The live ESP32 path is optional for artifact review. The recommended reviewer path is the hardware-free replay workflow.
 
+The hardware-free replay workflow was tested on both macOS and Ubuntu 24.04.4. The live ESP32 workflow, including the physical sensor scenarios, was tested on macOS only.
+
 ## Recommended reviewer path
 
 The quickest way to inspect this case study is to run the replay workflow.
@@ -181,6 +183,8 @@ The live hardware path reads sensor data from the ESP32 through `serial_bridge.p
 
 For artifact review, the same hardware-adapted LF executable can also be run using controlled sensor values written directly to `sensor_data.jsonl`. This replay mode is useful because it reproduces the event and property markers without requiring reviewers to physically connect the ESP32 setup, heat the temperature sensor, or trigger the PIR sensor manually.
 
+The five replay scenarios were run on both macOS and Ubuntu 24.04.4. This confirms that the hardware-free replay path is not tied to the Mac used for the live ESP32 experiment.
+
 ### Requirements for replay
 
 - Lingua Franca compiler (`lfc`)
@@ -344,6 +348,8 @@ The exact committed log may contain repeated cycles because the LF program conti
 
 The live hardware workflow is optional for artifact review. It is included to document the physical validation path used for the smart-home case study.
 
+The live ESP32 workflow was tested on macOS only. The hardware-free replay workflow should be used by reviewers who do not have the ESP32 setup.
+
 ### PlatformIO-based firmware workflow
 
 The ESP32 firmware in this example is managed with PlatformIO and uses the Arduino framework.
@@ -494,6 +500,8 @@ The model is perpetual because the sensors reschedule themselves. Actor prioriti
 - The main ReLico artifact is the Timed Rebeca → Lingua Franca translator. This smart-home example shows how translated code can be used in an end-to-end deployment path.
 - The hardware-backed LF program (`smarthome.lf`) includes manual integration for live/replayed sensor input and should not be confused with the direct translator output.
 - The replay workflow uses controlled values written to `sensor_data.jsonl`; it is intended to reproduce the scenario-level event/property behavior, not to replace the live ESP32 validation path.
+- The five replay scenarios were tested on both macOS and Ubuntu 24.04.4.
+- The live ESP32 workflow was tested on macOS only.
 - The serial port in `serial_bridge.py` may need to be changed for your machine.
 - Live hardware reproduction is optional for artifact review. The replay script and included logs provide a hardware-free way to inspect the behavior reported in the paper.
 - The exact steps for building/running the LF program depend on your Lingua Franca installation.
