@@ -335,10 +335,15 @@ The live ESP32 hardware workflow is optional and requires:
 - Java 21.0.1
 - Maven 3.9.9
 - Lingua Franca compiler (`lfc`) 0.11.0
+- Uclid 0.9.5
+- Z3 available through the local Uclid/Z3 setup
+- RMC 2.14
 - Docker-compatible runtime tested through Colima/Docker CLI for the core Docker path
 - Used for:
   - core translator build/smoke test,
   - Docker core translator smoke test,
+  - Timed Rebeca/RMC verifier smoke test,
+  - Lingua Franca/Uclid/Z3 verifier smoke test,
   - smart-home replay,
   - live ESP32 hardware workflow.
 
