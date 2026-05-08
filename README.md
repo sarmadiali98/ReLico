@@ -328,8 +328,10 @@ export DYLD_LIBRARY_PATH="$HOME/uclid/z3/bin:${DYLD_LIBRARY_PATH:-}"
 Used for:
 
 - core translator build/smoke test,
+- Docker core translator smoke test,
 - Timed Rebeca/RMC verifier smoke test,
 - Lingua Franca/Uclid/Z3 verifier smoke test.
+- smart-home hardware-free replay workflow.
 
 Recommended minimum resources:
 
