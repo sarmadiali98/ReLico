@@ -294,7 +294,12 @@ The live hardware workflow is optional and requires:
 - Uclid 0.9.5
 - Z3 available through the local Uclid/Z3 setup
 - RMC 2.14
-- Docker-compatible runtime tested through Colima/Docker CLI for the core Docker path
+- Docker CLI 29.4.3
+- Docker Buildx 0.33.0
+- Colima 0.10.1 using Docker runtime
+  - architecture: `aarch64`
+  - Docker client: 29.4.3
+  - Docker server: 29.2.1
 - Smart-home ESP32 firmware configuration:
   - PlatformIO Core 6.1.19
   - board: `esp32dev`
@@ -338,13 +343,16 @@ export DYLD_LIBRARY_PATH="$HOME/uclid/z3/bin:${DYLD_LIBRARY_PATH:-}"
 - Uclid 0.9.5
 - Z3 4.8.8
 - RMC 2.14
+- Docker Engine Community 29.4.3
+- Docker Buildx 0.33.0
+- Docker Compose 5.1.3
 
 Used for:
 
 - core translator build/smoke test,
 - Docker core translator smoke test,
 - Timed Rebeca/RMC verifier smoke test,
-- Lingua Franca/Uclid/Z3 verifier smoke test.
+- Lingua Franca/Uclid/Z3 verifier smoke test,
 - smart-home hardware-free replay workflow.
 
 Recommended minimum resources:
