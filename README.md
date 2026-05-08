@@ -286,13 +286,27 @@ The live hardware workflow is optional and requires:
 ### macOS
 
 - macOS on Apple Silicon
+- macOS 26.3
 - Java 21.0.1
 - Maven 3.9.9
+- Python 3.14.4
 - Lingua Franca compiler (`lfc`) 0.11.0
 - Uclid 0.9.5
 - Z3 available through the local Uclid/Z3 setup
 - RMC 2.14
 - Docker-compatible runtime tested through Colima/Docker CLI for the core Docker path
+- Smart-home ESP32 firmware configuration:
+  - PlatformIO Core 6.1.19
+  - board: `esp32dev`
+  - framework: Arduino
+  - serial monitor speed: `115200`
+  - upload speed: `115200`
+  - DHT22 temperature/humidity sensor on GPIO 27
+  - light sensor/LDR on GPIO 34
+  - PIR motion sensor on GPIO 35
+  - PlatformIO library dependencies:
+    - `adafruit/DHT sensor library@^1.4.4`
+    - `adafruit/Adafruit Unified Sensor@^1.1.9`
 
 Used for:
 
@@ -300,7 +314,7 @@ Used for:
 - Docker core translator smoke test,
 - Timed Rebeca/RMC verifier smoke test,
 - Lingua Franca/Uclid/Z3 verifier smoke test,
-- smart-home replay,
+- smart-home hardware-free replay workflow,
 - live ESP32 hardware workflow.
 
 On macOS, if Uclid and Z3 are installed locally but not on `PATH`, add their directories before running the verifier scripts. For example:
