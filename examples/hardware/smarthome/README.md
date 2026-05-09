@@ -1,6 +1,6 @@
 # Smart Home Hardware Execution Case Study
 
-This directory contains the smart-home case study used for the hardware-validation part of the ReLico artifact.
+This directory contains the smart-home case study used for the hardware implementation part of the ReLico artifact.
 
 It demonstrates an end-to-end workflow:
 
@@ -170,7 +170,7 @@ In the replay scenarios below, the values are chosen to reproduce the five paper
 
 ## Software architecture
 
-The hardware-validation pipeline has three layers:
+The hardware implementaion pipeline has three layers:
 
 1. **Sensor layer**  
    The ESP32 firmware samples the sensors and writes JSON messages to the serial port.
@@ -190,7 +190,7 @@ Two LF files are included on purpose:
 - `generated_smarthome.lf` is the raw output of ReLico.
 - `smarthome.lf` is the version used for hardware execution case study and replay.
 
-This distinction is important. The hardware-backed execution path does **not** use the raw generated file unchanged. Instead, the hardware-validation version includes the additional integration needed to read sensor data at runtime and print event/property markers.
+This distinction is important. The hardware-backed execution path does **not** use the raw generated file unchanged. Instead, the hardware execution case study version includes the additional integration needed to read sensor data at runtime and print event/property markers.
 
 ## Hardware-free scenario replay
 
@@ -299,7 +299,7 @@ Expected runtime output includes `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers i
 
 ## Result files and paper-related table
 
-The smart-home validation table in the paper is supported by the committed scenario logs.
+The smart-home execution case study table in the paper is supported by the committed scenario logs.
 
 The relevant files are:
 
@@ -361,7 +361,7 @@ The exact committed log may contain repeated cycles because the LF program conti
 
 ## Live ESP32 hardware workflow
 
-The live hardware workflow is optional for artifact review. It is included to document the physical validation path used for the smart-home case study.
+The live hardware workflow is optional for artifact review. It is included to document the physical implementation path used for the smart-home case study.
 
 The live ESP32 workflow was tested on macOS only. Reviewers who do not have the ESP32 setup should use the hardware-free replay workflow instead.
 
@@ -520,11 +520,11 @@ The model is perpetual because the sensors reschedule themselves. Actor prioriti
 
 ## Notes and limitations
 
-- This directory is an **example hardware-validation workflow**, not the core translator implementation.
+- This directory is an **example hardware execution case study workflow**, not the core translator implementation.
 - The main ReLico artifact is the Timed Rebeca → Lingua Franca translator. This smart-home example shows how translated code can be used in an end-to-end deployment path.
 - The hardware-backed LF program (`smarthome.lf`) includes manual integration for live/replayed sensor input and should not be confused with the direct translator output.
-- The committed logs document representative scenario behavior from the hardware-validation workflow.
-- The replay workflow uses controlled values written to `sensor_data.jsonl`; it is intended to reproduce the scenario-level event/property behavior, not to replace the live ESP32 validation path or emulate the serial byte stream exactly.
+- The committed logs document representative scenario behavior from the hardware execution case study workflow.
+- The replay workflow uses controlled values written to `sensor_data.jsonl`; it is intended to reproduce the scenario-level event/property behavior, not to replace the live ESP32 execution path or emulate the serial byte stream exactly.
 - The five replay scenarios were tested on both macOS and Ubuntu 24.04.4.
 - The live ESP32 workflow was tested on macOS only.
 - The serial port in `serial_bridge.py` may need to be changed for your machine.
