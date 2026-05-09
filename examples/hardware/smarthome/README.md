@@ -138,9 +138,11 @@ This example uses an ESP32-based sensor setup with:
 - light sensor / LDR module on GPIO 34
 - PIR motion detector on GPIO 35
 
-If included, the following image shows the physical setup used for the live ESP32 run:
+The following image shows the physical setup used for the live ESP32 run:
 
-![ESP32 smart-home hardware setup](images/hardware-setup.png)
+<p align="center">
+  <img src="images/hardware-setup.png" alt="ESP32 smart-home hardware setup" width="450">
+</p>
 
 The ESP32 firmware sends one JSON object per second over serial at 115200 baud.
 
