@@ -369,7 +369,7 @@ The live ESP32 workflow was tested on macOS only. Reviewers who do not have the 
 
 The ESP32 firmware in this example is managed with PlatformIO and uses the Arduino framework.
 
-The live ESP32 workflow was tested on macOS on Apple Silicon. The firmware project was run with PlatformIO Core 6.1.18, which was the latest stable PlatformIO Core release at the time of the live ESP32 run on January 2, 2026. The project targets `esp32dev` with the Arduino framework.
+The live ESP32 workflow was tested on macOS on Apple Silicon. The firmware project was run with PlatformIO Core 6.1.19. The project targets `esp32dev` with the Arduino framework.
 
 The firmware dependencies are declared in `firmware/platformio.ini` as:
 
