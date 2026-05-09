@@ -148,6 +148,8 @@ verifier-benchmarks/README.md
 
 This checks the smart-home case study without requiring physical ESP32 hardware.
 
+The committed smart-home logs include evidence from the live ESP32-backed execution path. The replay workflow is provided as a reviewer-friendly reproduction path: it writes controlled sensor values to the same `sensor_data.jsonl` interface consumed by the hardware-adapted LF program. The replay reproduces the reported scenario-level event/property behavior, but it is not a byte-for-byte serial-stream replay of the ESP32 output.
+
 ```bash
 cd examples/hardware/smarthome
 lfc smarthome.lf
@@ -169,6 +171,8 @@ For complete replay, logging, Table IV mapping, and optional live ESP32 instruct
 ```text
 examples/hardware/smarthome/README.md
 ```
+
+The five hardware-free replay scenarios were run on both macOS and Ubuntu 24.04.4. The live ESP32 sensor scenarios were run on macOS only.
 
 ## Expected runtimes
 
