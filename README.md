@@ -4,7 +4,7 @@ ReLico is a compiler from **Timed Rebeca** to **Lingua Franca (LF)**.
 
 This repository accompanies the ReLico work on bridging **formally verified Timed Rebeca models** to **executable Lingua Franca programs**. Its purpose is to reduce the gap between formal verification and deployment by automatically translating verified models into a deterministic, time-aware execution framework.
 
-This repository is also the artifact package for the ReLico paper. It contains the core translator, verification benchmark material, and a hardware-backed smart-home validation example.
+This repository is also the artifact package for the ReLico paper. It contains the core translator, verification benchmark material, and a hardware-backed smart-home execution case study.
 
 ## Artifact at a glance
 
@@ -14,7 +14,7 @@ The artifact has three main parts.
 |---|---|---|---|
 | Core translator | `src/`, `benchmarks/` | Timed Rebeca to Lingua Franca translation | Docker smoke test |
 | Verification benchmarks | `verifier-benchmarks/` | TR/RMC vs LF/Uclid/Z3 model-level verification comparison | `verifier-benchmarks/scripts/run_smoke.sh` |
-| Smart-home example | `examples/hardware/smarthome/` | Hardware/replay validation of translated LF behavior | `run_scenario.sh` replay |
+| Smart-home example | `examples/hardware/smarthome/` | Hardware/replay execution case study of translated LF behavior | `run_scenario.sh` replay |
 
 For complete workflow-specific instructions, see:
 
@@ -227,7 +227,7 @@ Important locations:
   Verification-oriented comparison between TR/RMC and LF/Uclid/Z3 workflows.
 
 - `examples/hardware/smarthome/`  
-  Smart-home hardware/replay validation example.
+  Smart-home hardware/replay example.
 
 ## Requirements
 
@@ -405,7 +405,7 @@ Important limitation:
 
 The artifact includes logs and result summaries so that key reported results can be inspected without requiring full experiment reruns.
 
-### Table IV: Hardware validation scenarios and observed properties
+### Table IV: Hardware execution case study scenarios and observed properties
 
 Table IV is supported by:
 
