@@ -1,4 +1,4 @@
-# Smart Home Hardware Validation Example
+# Smart Home Hardware Execution Case Study
 
 This directory contains the smart-home case study used for the hardware-validation part of the ReLico artifact.
 
@@ -188,7 +188,7 @@ The replay workflow bypasses the physical sensor and serial layers by writing co
 Two LF files are included on purpose:
 
 - `generated_smarthome.lf` is the raw output of ReLico.
-- `smarthome.lf` is the version used for hardware validation and replay.
+- `smarthome.lf` is the version used for hardware execution case study and replay.
 
 This distinction is important. The hardware-backed execution path does **not** use the raw generated file unchanged. Instead, the hardware-validation version includes the additional integration needed to read sensor data at runtime and print event/property markers.
 
@@ -312,7 +312,7 @@ logs/hardware-scenarios-summary.log
 The paper table is titled:
 
 ```text
-Hardware validation scenarios and observed properties
+Hardware execution case study scenarios and observed properties
 ```
 
 The property-to-scenario mapping is:
