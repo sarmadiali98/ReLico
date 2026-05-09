@@ -11,6 +11,8 @@ It demonstrates an end-to-end workflow:
 
 The live ESP32 path is optional for artifact review. The recommended reviewer path is the hardware-free replay workflow.
 
+The committed logs include evidence from the live ESP32-backed execution path. For artifact review, this directory also provides a hardware-free replay workflow that feeds controlled sensor values to the same `sensor_data.jsonl` interface consumed by the hardware-adapted LF program. The replay path reproduces the scenario-level event and property markers without requiring physical ESP32 hardware.
+
 The hardware-free replay workflow was tested on both macOS and Ubuntu 24.04.4. The live ESP32 workflow, including the physical sensor scenarios, was tested on macOS only.
 
 ## Recommended reviewer path
@@ -44,6 +46,8 @@ To replay all five scenarios:
 ./run_scenario.sh scenario-5-cold-temperature 18.0 40.0 0 0 6
 ```
 
+The replay workflow is intended to reproduce the five reported scenario behaviors. It is not a byte-for-byte serial-stream replay of the ESP32 output.
+
 ## What is in this directory
 
 - `smarthome.rebeca`  
@@ -74,13 +78,16 @@ To replay all five scenarios:
   Helper script for hardware-free replay. It writes controlled sensor values to `sensor_data.jsonl`, runs the hardware-adapted LF executable, and saves event/property logs.
 
 - `logs/hardware-scenarios/`  
-  Recorded logs for the five replayed scenarios used in the artifact. These logs contain the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers.
+  Recorded logs for the five reported scenarios. These logs contain the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers.
 
 - `logs/hardware-scenarios-summary.log`  
   Summary log containing representative event/property output from the scenario logs.
 
 - `logs/hardware-property-markers.log`  
   Extracted property markers from the scenario logs.
+
+- `images/hardware-setup.png`  
+  Photograph of the ESP32-based hardware setup.
 
 ## Runtime-generated files
 
@@ -131,6 +138,10 @@ This example uses an ESP32-based sensor setup with:
 - light sensor / LDR module on GPIO 34
 - PIR motion detector on GPIO 35
 
+If included, the following image shows the physical setup used for the live ESP32 run:
+
+![ESP32 smart-home hardware setup](images/hardware-setup.png)
+
 The ESP32 firmware sends one JSON object per second over serial at 115200 baud.
 
 Example JSON output:
@@ -167,6 +178,8 @@ The hardware-validation pipeline has three layers:
 
 3. **Execution layer**  
    `smarthome.lf` reads the latest sensor values from `sensor_data.jsonl` and executes the control logic, including runtime property checks.
+
+The replay workflow bypasses the physical sensor and serial layers by writing controlled values directly to `sensor_data.jsonl`. The hardware-adapted LF program then consumes the same file interface used in the live path.
 
 ## Relation between the two LF files
 
@@ -230,13 +243,13 @@ The script writes one controlled sensor record to `sensor_data.jsonl`, runs `bin
 ./run_scenario.sh scenario-5-cold-temperature 18.0 40.0 0 0 6
 ```
 
-The included replay logs are stored under:
+The included scenario logs are stored under:
 
 ```text
 logs/hardware-scenarios/
 ```
 
-These logs demonstrate the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers without requiring physical hardware reproduction.
+These logs demonstrate the expected `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers. The replay commands above can regenerate comparable scenario logs without requiring physical hardware reproduction.
 
 ### Regenerate summary logs
 
@@ -284,7 +297,7 @@ Expected runtime output includes `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers i
 
 ## Result files and paper-related table
 
-The smart-home validation table in the paper is derived from the committed replay logs.
+The smart-home validation table in the paper is supported by the committed scenario logs.
 
 The relevant files are:
 
@@ -342,17 +355,26 @@ A representative excerpt is:
 [EVENT] Door OPENED
 ```
 
-The exact committed log may contain repeated cycles because the LF program continues reading the replayed sensor values for the requested duration.
+The exact committed log may contain repeated cycles because the LF program continues reading the replayed or live sensor values for the requested duration.
 
 ## Live ESP32 hardware workflow
 
 The live hardware workflow is optional for artifact review. It is included to document the physical validation path used for the smart-home case study.
 
-The live ESP32 workflow was tested on macOS only. The hardware-free replay workflow should be used by reviewers who do not have the ESP32 setup.
+The live ESP32 workflow was tested on macOS only. Reviewers who do not have the ESP32 setup should use the hardware-free replay workflow instead.
 
 ### PlatformIO-based firmware workflow
 
 The ESP32 firmware in this example is managed with PlatformIO and uses the Arduino framework.
+
+The live ESP32 workflow was tested on macOS on Apple Silicon. The firmware project was run with PlatformIO Core 6.1.18, which was the latest stable PlatformIO Core release at the time of the live ESP32 run on January 2, 2026. The project targets `esp32dev` with the Arduino framework.
+
+The firmware dependencies are declared in `firmware/platformio.ini` as:
+
+```text
+adafruit/DHT sensor library@^1.4.4
+adafruit/Adafruit Unified Sensor@^1.1.9
+```
 
 #### Requirements
 
@@ -499,7 +521,8 @@ The model is perpetual because the sensors reschedule themselves. Actor prioriti
 - This directory is an **example hardware-validation workflow**, not the core translator implementation.
 - The main ReLico artifact is the Timed Rebeca → Lingua Franca translator. This smart-home example shows how translated code can be used in an end-to-end deployment path.
 - The hardware-backed LF program (`smarthome.lf`) includes manual integration for live/replayed sensor input and should not be confused with the direct translator output.
-- The replay workflow uses controlled values written to `sensor_data.jsonl`; it is intended to reproduce the scenario-level event/property behavior, not to replace the live ESP32 validation path.
+- The committed logs document representative scenario behavior from the hardware-validation workflow.
+- The replay workflow uses controlled values written to `sensor_data.jsonl`; it is intended to reproduce the scenario-level event/property behavior, not to replace the live ESP32 validation path or emulate the serial byte stream exactly.
 - The five replay scenarios were tested on both macOS and Ubuntu 24.04.4.
 - The live ESP32 workflow was tested on macOS only.
 - The serial port in `serial_bridge.py` may need to be changed for your machine.
@@ -523,6 +546,7 @@ This includes:
 - `logs/hardware-scenarios/`
 - `logs/hardware-scenarios-summary.log`
 - `logs/hardware-property-markers.log`
+- `images/hardware-setup.png`
 
 ### Third-party software and dependencies
 
