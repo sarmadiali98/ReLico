@@ -449,7 +449,7 @@ TR/sample_results.csv
 
 | Paper column | CSV field |
 |---|---|
-| Benchmark | `model` |
+| Bench. | `model` |
 | Res. | `analysis_result` |
 | Gen. | `generation_seconds` |
 | Cmp. | `compile_seconds` |
@@ -473,7 +473,7 @@ LF/results/result-*.txt
 
 | Paper column | CSV field |
 |---|---|
-| Benchmark | `benchmark` |
+| Bench. | `benchmark` |
 | Res. | `lf_validity` |
 | LFC | `lfc_real_sec` |
 | Ucl. | `uclid_real_sec` |
