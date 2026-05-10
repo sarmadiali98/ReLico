@@ -7,7 +7,7 @@ It demonstrates an end-to-end workflow:
 1. model the system in Timed Rebeca,
 2. translate it to Lingua Franca with ReLico,
 3. adapt the generated LF program to consume live or replayed sensor data, and
-4. validate the expected properties during execution on an ESP32-backed setup or through hardware-free replay.
+4. observe the expected properties during execution on an ESP32-backed setup or through hardware-free replay.
 
 The live ESP32 path is optional for artifact review. The recommended reviewer path is the hardware-free replay workflow.
 
@@ -104,7 +104,7 @@ The following files/directories may be generated locally during execution and do
 
 ## Purpose of this example
 
-The purpose of this example is to show that properties verified at the Timed Rebeca level can still be observed and validated in a concrete execution pipeline.
+The purpose of this example is to show that properties verified at the Timed Rebeca level can still be observed in a concrete execution pipeline.
 
 This example corresponds to the smart-home evaluation described in the paper, where:
 
@@ -270,7 +270,7 @@ grep -R "\[PROPERTY\]" logs/hardware-scenarios \
 
 ## Expected behavior
 
-The smart-home example is designed around five validated properties:
+The smart-home example is designed around five assertion-type properties:
 
 - `FireKeepsDoorOpen`
 - `FireOverridesIntrusion`
@@ -295,11 +295,11 @@ The paper evaluates five hardware/replay scenarios:
 5. **Cold Temperature**  
    Low temperature (<20°C), no motion, bright light.
 
-Expected runtime output includes `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers indicating both control actions and property validation.
+Expected runtime output includes `[EVENT]`, `[INFO]`, and `[PROPERTY]` markers indicating both control actions and property observation.
 
-## Result files and paper-related table
+## Result files and property-marker mapping
 
-The smart-home execution case study table in the paper is supported by the committed scenario logs.
+The smart-home execution case study is supported by the committed scenario logs.
 
 The relevant files are:
 
@@ -307,12 +307,6 @@ The relevant files are:
 logs/hardware-scenarios/*.log
 logs/hardware-property-markers.log
 logs/hardware-scenarios-summary.log
-```
-
-The paper table is titled:
-
-```text
-Hardware execution case study scenarios and observed properties
 ```
 
 The property-to-scenario mapping is:
@@ -335,7 +329,7 @@ grep -R "EmergencyImpliesAlarmOrHistory" logs/hardware-scenarios
 grep -R "LightOffDuringIntrusionOverride" logs/hardware-scenarios
 ```
 
-The representative trace in the paper is taken from the fire-overriding-intrusion scenario:
+The fire-overriding-intrusion scenario is stored in:
 
 ```text
 logs/hardware-scenarios/scenario-3-fire-overrides-intrusion.log
