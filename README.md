@@ -138,7 +138,7 @@ Expected result:
 - the TR/RMC CSV reports `analysis_result=satisfied`,
 - the LF/Uclid/Z3 CSV reports `AircraftDoor,...,Valid,0,0,0,...`.
 
-For complete setup, full reruns, expected outputs, result interpretation, and Table V mapping, see:
+For complete setup, full reruns, expected outputs, result interpretation, and the model-level verification table mapping, see:
 
 ```text
 verifier-benchmarks/README.md
@@ -166,7 +166,7 @@ Expected result:
   - `HeaterOffDuringFire`
   - `EmergencyImpliesAlarmOrHistory`
 
-For complete replay, logging, Table IV mapping, and optional live ESP32 instructions, see:
+For complete replay, logging, property-to-scenario mapping, and optional live ESP32 instructions, see:
 
 ```text
 examples/hardware/smarthome/README.md
@@ -405,13 +405,38 @@ Important limitation:
 
 - A known out-of-scope case is the transmission of identical simultaneous back-to-back messages from a single sender to the exact same target at the exact same logical time. This is excluded to avoid introducing extra manual queuing mechanisms in generated LF state.
 
-## Paper-result evidence
+## Evaluation-result evidence
 
-The artifact includes logs and result summaries so that key reported results can be inspected without requiring full experiment reruns.
+The artifact includes logs and result summaries so that key evaluation results can be inspected without requiring full experiment reruns.
 
-### Table IV: Hardware execution case study scenarios and observed properties
+### RQ1: Model-level verification comparison
 
-Table IV is supported by:
+The model-level verification comparison is supported by:
+
+```text
+verifier-benchmarks/TR/sample_results.csv
+verifier-benchmarks/LF/results/
+```
+
+The comparison table is derived from the TR/RMC and LF/Uclid/Z3 CSV fields for:
+
+- benchmark name,
+- verification outcome,
+- RMC code generation, compilation, and verification times,
+- RMC reached state-space size and transition count,
+- LF verification/model generation, Uclid/SMT generation, and Z3 solving times,
+- LF unfolding bound,
+- whether downstream verification artifacts were generated successfully.
+
+The exact field mapping and rerun commands are documented in:
+
+```text
+verifier-benchmarks/README.md
+```
+
+### RQ2: Hardware execution case study
+
+The smart-home case study is supported by:
 
 ```text
 examples/hardware/smarthome/logs/hardware-scenarios/*.log
@@ -434,30 +459,6 @@ The observed mapping is:
 | `HeaterOffDuringFire` | 1, 3 |
 | `EmergencyImpliesAlarmOrHistory` | 1, 2, 3 |
 | `LightOffDuringIntrusionOverride` | 2 |
-
-### Table V: Model-level verification comparison
-
-Table V is supported by:
-
-```text
-verifier-benchmarks/TR/sample_results.csv
-verifier-benchmarks/LF/results/
-```
-
-The table is derived from the TR/RMC and LF/Uclid/Z3 CSV fields for:
-
-- benchmark name,
-- verification outcome,
-- exit codes,
-- generated model size or communication-bound fields,
-- timing measurements,
-- whether downstream verification artifacts were generated successfully.
-
-The exact field mapping and rerun commands are documented in:
-
-```text
-verifier-benchmarks/README.md
-```
 
 ## Generated files not included in Git
 
