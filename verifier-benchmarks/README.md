@@ -421,11 +421,11 @@ These sample results document the benchmark outcomes used in the evaluation and 
 
 Generated run directories such as `TR/_cli_runs/` and `LF/_smoke/` are not committed to the repository.
 
-## Result files and Table V mapping
+## Result files and model-level verification table mapping
 
-The verification comparison in Table V of the paper is derived from the committed TR and LF result summaries.
+The model-level verification comparison in the paper is derived from the committed TR and LF result summaries.
 
-Table V is titled:
+The table is titled:
 
 ```text
 Model-level verification outcome, timing, and verification size indicators comparison
@@ -452,15 +452,15 @@ TR/sample_results.csv
 | Benchmark | `model` |
 | Res. | `analysis_result` |
 | Gen. | `generation_seconds` |
-| Comp. | `compile_seconds` |
+| Cmp. | `compile_seconds` |
 | Ver. | `verification_seconds` |
-| States | `reached_states` |
-| Trans. | `reached_transitions` |
+| St. | `reached_states` |
+| Tr. | `reached_transitions` |
 
 Result abbreviation:
 
 - `satisfied` → `Sat.`
-- counterexample / violated result → `C.EX`
+- counterexample / violated result → `C.E.`
 
 ### Lingua Franca/Uclid/Z3 columns
 
@@ -475,22 +475,22 @@ LF/results/result-*.txt
 |---|---|
 | Benchmark | `benchmark` |
 | Res. | `lf_validity` |
-| `ct` | `ct` |
 | LFC | `lfc_real_sec` |
-| Uclid | `uclid_real_sec` |
+| Ucl. | `uclid_real_sec` |
 | Z3 | `z3_real_sec` |
+| `ct` | `ct` |
 
 Result abbreviation:
 
 - `Valid` with expected-valid benchmark → `Sat.`
-- `Not valid` with expected-counterexample benchmark → `C.EX`
+- `Not valid` with expected-counterexample benchmark → `C.E.`
 - resource-bound or failed workflow → `Fail`
-- unknown or unsupported verifier outcome → `UNK`
+- unknown or unsupported verifier outcome → `UK`
 
 In the paper table:
 
 - `CheckpointBarrier2` is reported as `Fail` on the LF side because the workflow reaches a resource-bound failure.
-- `WideBarrier24` is reported as `UNK` on the LF side because it has a very large communication bound (`ct = 1301`) and falls outside the practical LF verification range used in this evaluation.
+- `WideBarrier24` is reported as `UK` on the LF side because it has a very large communication bound (`ct = 1301`) and falls outside the supported downstream LF verification bound used in this evaluation.
 
 To regenerate the TR/RMC result CSV:
 
@@ -542,7 +542,7 @@ The authoritative artifacts are the actual TR and LF models included in the repo
 
 Two demanding LF-side cases deserve special mention:
 
-- **WideBarrier24** produces a very large communication bound (`ct = 1301`) and falls outside the practical LF verification criteria (`ct < 100`).
+- **WideBarrier24** produces a very large communication bound (`ct = 1301`) and falls outside the supported downstream LF verification bound (`ct < 100`).
 - **CheckpointBarrier2** reaches `ct = 61` and exceeded the memory limits of the documented machine configuration during verification.
 
 Both benchmarks still run successfully on the TR side using RMC.
@@ -565,7 +565,7 @@ This benchmark directory is not the core translator implementation.
 
 It is an evaluation harness used to compare verification behavior across equivalent TR and LF benchmark models. It should be read as a companion artifact to the main ReLico tool.
 
-The comparison does **not** cover LTL properties across both frameworks. While LTL verification was available in the LF-side workflow, we were not able to evaluate corresponding LTL properties on the RMC-based TR-side workflow used here.
+The comparison does **not** cover unrestricted LTL properties across both frameworks. LF properties written using `@property` are translated into bounded model-checking queries over a Uclid model, while the RMC-based TR workflow used here checks equivalent observer-based state assertions.
 
 ## Provenance and attribution
 
