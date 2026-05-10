@@ -542,7 +542,7 @@ The authoritative artifacts are the actual TR and LF models included in the repo
 
 Two demanding LF-side cases deserve special mention:
 
-- **WideBarrier24** produces a very large communication bound (`ct = 1301`) and falls outside the supported downstream LF verification bound (`ct < 100`).
+- **WideBarrier24** produces a very large communication bound (`ct = 1301`) and falls outside the supported downstream LF verification bound (`ct <= 100`).
 - **CheckpointBarrier2** reaches `ct = 61` and exceeded the memory limits of the documented machine configuration during verification.
 
 Both benchmarks still run successfully on the TR side using RMC.
