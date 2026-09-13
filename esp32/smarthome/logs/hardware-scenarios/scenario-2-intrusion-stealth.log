@@ -1,0 +1,13 @@
+# virtual-hardware scenario: scenario-2-intrusion-stealth
+# date: 2026-09-13T21:30:03Z
+# input: temp=24.0 humidity=40.0 light=1 motion=1 duration=5s
+# binary: /Users/ali/Desktop/ReLico/bin/smarthome (built from esp32/smarthome/hardware/smarthome.lf)
+# hardware-lf-sha256: c583b12e98fb09cb8d892406f44e362b6d2de4be60f3b98542fc07057e9a785d
+# formal artifact: esp32/smarthome/generated/TranslatedLFProgram.lf (immutable, not executed here)
+# evidence role: runtime observation only, not a correctness proof
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, intrusionActive=true ✓
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, lightIsOn=false ✓
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, ignoring light update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, ignoring light update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, ignoring light update
+[PROPERTY] LightOffDuringIntrusionOverride: lightOverride=true, ignoring light update
