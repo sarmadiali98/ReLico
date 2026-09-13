@@ -1,0 +1,33 @@
+property {
+    define {
+        fireActive = central.fireAlarmActive == true;
+        doorIsClosed = mainDoor.closed == true;
+        intrusionActive = central.intrusionAlarmActive == true;
+        tempIsLow = rc1.lastTemp < 20;
+        tempIsNormal = rc1.lastTemp >= 20 && rc1.lastTemp <= 25;
+        tempIsFire = rc1.lastTemp > 35;
+        heaterIsOn = heater1.on == true;
+        
+        emergencyActive = central.emergencyModeActive == true;
+        intrusionCleared = central.intrusionWasCleared == true;
+        lightOverride = rc1.lightOverrideActive == true;
+        lightIsOn = rc1.lightIsOn == true;
+    }
+    
+    Assertion {
+        // PROPERTY 1: Fire always keeps door open
+        FireKeepsDoorOpen: !fireActive || !doorIsClosed;
+        
+        // PROPERTY 2: Fire alarm overrides intrusion alarm
+        FireOverridesIntrusion: !fireActive || !intrusionActive;
+        
+        // PROPERTY 3: Heater doesn't run during fire
+        HeaterOffDuringFire: !(fireActive && heaterIsOn);
+        
+        // PROPERTY 4: Emergency mode implies current or past alarm activity
+        EmergencyImpliesAlarmOrHistory: !emergencyActive || (fireActive || intrusionActive || intrusionCleared);
+        
+        // PROPERTY 5: Light cannot be on during intrusion with override active
+        LightOffDuringIntrusionOverride: !(lightOverride && intrusionActive && lightIsOn);
+    }
+}

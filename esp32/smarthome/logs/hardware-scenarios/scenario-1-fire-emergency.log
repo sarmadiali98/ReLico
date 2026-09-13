@@ -1,0 +1,14 @@
+# virtual-hardware scenario: scenario-1-fire-emergency
+# date: 2026-09-13T21:29:58Z
+# input: temp=38.0 humidity=40.0 light=0 motion=0 duration=5s
+# binary: /Users/ali/Desktop/ReLico/bin/smarthome (built from esp32/smarthome/hardware/smarthome.lf)
+# hardware-lf-sha256: c583b12e98fb09cb8d892406f44e362b6d2de4be60f3b98542fc07057e9a785d
+# formal artifact: esp32/smarthome/generated/TranslatedLFProgram.lf (immutable, not executed here)
+# evidence role: runtime observation only, not a correctness proof
+[PROPERTY] HeaterOffDuringFire: temp=38 > 35, fire alert, heater forced OFF ✓
+[PROPERTY] FireKeepsDoorOpen: fireActive=true, door being OPENED ✓
+[PROPERTY] EmergencyImpliesAlarmOrHistory: emergencyActive=true, fireActive=true ✓
+[PROPERTY] HeaterOffDuringFire: temp=38 > 35, fire alert, heater forced OFF ✓
+[PROPERTY] HeaterOffDuringFire: temp=38 > 35, fire alert, heater forced OFF ✓
+[PROPERTY] HeaterOffDuringFire: temp=38 > 35, fire alert, heater forced OFF ✓
+[PROPERTY] HeaterOffDuringFire: temp=38 > 35, fire alert, heater forced OFF ✓
