@@ -53,7 +53,32 @@ else
 fi
 
 check "java>=17" yes java -version
-check "maven" yes mvn -version
+# Maven: honor RELICO_MAVEN, then the same candidate paths the java-bridge
+# runners search, and require "Apache Maven" in the output — a bare `mvn` on
+# PATH may be an unrelated tool.
+MAVEN_BIN="${RELICO_MAVEN:-}"
+if [ -z "$MAVEN_BIN" ]; then
+  for maven_candidate in \
+    /opt/homebrew/opt/maven/bin/mvn \
+    /opt/homebrew/bin/mvn \
+    /usr/local/bin/mvn \
+    "$HOME/.sdkman/candidates/maven/current/bin/mvn"
+  do
+    if [ -x "$maven_candidate" ] && "$maven_candidate" -version 2>&1 | grep -q "Apache Maven"; then
+      MAVEN_BIN="$maven_candidate"
+      break
+    fi
+  done
+fi
+if [ -z "$MAVEN_BIN" ]; then
+  MAVEN_BIN="$(command -v mvn 2>/dev/null || true)"
+fi
+if [ -n "$MAVEN_BIN" ] && "$MAVEN_BIN" -version 2>&1 | grep -q "Apache Maven"; then
+  echo "PASS maven($MAVEN_BIN)"
+else
+  echo "FAIL maven (no Apache Maven found; set RELICO_MAVEN or install Maven per DEPENDENCIES.md)"
+  fail=1
+fi
 check "cmake" yes cmake --version
 check "make" yes make --version
 if command -v clang++ >/dev/null 2>&1; then echo "PASS cxx(clang++)"
