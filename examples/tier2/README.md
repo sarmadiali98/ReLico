@@ -1,9 +1,12 @@
 # Tier 2: real corpus models, unmodified
 
-These 21 unmodified upstream models passed the measured frontend screen and were run through the
-pipeline exactly as they ship in the archive: no source edits, registry entries, or wrappers. This
-is a dated empirical measurement from 2026-09-07, not a statement that every model is accepted by
-the complete translation path or covered by a formal theorem.
+These 21 upstream models passed the measured frontend screen and were run through the pipeline
+exactly as collected -- no source edits, registry entries, or wrappers. Seventeen are adapted
+from lf-lang/lf-verifier-benchmarks (rendered to Timed Rebeca, not used verbatim), one is from
+the official Rebeca examples at rebeca-lang.org, and three are authored for this evaluation;
+sources and references are documented in `evaluation/registry/PROVENANCE.md`. This is a dated
+empirical measurement from 2026-09-07, not a statement that every model is accepted by the
+complete translation path or covered by a formal theorem.
 
 ## Method
 
@@ -25,7 +28,7 @@ the precise failure reason where one exists.
 Alarm, CheckpointBarrier2, Election, Fibonacci, PingPong, Pipe,
 ProcessMsg, Ring, Thermostat, TrainDoor2, TrainDoorFeedback and
 WideBarrier24 translate, generate LF, compile and run exactly as
-archived.
+collected.
 
 ## The 9 failures are two known causes, nothing new
 

@@ -61,6 +61,27 @@ marking the boundary:
 Repairing either would have to move all 2,579 rows in one pass, which is a
 separate task from adding a family.
 
+## Upstream sources and references
+
+The 49 upstream corpus models come from three sources. Seventeen are adapted from LF Verifier
+Benchmarks, https://github.com/lf-lang/lf-verifier-benchmarks/tree/main/rebeca -- the seven models
+of that directory and the ten LF programs of `benchmarks/src` in the same repository, rendered to
+Timed Rebeca following the repository's conversion guide; they are adapted, not used verbatim.
+Sixteen come from the official Rebeca examples at https://rebeca-lang.org, including the Leasing
+NRP FD model, the case study of the site's Consistency of Distributed Controllers project.
+Sixteen are authored for this evaluation and have no upstream source.
+
+Associated papers:
+
+- Shaokai Lin, Yatin A. Manerkar, Marten Lohstroh, Elizabeth Polgreen, Sheng-Jung Yu, Chadlia
+  Jerad, Edward A. Lee, and Sanjit A. Seshia. Towards Building Verifiable CPS using Lingua
+  Franca. ACM Transactions on Embedded Computing Systems 22(5s), Article 155, 2023 (presented at
+  EMSOFT 2023). doi:10.1145/3609134. (LF Verifier Benchmarks)
+- Bjarne Johansson, Bahman Pourvatan, Zahra Moezkarimi, Alessandro Papadopoulos, and Marjan
+  Sirjani. Formal Verification of Consistency for Systems with Redundant Controllers. In Models
+  for Formal Analysis of Real Systems (MARS 2024), Electronic Proceedings in Theoretical Computer
+  Science 399, pp. 169-191, 2024. (Leasing NRP FD)
+
 ## Candidate source models
 
 `general-corpus-selection.tsv` records the measured construct profile of every
@@ -68,7 +89,7 @@ candidate general-family source model, so that benchmark selection is derived
 from measurement instead of a hard-coded next benchmark. It keeps two
 populations apart because their verdicts have different standing: the 32 in-repo
 fixtures under `frontend/fixtures/general/`, whose directory *is* the gate's
-verdict, and the 49 upstream corpus models in `examples.zip`, which have never
+verdict, and the 49 upstream corpus models, which have never
 been through the frontend and therefore carry a static screen against the
 exclusion list in `docs/supported-fragment-general.md` rather than a verdict.
 The screen clears 28 of the 49 where the project's recorded I0 census put 31 of
@@ -112,10 +133,10 @@ positive rows. `core--well-formedness--negative` remains the one genuine
 negative: upstream Timed Rebeca itself refuses its source. The rule going
 forward is recorded as F95 in `docs/STAGE_K_FINDINGS.md`.
 
-## The examples2 corpus
+## The ordering and composition corpus
 
-`examples2.zip` contributes 17 candidate models -- ordering and composition
-patterns from the paper's own themes, each ordering case supplied at both the
+The corpus contributes 17 models authored for this evaluation -- ordering and
+composition patterns from the paper's own themes, each ordering case supplied at both the
 rebec and the message-server level. All 17 clear the exporter, the Lean
 decoder, the verified translation and `lfc` with zero adaptation; nine also
 report `satisfied` under the model checker and are implemented now. The other

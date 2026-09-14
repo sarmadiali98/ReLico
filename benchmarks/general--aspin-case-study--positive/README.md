@@ -6,8 +6,8 @@ from `r00` to `r23`; a manager restarts the designated source path after 700 tim
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/ASPIN.rebeca`.
-- **Property:** the archive contains no ASPIN `.property` file.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, ASPIN.rebeca (adapted, not used verbatim)`.
+- **Property:** the upstream source contains no ASPIN `.property` file.
 - **Adaptation:** finite array flattening, byte widening, static sender tags, the documented
   deadline-monitor abstraction, and inert marker parameters; see
   [`ADAPTATION.md`](ADAPTATION.md).

@@ -1,5 +1,5 @@
 // Benchmark: general--partial-rebec-ordering--positive
-// A DTR-fragment redesign of examples2 Paritial_Ordering_Rebec, whose original
+// A DTR-fragment redesign of the ordering and composition case Paritial_Ordering_Rebec, whose original
 // form overflows the model checker's queue; see README for the redesign.
 reactiveclass Sender(4) {
     knownrebecs {

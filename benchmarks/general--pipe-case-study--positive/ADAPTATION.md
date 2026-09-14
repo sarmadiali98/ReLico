@@ -2,7 +2,7 @@
 
 Status: **complete** - the literal source passes all eight pipeline stages.
 
-Source: `examples.zip:ReLico-main/Pipe/Pipe.rebeca`, 92 lines, with five reactive classes
+Source: `lf-lang/lf-verifier-benchmarks, benchmarks/src/Pipe.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 92 lines, with five reactive classes
 (`Checker`, `Sink`, `Node`, `Source`, and `KeepAlive`).
 
 ## Property boundary
@@ -13,7 +13,7 @@ behavior only and does not translate or encode that assertion.
 
 ## Applied adaptation
 
-No source adaptation is applied. `source/model.rebeca` preserves the archived model byte-for-byte,
+No source adaptation is applied. `source/model.rebeca` preserves the upstream model byte-for-byte,
 including actors, state variables, message payloads, priorities, the 10-unit forwarding delay, and
 the 100-unit KeepAlive period.
 

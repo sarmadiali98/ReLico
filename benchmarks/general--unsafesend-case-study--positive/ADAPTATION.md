@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--unsafesend-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/UnsafeSend/UnsafeSend.rebeca`, 87 lines, one of the paper's RQ1 verification benchmarks — the deliberately unsafe member of the SafeSend/UnsafeSend pair, where the client sends `0`, the server takes the error path, and the Checker's violation latch fires. The benchmark source is the original under a four-line header comment plus the single adaptation below.
+Source: `lf-lang/lf-verifier-benchmarks, benchmarks/src/UnsafeSend.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 87 lines, one of the paper's RQ1 verification benchmarks — the deliberately unsafe member of the SafeSend/UnsafeSend pair, where the client sends `0`, the server takes the error path, and the Checker's violation latch fires. The benchmark source is the original under a four-line header comment plus the single adaptation below.
 
 ## Original blocker
 

@@ -57,10 +57,6 @@ exact binary.
   expects; `RELICO_PARSER_ARTIFACT` remains the offline override)
 - Purpose: trusted Timed Rebeca parser/type checker; the java-bridge exporters are compiled and run on top of it
 - License: GPL-2.0
-- Note: the legacy packaging `ReLico-fmcad-2026-artifact-v1.zip`
-  (`b5805295...dc41586`) is the same compiler at the same commit and is
-  superseded by the canonical GitHub archive; it is kept only as a legacy
-  reference row in `artifact/checksums.tsv`.
 
 ### Apache Maven
 - Version: 3.9.16 (the version used in all recorded runs; the committed
@@ -123,10 +119,15 @@ evidence was produced by the virtual runner and does not need them.
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `RELICO_PYTHON` | `tools/relico_test.sh`, `tools/relico_bench.sh` | Python 3.10+ executable override |
-| `RELICO_PARSER_ARTIFACT` | `tests/translator/.../run-test.sh` | digest-identical parser ZIP for offline use |
+| `RELICO_PYTHON` | `tools/relico_test.sh`, `tools/relico_bench.sh`, manifests `{python}` | Python 3.10+ executable override |
+| `RELICO_LAKE` | manifests `{lake}` | lake executable override |
+| `RELICO_LFC` | manifests `{lfc}` | lfc executable override |
+| `RELICO_RMC` | manifests `{rmc_jar}` | RMC 2.14 JAR path (default: `~/.cache/relico/rmc/2.14/rmc-2.14.jar`) |
+| `RELICO_PARSER_ARTIFACT` | `run-test.sh`, manifests `{parser_artifact}` | parser archive path (default: `~/.cache/relico/parser/2.25/org.rebecalang.compiler-94ca579e0f2e3528d8de608a9e86316ecb78d608.zip`) |
+| `RELICO_MAVEN` | `run-*-from-zip.sh`, manifests `{maven}` | Maven executable path |
+| `RELICO_JAVA` | manifests `{java}` | java executable override |
+| `RELICO_CXX` | manifests `{cxx}` | C++ compiler override (default: `clang++` or `g++` from PATH) |
 | `RELICO_PARSER_CACHE` | same | parser ZIP cache directory (default `~/.cache/relico/parser/2.25`) |
-| `RELICO_MAVEN` | `frontend/java-bridge/run-*-from-zip.sh` | Maven executable path |
 | `RELICO_REPO_ROOT` | `run-test.sh` | repository root override |
 | `RELICO_GENERAL_BUILD_DIR` | `run-general-from-zip.sh` | opt-in shared Maven build cache |
 | `RELICO_GENERAL_RECORDING` | `frontend/test_validate_general_v1.py` | recording-mode gate |

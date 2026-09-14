@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper's RQ1 TrainDoor model — a `
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/TrainDoor/TrainDoor.rebeca`, 101 lines, one of the paper's RQ1 verification benchmarks (the base member of the TrainDoor family; TrainDoor2 and TrainDoorFeedback are already in the suite from the corpus wave).
+- **Original source:** `lf-lang/lf-verifier-benchmarks, rebeca/TrainDoor/TrainDoor.rebeca (adapted, not used verbatim)`, 101 lines, one of the paper's RQ1 verification benchmarks (the base member of the TrainDoor family; TrainDoor2 and TrainDoorFeedback are already in the suite from the corpus wave).
 - **Original blocker:** the parameterless external-send target `Checker.trainEvt` — and, behind it, three more of the same boundary: `Checker.doorEvt`, `Train.move`, `Door.close`.
 - **Adaptation:** four marker parameters, one per parameterless server that is the target of an external send; each send site passes `0` and no server body reads it. See [`ADAPTATION.md`](ADAPTATION.md).
 

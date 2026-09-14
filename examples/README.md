@@ -24,12 +24,13 @@ themselves. Property and specification files are out of scope.
 
 ## Source provenance
 
-The models live in the upstream artifact archive (`examples.zip`, a local provenance snapshot that
-is not part of the distributed repository contract), under `ReLico-main/`. Each results row names
-its source by archive path. The archive is the paper's own evaluation
-corpus: the Rebeca examples distribution plus the case-study models.
-Registered benchmark directories contain committed source copies and provenance records; rerunning
-`examples/tier2` additionally requires the matching archive.
+The upstream models are not vendored in this repository. Each results row names its source, and
+all sources and references are documented in
+[`evaluation/registry/PROVENANCE.md`](../evaluation/registry/PROVENANCE.md): seventeen models are
+adapted from LF Verifier Benchmarks (not used verbatim), sixteen come from the official Rebeca
+examples at rebeca-lang.org, and sixteen are authored for this evaluation. Registered benchmark
+directories contain committed source copies and provenance records; rerunning `examples/tier2`
+additionally requires collecting the upstream models from those sources.
 
 ## Pipeline used
 

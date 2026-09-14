@@ -7,11 +7,11 @@ smart-home system — eight reactive classes (`Heater`, `Light`, `Door`,
 heater and light, and coordinating door and alarm policy.
 
 Case-study rows own no Lean obligations; their evidence is the pipeline
-artifacts themselves, the same shape as the examples2 composition rows.
+artifacts themselves, the same shape as the ordering and composition case composition rows.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/smarthome/smarthome.rebeca`,
+- **Original source:** `authored for this evaluation (smarthome/smarthome.rebeca)`,
   359 lines, unmodified upstream.
 - **Original blocker**, measured against the unmodified source:
   `unsupported by the ReLico general parser bridge: environment variable`.

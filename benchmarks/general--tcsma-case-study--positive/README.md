@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper-named TCSMA model — a `Cont
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/benchmarks/tcsma.rebeca`, 215 lines, the paper-named TCSMA model (which the paper derives from the Rebeca examples for its generator suite).
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, benchmarks/tcsma.rebeca (adapted, not used verbatim)`, 215 lines, the paper-named TCSMA model (which the paper derives from the Rebeca examples for its generator suite).
 - **Original blockers:** translation refused on the parameterless external-send targets `User.sendData` and `Interface.getAckFromUser`; the model checker reported `queue overflow` on the unmodified model.
 - **Adaptations:** two marker parameters; poll gating on round completion; removal of the never-read bookkeeping layer. All three are measured and documented in [`ADAPTATION.md`](ADAPTATION.md).
 

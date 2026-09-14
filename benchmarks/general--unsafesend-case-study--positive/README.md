@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper's RQ1 UnsafeSend model — th
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/UnsafeSend/UnsafeSend.rebeca`, 87 lines, one of the paper's RQ1 verification benchmarks (the deliberately unsafe member of the SafeSend/UnsafeSend pair).
+- **Original source:** `lf-lang/lf-verifier-benchmarks, benchmarks/src/UnsafeSend.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 87 lines, one of the paper's RQ1 verification benchmarks (the deliberately unsafe member of the SafeSend/UnsafeSend pair).
 - **Original blocker:** the parameterless external-send target `Checker.errorIn` (its LF port would carry no value).
 - **Adaptation:** exactly one — the marker parameter. `errorIn()` gains `int unit` and its single send site passes `0`; no server body reads it. See [`ADAPTATION.md`](ADAPTATION.md).
 

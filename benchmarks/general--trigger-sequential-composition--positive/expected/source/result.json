@@ -1,6 +1,6 @@
 {
   "benchmark_id": "general--trigger-sequential-composition--positive",
   "schema_version": 1,
-  "sha256": "f59858de55779716480d96d910b144234b983e76cc522f5d7476154cc1c0e552",
+  "sha256": "260b584baa94315cc71aa58adb98909856ca4bea8586e82643f8efd0d08530bf",
   "status": "pass"
 }

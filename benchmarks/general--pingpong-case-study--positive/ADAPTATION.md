@@ -2,7 +2,7 @@
 
 Status: **complete** - the literal source passes all eight pipeline stages.
 
-Source: `examples.zip:ReLico-main/PingPong/PingPong.rebeca`, 97 lines, with four reactive
+Source: `lf-lang/lf-verifier-benchmarks, rebeca/PingPong/PingPong.rebeca (adapted, not used verbatim)`, 97 lines, with four reactive
 classes (`Checker`, `Ping`, `Pong`, and `KeepAlive`).
 
 ## Property boundary
@@ -13,7 +13,7 @@ behavior only and does not translate or encode that assertion.
 
 ## Applied adaptation
 
-No source adaptation is applied. `source/model.rebeca` preserves the archived model byte-for-byte,
+No source adaptation is applied. `source/model.rebeca` preserves the upstream model byte-for-byte,
 including actors, state variables, message payloads, priorities, both 10-unit protocol delays, and
 the 100-unit KeepAlive period.
 

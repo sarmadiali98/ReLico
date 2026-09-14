@@ -7,10 +7,10 @@ five instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/Pipe/Pipe.rebeca`, 92 lines.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, benchmarks/src/Pipe.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 92 lines.
 - **Original property:** `Pipe.property` is intentionally excluded. This fixture evaluates
   translation and runtime behavior only; it does not translate or enforce the property.
-- **Adaptation:** none; the archived Rebeca source is preserved byte-for-byte. See
+- **Adaptation:** none; the upstream Rebeca source is preserved byte-for-byte. See
   [`ADAPTATION.md`](ADAPTATION.md).
 
 ## Stages
@@ -20,7 +20,7 @@ five instances.
 
 ## Evidence
 
-- the source stage passes and the fixture source is byte-identical to the archived model;
+- the source stage passes and the fixture source is byte-identical to the upstream model;
 - RMC 2.14 reports `satisfied` for `Deadlock-Freedom and No Deadline Missed`, reaching 7 states
   and 8 transitions;
 - parser JSON, decoded DTR AST, translated LF AST, and LF source export pass;

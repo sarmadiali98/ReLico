@@ -2,7 +2,7 @@
   "benchmark_id": "general--checkpointbarrier2-case-study--positive",
   "description": "General-family benchmark for CheckpointBarrier2 with bounded-coordination and final-barrier Assertion evidence.",
   "expected_artifacts": [
-    {"path": "source/result.json", "required": true, "sha256": "7d7e70bedcd605f5e6a21e31fcda025cd1d4c15625193f8b21c3c5c907cbc390"},
+    {"path": "source/result.json", "required": true, "sha256": "79937864f45d8ec90bee6c7fb37ada586c6466b3e13a4a2f248ce8de2ff0a4b6"},
     {"path": "rmc/verdict.json", "required": true, "sha256": "ae189ff84374614d3e92afffe21341c73591b3b0ed19f2469884c4e828be875f"},
     {"path": "rmc-properties/results.json", "required": true, "sha256": "bbcd76e12afd74e288bd3040a645942051d4c1dfea64bc56e1c3c8a9450864fd"},
     {"path": "parser-json/model.json", "required": true, "sha256": "a2d6a0982864a386edcd7245f2d000508ff54df09b780dcdccb8a79f40f91d2e"},
@@ -38,46 +38,46 @@
   ],
   "stages": [
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "source", "--benchmark-id", "general--checkpointbarrier2-case-study--positive", "--source", "{source}", "--output", "{actual}/source/result.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "source", "--benchmark-id", "general--checkpointbarrier2-case-study--positive", "--source", "{source}", "--output", "{actual}/source/result.json"],
       "name": "source"
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "rmc", "--source", "{source}", "--actual", "{actual}", "--rmc-jar", "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar", "--java", "/usr/bin/java", "--cxx", "/usr/bin/clang++", "--output", "{actual}/rmc/verdict.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "rmc", "--source", "{source}", "--actual", "{actual}", "--rmc-jar", "{rmc_jar}", "--java", "{java}", "--cxx", "{cxx}", "--output", "{actual}/rmc/verdict.json"],
       "name": "rmc",
       "timeout_seconds": 600
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "rmc-properties", "--benchmark-id", "general--checkpointbarrier2-case-study--positive", "--benchmark", "{benchmark}", "--source", "{source}", "--actual", "{actual}", "--rmc-jar", "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar", "--java", "/usr/bin/java", "--cxx", "/usr/bin/clang++", "--output", "{actual}/rmc-properties/results.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "rmc-properties", "--benchmark-id", "general--checkpointbarrier2-case-study--positive", "--benchmark", "{benchmark}", "--source", "{source}", "--actual", "{actual}", "--rmc-jar", "{rmc_jar}", "--java", "{java}", "--cxx", "{cxx}", "--output", "{actual}/rmc-properties/results.json"],
       "name": "rmc-properties",
       "timeout_seconds": 1800
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "parser-json", "--family", "general", "--repo", "{repo}", "--source", "{source}", "--actual", "{actual}", "--artifact-zip", "/Users/ali/Desktop/LFStructuringNonDeterminism/ReLico-fmcad-2026-artifact-v1.zip", "--maven", "/opt/homebrew/Cellar/maven/3.9.16/bin/mvn", "--output", "{actual}/parser-json/model.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "parser-json", "--family", "general", "--repo", "{repo}", "--source", "{source}", "--actual", "{actual}", "--artifact-zip", "{parser_artifact}", "--maven", "{maven}", "--output", "{actual}/parser-json/model.json"],
       "name": "parser-json",
       "timeout_seconds": 600
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "decoded-dtr-ast", "--repo", "{repo}", "--lake", "/Users/ali/.elan/bin/lake", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/decoded-dtr-ast/model.txt"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "decoded-dtr-ast", "--repo", "{repo}", "--lake", "{lake}", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/decoded-dtr-ast/model.txt"],
       "name": "decoded-dtr-ast",
       "timeout_seconds": 600
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "translated-lf-ast", "--repo", "{repo}", "--lake", "/Users/ali/.elan/bin/lake", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/translated-lf-ast/program.txt"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "translated-lf-ast", "--repo", "{repo}", "--lake", "{lake}", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/translated-lf-ast/program.txt"],
       "name": "translated-lf-ast",
       "timeout_seconds": 600
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "lf-source", "--repo", "{repo}", "--lake", "/Users/ali/.elan/bin/lake", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/lf-source/TranslatedLFProgram.lf"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "lean-export", "--family", "general", "--mode", "lf-source", "--repo", "{repo}", "--lake", "{lake}", "--input", "{actual}/parser-json/model.json", "--output", "{actual}/lf-source/TranslatedLFProgram.lf"],
       "name": "lf-source",
       "timeout_seconds": 600
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "lfc", "--lf-source", "{actual}/lf-source/TranslatedLFProgram.lf", "--work-directory", "{actual}/work/lfc", "--lfc", "/Users/ali/.local/share/lingua-franca/cli/bin/lfc", "--output", "{actual}/lfc/result.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "lfc", "--lf-source", "{actual}/lf-source/TranslatedLFProgram.lf", "--work-directory", "{actual}/work/lfc", "--lfc", "{lfc}", "--output", "{actual}/lfc/result.json"],
       "name": "lfc",
       "timeout_seconds": 1200
     },
     {
-      "command": ["/opt/homebrew/bin/python3", "{repo}/tools/relico_bench_stage.py", "runtime", "--executable", "{actual}/work/lfc/bin/TranslatedLFProgram", "--output", "{actual}/runtime/result.json"],
+      "command": ["{python}", "{repo}/tools/relico_bench_stage.py", "runtime", "--executable", "{actual}/work/lfc/bin/TranslatedLFProgram", "--output", "{actual}/runtime/result.json"],
       "name": "runtime",
       "timeout_seconds": 600
     }

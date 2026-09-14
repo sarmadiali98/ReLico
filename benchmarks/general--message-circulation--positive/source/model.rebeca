@@ -1,5 +1,5 @@
 // Benchmark: general--message-circulation--positive
-// A DTR-fragment redesign of examples2 A_First_Example, whose original
+// A DTR-fragment redesign of the ordering and composition case A_First_Example, whose original
 // form overflows the model checker's queue; see README for the redesign.
 reactiveclass Node(4) {
     knownrebecs {

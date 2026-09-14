@@ -4,7 +4,7 @@ Status: **in progress** — four redesign attempts measured and refused by RMC; 
 approved option A (demand-driven slot clock) on 2026-09-09. This file records the evidence that
 motivated the decision, so the probes do not have to be re-run to justify it.
 
-Source: `examples.zip:ReLico-main/tinyos-prop/TinyOSPV6-TDMA.rebeca`, 253 lines. TDMA is MACB plus
+Source: `the official Rebeca examples at rebeca-lang.org, tinyos-prop/TinyOSPV6-TDMA.rebeca (adapted, not used verbatim)`, 253 lines. TDMA is MACB plus
 one rebuilt class: the corpus diff shows `CPU`, `Sensor`, `Misc`, `WirelessMedium` and `main`
 effectively identical, with every difference confined to `CommunicationDevice` — the TDMA slot
 machine (slot clock, deferred sending, busy retry, in-flight guard).

@@ -12,20 +12,20 @@ needs rechecking.
 
 ## The external input, and why it is not in the repo
 
-Two of the three need the **upstream ReLico example corpus**, which is a snapshot of
-`github.com/sarmadiali98/ReLico` and is deliberately not vendored here. Obtain it either by cloning
-that repository or from the `examples.zip` snapshot the user provided on 2026-08-17, then point the
-script at the unpacked root:
+Two of the three need the **upstream evaluation corpus**: the 49 upstream models recorded in
+`evaluation/registry/general-corpus-selection.tsv` -- seventeen adapted from
+lf-lang/lf-verifier-benchmarks (not used verbatim), sixteen from the official Rebeca examples at
+rebeca-lang.org, and sixteen authored for this evaluation. Sources and references are documented
+in `evaluation/registry/PROVENANCE.md`. The corpus is deliberately not vendored here; collect the
+models into one directory and point the script at its root:
 
 ~~~text
-unzip examples.zip -d /tmp/relico_corpus
-python3 tools/paper-measurements/measure_priority_requirement.py /tmp/relico_corpus
-python3 tools/paper-measurements/census_topology_constructs.py /tmp/relico_corpus
+python3 tools/paper-measurements/measure_priority_requirement.py /path/to/corpus
+python3 tools/paper-measurements/census_topology_constructs.py /path/to/corpus
 ~~~
 
-Both walk the tree for `*.rebeca` and parse the text lexically — no Java, no RMC, no network. One
-trap worth knowing: a naive `find` reports 98 models because half the entries are `__MACOSX` `._`
-resource forks, so any filter must exclude `*__MACOSX*`. The real count is 49.
+Both walk the tree for `*.rebeca` and parse the text lexically — no Java, no RMC, no network. The
+expected model count is 49.
 
 ## What each one establishes
 

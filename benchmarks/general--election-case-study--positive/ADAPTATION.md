@@ -2,7 +2,7 @@
 
 Status: **complete** - the unmodified model semantics pass the full benchmark pipeline.
 
-Source: `examples.zip:ReLico-main/Election/Election.rebeca`, with six reactive classes
+Source: `lf-lang/lf-verifier-benchmarks, rebeca/Election/Election.rebeca (adapted, not used verbatim)`, with six reactive classes
 (`Checker`, `Node1`, `Router`, `Node0`, `Source`, and `KeepAlive`).
 
 ## Property boundary

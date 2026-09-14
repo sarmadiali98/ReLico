@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper's RQ1 AircraftDoor model — 
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/AircraftDoor/AircraftDoor.rebeca`, 110 lines, one of the paper's RQ1 verification benchmarks.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, rebeca/AircraftDoor/AircraftDoor.rebeca (adapted, not used verbatim)`, 110 lines, one of the paper's RQ1 verification benchmarks.
 - **Original blocker:** `translation failed: message server `KeepAlive`.`kick` takes no parameters, so the port that would carry it has no payload`.
 - **Adaptation:** exactly one — the marker parameter. `kick()` gains `int unit` and its single send site passes `0`; no server body reads it, so no behaviour changes. See [`ADAPTATION.md`](ADAPTATION.md).
 

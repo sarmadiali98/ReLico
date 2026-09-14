@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper-named TinyOSPV6-MACB model â€
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/tinyos-prop/TinyOSPV6-MACB.rebeca`, 215 lines.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, tinyos-prop/TinyOSPV6-MACB.rebeca (adapted, not used verbatim)`, 215 lines.
 - **Original blockers:** environment variables (10); rebec-typed message parameters (`send`, `broadcast`, `receiveData` carry `CommunicationDevice` values); rebec-typed state variables with runtime reassignment and `null`; sender capture in the medium; nondeterministic first-tick delays; computed delays; `currentMessageWaitingTime` (a Rebeca built-in); `assertion(false)` x4; `delay` statements; `byte`; compound assignment.
 - **Redesign:** the approved category-3 redesign â€” device tags, tag-parameterised dispatch over static bindings, latch observables, and completion-coupled drivers; per the mapping in [`ADAPTATION.md`](ADAPTATION.md).
 

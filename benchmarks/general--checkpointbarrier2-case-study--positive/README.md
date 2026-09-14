@@ -6,7 +6,7 @@ actor toggles phase on a long periodic self-loop. Two reactive classes, two inst
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/CheckpointBarrier2/CheckpointBarrier2.rebeca`.
+- **Original source:** `authored for this evaluation (CheckpointBarrier2/CheckpointBarrier2.rebeca)`.
 - **Original property:** `CheckpointBarrier2.property` remains excluded. Benchmark-local source-level
   assertions check observed coordination bounds and provide a final-barrier counterexample witness.
 - **Adaptation:** no semantic correction or timing redesign; see [`ADAPTATION.md`](ADAPTATION.md).

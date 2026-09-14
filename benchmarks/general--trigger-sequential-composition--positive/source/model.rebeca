@@ -1,5 +1,5 @@
 // Benchmark: general--trigger-sequential-composition--positive
-// Source: examples2.zip Trigger_Activated_Sequential_Composition, unmodified.
+// Source: ordering and composition case authored for this evaluation, committed unmodified.
 reactiveclass Node(100) {
   knownrebecs {
     Node next;

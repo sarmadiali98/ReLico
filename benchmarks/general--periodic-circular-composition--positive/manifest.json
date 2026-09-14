@@ -1,11 +1,11 @@
 {
   "benchmark_id": "general--periodic-circular-composition--positive",
-  "description": "General-family benchmark for periodic circular composition, a bounded redesign of examples2 Periodic_Circular_Composition.",
+  "description": "General-family benchmark for periodic circular composition, a bounded redesign of the ordering and composition case Periodic_Circular_Composition.",
   "expected_artifacts": [
     {
       "path": "source/result.json",
       "required": true,
-      "sha256": "295891b6f2ed11a5e6d520fed53e5d3d6a0ee70201c6fb6764d6f7eaffa130e8"
+      "sha256": "792c1eed76bdacb3ca8283976abe7fd6cd89bafd622d7d4d8da3600c85d3ae04"
     },
     {
       "path": "rmc/verdict.json",
@@ -52,7 +52,7 @@
   "stages": [
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "source",
         "--benchmark-id",
@@ -66,7 +66,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "rmc",
         "--source",
@@ -74,11 +74,11 @@
         "--actual",
         "{actual}",
         "--rmc-jar",
-        "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar",
+        "{rmc_jar}",
         "--java",
-        "/usr/bin/java",
+        "{java}",
         "--cxx",
-        "/usr/bin/clang++",
+        "{cxx}",
         "--output",
         "{actual}/rmc/verdict.json"
       ],
@@ -87,7 +87,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "parser-json",
         "--family",
@@ -99,9 +99,9 @@
         "--actual",
         "{actual}",
         "--artifact-zip",
-        "/Users/ali/Desktop/LFStructuringNonDeterminism/ReLico-fmcad-2026-artifact-v1.zip",
+        "{parser_artifact}",
         "--maven",
-        "/opt/homebrew/Cellar/maven/3.9.16/bin/mvn",
+        "{maven}",
         "--output",
         "{actual}/parser-json/model.json"
       ],
@@ -110,7 +110,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -120,7 +120,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -131,7 +131,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -141,7 +141,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -152,7 +152,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -162,7 +162,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -173,7 +173,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lfc",
         "--lf-source",
@@ -181,7 +181,7 @@
         "--work-directory",
         "{actual}/work/lfc",
         "--lfc",
-        "/Users/ali/.local/share/lingua-franca/cli/bin/lfc",
+        "{lfc}",
         "--output",
         "{actual}/lfc/result.json"
       ],
@@ -190,7 +190,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "runtime",
         "--executable",

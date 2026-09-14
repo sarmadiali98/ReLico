@@ -7,7 +7,7 @@ deadline misses.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/yarn-prop/yarn-deadline-fifo-4AMs.rebeca`.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, yarn-prop/yarn-deadline-fifo-4AMs.rebeca (adapted, not used verbatim)`.
 - **Original property:** the shared `yarn.property` is intentionally excluded.
 - **Adaptation:** fixed-size source normalization and explicit application-master identity tags.
   See [`ADAPTATION.md`](ADAPTATION.md).

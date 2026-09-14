@@ -352,7 +352,7 @@ def validate_corpus_candidates(
     an in-repo fixture whose directory is the gate's answer, and its path must
     exist; a 'static-screen' row is an upstream corpus model that has never been
     through the frontend, so its status is a screen against the documented
-    exclusion list and its path names an archive entry rather than a file.
+    exclusion list and its path names an upstream source entry rather than a file.
     """
     corpus = registry["corpus"]
     benchmarks = registry["benchmarks"]

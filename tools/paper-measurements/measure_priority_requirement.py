@@ -17,7 +17,8 @@ This script computes, for all 49 upstream models, which would be REJECTED under
 each rule and why. Read-only; parses .rebeca text only.
 
 USAGE
-    unzip examples.zip -d /tmp/relico_corpus      # the upstream ReLico snapshot
+    # Collect the 49 upstream corpus models (sources and references in
+    # evaluation/registry/PROVENANCE.md) under /tmp/relico_corpus, then:
     python3 measure_priority_requirement.py /tmp/relico_corpus
 
 Read-only. Parses .rebeca text; touches nothing else.

@@ -1,6 +1,6 @@
 {
   "benchmark_id": "general--causal-msgsrv-chain--positive",
   "schema_version": 1,
-  "sha256": "afdad96fd0ea5eff28b8991a9ae3665f70e0995492b4c1baa4045f158d1bc1c2",
+  "sha256": "e181a624ac3ab531a80fb54a70ed5de8913382e612a81d8b4e92f5a947893a26",
   "status": "pass"
 }

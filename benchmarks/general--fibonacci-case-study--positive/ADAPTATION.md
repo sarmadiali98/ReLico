@@ -2,7 +2,7 @@
 
 Status: **complete** - the preserved model semantics pass the full benchmark pipeline.
 
-Source: `examples.zip:ReLico-main/Fibonacci/Fibonacci.rebeca`, 79 lines, with four reactive
+Source: `lf-lang/lf-verifier-benchmarks, benchmarks/src/Fibonacci.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 79 lines, with four reactive
 classes (`Source`, `FibCore`, `Checker`, and `KeepAlive`).
 
 ## Property boundary

@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--aircraftdoor-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/AircraftDoor/AircraftDoor.rebeca`, 110 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
+Source: `lf-lang/lf-verifier-benchmarks, rebeca/AircraftDoor/AircraftDoor.rebeca (adapted, not used verbatim)`, 110 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
 
 ## Original blocker
 

@@ -2,7 +2,7 @@
 
 Status: **complete** - the preserved model semantics pass the full benchmark pipeline.
 
-Source: `examples.zip:ReLico-main/CheckpointBarrier2/CheckpointBarrier2.rebeca`, 71 lines,
+Source: `authored for this evaluation (CheckpointBarrier2/CheckpointBarrier2.rebeca)`, 71 lines,
 with two reactive classes (`Coordinator` and `KeepAlive`).
 
 ## Property boundary

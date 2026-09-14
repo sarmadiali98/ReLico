@@ -1,5 +1,5 @@
 // Benchmark: general--circular-rebec-ordering--positive
-// Source: examples2.zip Deterministic_Circular_Ordering_Rebec, unmodified.
+// Source: ordering and composition case authored for this evaluation, committed unmodified.
 reactiveclass Node(100) {
     knownrebecs {
         Node next;

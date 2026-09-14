@@ -7,7 +7,7 @@ The `AppMaster` completes jobs after two units and cycles its successful-job cou
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/yarn-prop/yarn-deadline-fifo-1AMs.rebeca`.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, yarn-prop/yarn-deadline-fifo-1AMs.rebeca (adapted, not used verbatim)`.
 - **Original property:** the shared `yarn.property` is intentionally excluded. This fixture does not
   translate or enforce its bounded reachability assertion.
 - **Adaptation:** fixed-size source normalization only. See [`ADAPTATION.md`](ADAPTATION.md).

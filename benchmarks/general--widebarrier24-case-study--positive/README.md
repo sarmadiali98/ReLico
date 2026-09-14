@@ -7,10 +7,10 @@ reactive classes, two instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/WideBarrier24/WideBarrier24.rebeca`, 93 lines.
+- **Original source:** `authored for this evaluation (WideBarrier24/WideBarrier24.rebeca)`, 93 lines.
 - **Original property:** `WideBarrier24.property` is intentionally excluded. This fixture evaluates
   translation and runtime behavior only; it does not translate or enforce the property.
-- **Adaptation:** none; the archived Rebeca source is preserved byte-for-byte. See
+- **Adaptation:** none; the upstream Rebeca source is preserved byte-for-byte. See
   [`ADAPTATION.md`](ADAPTATION.md).
 
 ## Stages
@@ -20,7 +20,7 @@ reactive classes, two instances.
 
 ## Evidence
 
-- the source stage passes and the fixture source is byte-identical to the archived model;
+- the source stage passes and the fixture source is byte-identical to the upstream model;
 - RMC 2.14 reports `satisfied` for `Deadlock-Freedom and No Deadline Missed`, reaching 3,006 states
   and 39,130 transitions;
 - parser JSON, decoded DTR AST, translated LF AST, and LF source export pass;

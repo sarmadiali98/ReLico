@@ -1,5 +1,5 @@
 // Benchmark: general--checkpointbarrier2-case-study--positive
-// Source: examples.zip/ReLico-main/CheckpointBarrier2/CheckpointBarrier2.rebeca.
+// Source: authored for this evaluation (CheckpointBarrier2/CheckpointBarrier2.rebeca)
 // The original property file is excluded; translation and runtime behavior only.
 reactiveclass Coordinator(20) {
     statevars {

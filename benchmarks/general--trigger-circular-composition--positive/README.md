@@ -6,7 +6,7 @@ A **general**-family positive benchmark. General-family benchmark for a trigger-
 
 ### 1. Original purpose
 
-A ring of actors held quiet until a trigger fires, then circulating (examples2 Trigger_Activated_Circular_Composition).
+A ring of actors held quiet until a trigger fires, then circulating (ordering and composition case Trigger_Activated_Circular_Composition).
 
 ### 2. Why the original fails
 

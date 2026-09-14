@@ -14,6 +14,6 @@ Measured 2026-09-09 through the repository stage pipeline.
 | runtime | generated binary, 5 msec logical-time budget | pass |
 
 The fixture source is byte-identical to
-`examples.zip:ReLico-main/WideBarrier24/WideBarrier24.rebeca`.
+`authored for this evaluation (WideBarrier24/WideBarrier24.rebeca)`.
 `WideBarrier24.property` is intentionally excluded. All eight expected artifacts were copied from
 the successful pipeline outputs and SHA-256-pinned in `manifest.json`.

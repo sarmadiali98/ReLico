@@ -5,7 +5,7 @@ all eight stages green including `rmc`, after the maintainer-approved
 category-3 redesign (the blocker classification that preceded it is the
 stage K decision report of 2026-09-07).
 
-Source: `examples.zip:ReLico-main/AutonomousVehicles.rebeca`, 517 lines,
+Source: `the official Rebeca examples at rebeca-lang.org, AutonomousVehicles.rebeca (adapted, not used verbatim)`, 517 lines,
 10 classes. The redesigned source is 409 lines, 7 classes, 39 instances
 (33 segments + 6 facilities). **There is no Vehicle reactiveclass in the
 original** — vehicles are virtual (`vehicleId` parameters); the moving

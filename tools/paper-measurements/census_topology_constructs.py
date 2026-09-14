@@ -22,7 +22,8 @@ headline numbers can be reported with the anomalies accounted for rather than
 swept aside.
 
 USAGE
-    unzip examples.zip -d /tmp/relico_corpus      # the upstream ReLico snapshot
+    # Collect the 49 upstream corpus models (sources and references in
+    # evaluation/registry/PROVENANCE.md) under /tmp/relico_corpus, then:
     python3 census_topology_constructs.py /tmp/relico_corpus
 
 Read-only. Parses .rebeca text; touches nothing else.

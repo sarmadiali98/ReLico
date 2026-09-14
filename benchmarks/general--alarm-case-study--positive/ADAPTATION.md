@@ -2,7 +2,7 @@
 
 Status: **in progress** — source validation and RMC 2.14 pass with the original model semantics.
 
-Source: `examples.zip:ReLico-main/Alarm/Alarm.rebeca`, 70 lines, with three reactive classes
+Source: `lf-lang/lf-verifier-benchmarks, rebeca/Alarm/Alarm.rebeca (adapted, not used verbatim)`, 70 lines, with three reactive classes
 (`Checker`, `Controller`, and `KeepAlive`).
 
 ## Property boundary

@@ -2,7 +2,7 @@
 // A periodic fork with heterogeneous branches: one producer fans out to three
 // workers, each branch carrying its own payload and each worker storing what
 // it received, before the producer re-arms on the last acknowledgement. A
-// differentiated redesign of the examples2 Periodic_Fork_Composition model,
+// differentiated redesign of the ordering and composition case Periodic_Fork_Composition model,
 // whose original form is an uncoupled timer-driven fork that overflows the
 // model checker; its uniform-fan-out twin is already implemented as
 // general--arbitrary-rebec-ordering--positive, so this source carries

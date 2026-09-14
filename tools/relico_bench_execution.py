@@ -456,6 +456,85 @@ def load_manifest(
     return benchmark_directory, manifest
 
 
+def resolve_tool_variables():
+    # Environment-resolved tool locations for manifest placeholders.
+    # Each honors a RELICO_* override, then PATH, then the default
+    # artifact cache populated by scripts/install-dependencies.sh.
+    cache_root = Path(
+        os.environ.get("RELICO_CACHE_DIR", "")
+        or Path.home() / ".cache" / "relico"
+    )
+
+    def executable(name, env_key):
+        value = os.environ.get(env_key, "")
+        if value:
+            return value
+        return shutil.which(name) or ""
+
+    def first_executable(names, env_key):
+        value = os.environ.get(env_key, "")
+        if value:
+            return value
+        for name in names:
+            found = shutil.which(name)
+            if found:
+                return found
+        return ""
+
+    maven_candidates = [
+        "/opt/homebrew/opt/maven/bin/mvn",
+        "/opt/homebrew/bin/mvn",
+        "/usr/local/bin/mvn",
+    ]
+    maven = os.environ.get("RELICO_MAVEN", "")
+    if not maven:
+        for candidate in maven_candidates:
+            if Path(candidate).is_file():
+                maven = candidate
+                break
+    if not maven:
+        maven = shutil.which("mvn") or ""
+
+    lfc = os.environ.get("RELICO_LFC", "")
+    if not lfc:
+        lfc = shutil.which("lfc") or ""
+    if not lfc:
+        matches = sorted(
+            (cache_root / "lf").rglob("lfc")
+        ) if (cache_root / "lf").is_dir() else []
+        lfc = str(matches[0]) if matches else ""
+
+    return {
+        "python": executable("python3", "RELICO_PYTHON"),
+        "lake": executable("lake", "RELICO_LAKE"),
+        "lfc": lfc,
+        "rmc_jar": str(
+            Path(
+                os.environ.get(
+                    "RELICO_RMC",
+                    str(cache_root / "rmc" / "2.14" / "rmc-2.14.jar"),
+                )
+            )
+        ),
+        "parser_artifact": str(
+            Path(
+                os.environ.get(
+                    "RELICO_PARSER_ARTIFACT",
+                    str(
+                        cache_root
+                        / "parser"
+                        / "2.25"
+                        / "org.rebecalang.compiler-94ca579e0f2e3528d8de608a9e86316ecb78d608.zip"
+                    ),
+                )
+            )
+        ),
+        "maven": maven,
+        "java": executable("java", "RELICO_JAVA"),
+        "cxx": first_executable(["clang++", "g++"], "RELICO_CXX"),
+    }
+
+
 def run_stage(
     *,
     benchmark_id: str,
@@ -992,6 +1071,7 @@ def run_benchmark(
             benchmark_directory_path
             / manifest["source_files"][0]
         ),
+        **resolve_tool_variables(),
     }
 
     overall_status = "pass"

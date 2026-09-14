@@ -4,7 +4,7 @@ Status: **implemented** as `general--tinyosmacb-case-study--positive`,
 all eight stages green including `rmc`, after the maintainer-approved
 category-3 redesign.
 
-Source: `examples.zip:ReLico-main/tinyos-prop/TinyOSPV6-MACB.rebeca`,
+Source: `the official Rebeca examples at rebeca-lang.org, tinyos-prop/TinyOSPV6-MACB.rebeca (adapted, not used verbatim)`,
 215 lines, 5 classes (CPU, Sensor, Misc, WirelessMedium,
 CommunicationDevice), 6 instances. The redesigned source is 196 lines;
 the instance inventory is unchanged.

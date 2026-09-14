@@ -1,5 +1,5 @@
 // Benchmark: general--alarm-case-study--positive
-// Source: examples.zip/ReLico-main/Alarm/Alarm.rebeca. The Alarm.property
+// Source: lf-lang/lf-verifier-benchmarks, rebeca/Alarm/Alarm.rebeca (adapted, not used verbatim). The Alarm.property
 // file is intentionally excluded; this benchmark checks translation and
 // runtime behavior only. The model semantics, priorities, and delays remain
 // unchanged.

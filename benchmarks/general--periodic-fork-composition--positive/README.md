@@ -6,7 +6,7 @@ A **general**-family positive benchmark. General-family benchmark for a periodic
 
 ### 1. Original purpose
 
-One actor fans a periodic message out to several consumers (examples2 Periodic_Fork_Composition).
+One actor fans a periodic message out to several consumers (ordering and composition case Periodic_Fork_Composition).
 
 ### 2. Why the original fails
 

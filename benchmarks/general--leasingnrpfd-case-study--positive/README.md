@@ -12,7 +12,7 @@ artifacts themselves.
 ## Provenance
 
 - **Original source:**
-  `examples.zip:ReLico-main/LeasingNRPFD/LeasingNRPFD.rebeca`, 359 lines.
+  `the Leasing NRP FD model of the Consistency of Distributed Controllers project at rebeca-lang.org (adapted, not used verbatim; the associated paper is cited in evaluation/registry/PROVENANCE.md)`, 359 lines.
 - **Original blocker:** `unsupported by the ReLico general parser
   bridge: environment variable`.
 - **Adaptations:** the approved category-1 mechanical set (env fold,

@@ -1,5 +1,5 @@
 // Benchmark: general--periodic-join-composition--positive
-// A DTR-fragment redesign of examples2 Periodic_Join_Composition, whose original
+// A DTR-fragment redesign of the ordering and composition case Periodic_Join_Composition, whose original
 // form overflows the model checker's queue; see README for the redesign.
 reactiveclass receiver(4) {
     knownrebecs {

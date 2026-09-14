@@ -1,5 +1,5 @@
 // Benchmark: general--periodic-circular-composition--positive
-// A DTR-fragment redesign of examples2 Periodic_Circular_Composition, whose original
+// A DTR-fragment redesign of the ordering and composition case Periodic_Circular_Composition, whose original
 // form overflows the model checker's queue; see README for the redesign.
 reactiveclass Node(4) {
     knownrebecs {

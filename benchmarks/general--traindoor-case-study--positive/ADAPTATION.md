@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--traindoor-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/TrainDoor/TrainDoor.rebeca`, 101 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a five-line header comment plus the single adaptation below.
+Source: `lf-lang/lf-verifier-benchmarks, rebeca/TrainDoor/TrainDoor.rebeca (adapted, not used verbatim)`, 101 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a five-line header comment plus the single adaptation below.
 
 ## Original blocker
 

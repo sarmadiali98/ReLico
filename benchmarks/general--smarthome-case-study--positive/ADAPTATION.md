@@ -6,7 +6,7 @@ reactive classes — `Heater`, `Light`, `Door`, `TempSensor`,
 monitoring temperature, light and motion, controlling heater and light,
 and coordinating door and alarm policy from a central controller.
 
-Source: `examples.zip:ReLico-main/smarthome/smarthome.rebeca` (359
+Source: `authored for this evaluation (smarthome/smarthome.rebeca)` (359
 lines). The adapted source in this directory is 341 lines; the
 difference is entirely the removed `env` block and the removed
 commented-out scenario variants are retained as comments.
@@ -17,7 +17,7 @@ commented-out scenario variants are retained as comments.
 unsupported by the ReLico general parser bridge: environment variable
 ```
 
-measured against the unmodified archive source.
+measured against the unmodified corpus source.
 
 ## The minimal adaptation — three parts, each forced by a measured refusal
 

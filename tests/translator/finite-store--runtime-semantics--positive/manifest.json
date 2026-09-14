@@ -67,7 +67,7 @@
   "stages": [
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "source",
         "--benchmark-id",
@@ -81,7 +81,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "rmc",
         "--source",
@@ -89,11 +89,11 @@
         "--actual",
         "{actual}",
         "--rmc-jar",
-        "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar",
+        "{rmc_jar}",
         "--java",
-        "/usr/bin/java",
+        "{java}",
         "--cxx",
-        "/usr/bin/clang++",
+        "{cxx}",
         "--output",
         "{actual}/rmc/verdict.json"
       ],
@@ -102,7 +102,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "parser-json",
         "--family",
@@ -114,9 +114,9 @@
         "--actual",
         "{actual}",
         "--artifact-zip",
-        "/Users/ali/Desktop/LFStructuringNonDeterminism/ReLico-fmcad-2026-artifact-v1.zip",
+        "{parser_artifact}",
         "--maven",
-        "/opt/homebrew/Cellar/maven/3.9.16/bin/mvn",
+        "{maven}",
         "--output",
         "{actual}/parser-json/model.json"
       ],
@@ -125,7 +125,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -135,7 +135,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -146,13 +146,13 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "formal-witness",
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--coverage",
         "{benchmark}/coverage.json",
         "--output",
@@ -163,7 +163,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -173,7 +173,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -184,7 +184,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -194,7 +194,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -205,7 +205,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lfc",
         "--lf-source",
@@ -213,7 +213,7 @@
         "--work-directory",
         "{actual}/work/lfc",
         "--lfc",
-        "/Users/ali/.local/share/lingua-franca/cli/bin/lfc",
+        "{lfc}",
         "--output",
         "{actual}/lfc/result.json"
       ],
@@ -222,7 +222,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "runtime",
         "--executable",
@@ -235,7 +235,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "coverage-manifest",
         "--benchmark-id",
@@ -252,7 +252,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "trust-report",
         "--benchmark-id",
@@ -262,7 +262,7 @@
         "--shared-formal-registry",
         "{repo}/evaluation/registry/shared-formal-evidence.tsv",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--output",
         "{actual}/trust-report/result.json"
       ],

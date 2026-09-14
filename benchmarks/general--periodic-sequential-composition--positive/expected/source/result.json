@@ -1,6 +1,6 @@
 {
   "benchmark_id": "general--periodic-sequential-composition--positive",
   "schema_version": 1,
-  "sha256": "a4c5043af9afd8995c1ad4836ee1be45d7ef3150d7061ff1eb3a18dfa7a0e0eb",
+  "sha256": "a4a673b12ce2ae7f5d27048602144804d8790387d64e21889d39c681a9b667fc",
   "status": "pass"
 }

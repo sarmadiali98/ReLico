@@ -7,10 +7,10 @@ Four reactive classes, four instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/ProcessMsg/ProcessMsg.rebeca`, 86 lines.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, benchmarks/src/ProcessMsg.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 86 lines.
 - **Original property:** `ProcessMsg.property` is intentionally excluded. This fixture evaluates
   translation and runtime behavior only; it does not translate or enforce the property.
-- **Adaptation:** none; the archived Rebeca source is preserved byte-for-byte. See
+- **Adaptation:** none; the upstream Rebeca source is preserved byte-for-byte. See
   [`ADAPTATION.md`](ADAPTATION.md).
 
 ## Stages
@@ -20,7 +20,7 @@ Four reactive classes, four instances.
 
 ## Evidence
 
-- the source stage passes and the fixture source is byte-identical to the archived model;
+- the source stage passes and the fixture source is byte-identical to the upstream model;
 - RMC 2.14 reports `satisfied` for `Deadlock-Freedom and No Deadline Missed`, reaching 6 states
   and 7 transitions;
 - parser JSON, decoded DTR AST, translated LF AST, and LF source export pass;

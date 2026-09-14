@@ -1,5 +1,5 @@
 // Benchmark: general--partial-msgsrv-ordering--positive
-// Source: examples2.zip Paritial_Ordering_messageserver, unmodified.
+// Source: ordering and composition case authored for this evaluation, committed unmodified.
 reactiveclass Node(100) {
     Node() {
         self.sendMsg1(1);

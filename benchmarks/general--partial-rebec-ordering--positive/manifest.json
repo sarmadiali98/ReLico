@@ -1,11 +1,11 @@
 {
   "benchmark_id": "general--partial-rebec-ordering--positive",
-  "description": "General-family benchmark for partial rebec ordering, a bounded redesign of examples2 Paritial_Ordering_Rebec.",
+  "description": "General-family benchmark for partial rebec ordering, a bounded redesign of the ordering and composition case Paritial_Ordering_Rebec.",
   "expected_artifacts": [
     {
       "path": "source/result.json",
       "required": true,
-      "sha256": "f8050a8bde7431f83f32c230b986e1e9aa297d75573e4ca8cc933147a0fd9337"
+      "sha256": "7f6ad28ed43449022f4fd7cf3371a4db0c29cbd0c9ed4011bfa422ab21472124"
     },
     {
       "path": "rmc/verdict.json",
@@ -68,7 +68,7 @@
   "stages": [
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "source",
         "--benchmark-id",
@@ -82,7 +82,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "rmc",
         "--source",
@@ -90,11 +90,11 @@
         "--actual",
         "{actual}",
         "--rmc-jar",
-        "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar",
+        "{rmc_jar}",
         "--java",
-        "/usr/bin/java",
+        "{java}",
         "--cxx",
-        "/usr/bin/clang++",
+        "{cxx}",
         "--output",
         "{actual}/rmc/verdict.json"
       ],
@@ -103,7 +103,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "rmc-properties",
         "--benchmark-id",
@@ -115,11 +115,11 @@
         "--actual",
         "{actual}",
         "--rmc-jar",
-        "/Users/ali/.cache/relico/rmc/2.14/rmc-2.14.jar",
+        "{rmc_jar}",
         "--java",
-        "/usr/bin/java",
+        "{java}",
         "--cxx",
-        "/usr/bin/clang++",
+        "{cxx}",
         "--output",
         "{actual}/rmc-properties/results.json"
       ],
@@ -128,7 +128,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "parser-json",
         "--family",
@@ -140,9 +140,9 @@
         "--actual",
         "{actual}",
         "--artifact-zip",
-        "/Users/ali/Desktop/LFStructuringNonDeterminism/ReLico-fmcad-2026-artifact-v1.zip",
+        "{parser_artifact}",
         "--maven",
-        "/opt/homebrew/Cellar/maven/3.9.16/bin/mvn",
+        "{maven}",
         "--output",
         "{actual}/parser-json/model.json"
       ],
@@ -151,7 +151,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -161,7 +161,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -172,7 +172,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -182,7 +182,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -193,7 +193,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lean-export",
         "--family",
@@ -203,7 +203,7 @@
         "--repo",
         "{repo}",
         "--lake",
-        "/Users/ali/.elan/bin/lake",
+        "{lake}",
         "--input",
         "{actual}/parser-json/model.json",
         "--output",
@@ -214,7 +214,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "lfc",
         "--lf-source",
@@ -222,7 +222,7 @@
         "--work-directory",
         "{actual}/work/lfc",
         "--lfc",
-        "/Users/ali/.local/share/lingua-franca/cli/bin/lfc",
+        "{lfc}",
         "--output",
         "{actual}/lfc/result.json"
       ],
@@ -231,7 +231,7 @@
     },
     {
       "command": [
-        "/opt/homebrew/bin/python3",
+        "{python}",
         "{repo}/tools/relico_bench_stage.py",
         "runtime",
         "--executable",

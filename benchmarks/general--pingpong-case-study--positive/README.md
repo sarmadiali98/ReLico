@@ -7,10 +7,10 @@ units. Four reactive classes, four instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/PingPong/PingPong.rebeca`, 97 lines.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, rebeca/PingPong/PingPong.rebeca (adapted, not used verbatim)`, 97 lines.
 - **Original property:** `PingPong.property` is intentionally excluded. This fixture evaluates
   translation and runtime behavior only; it does not translate or enforce the property.
-- **Adaptation:** none; the archived Rebeca source is preserved byte-for-byte. See
+- **Adaptation:** none; the upstream Rebeca source is preserved byte-for-byte. See
   [`ADAPTATION.md`](ADAPTATION.md).
 
 The model is distinct from the existing trigger and periodic ping-pong composition fixtures: this
@@ -23,7 +23,7 @@ is a finite four-actor checked exchange rather than a recurring two-node composi
 
 ## Evidence
 
-- the source stage passes and the fixture source is byte-identical to the archived model;
+- the source stage passes and the fixture source is byte-identical to the upstream model;
 - RMC 2.14 reports `satisfied` for `Deadlock-Freedom and No Deadline Missed`, reaching 20 states
   and 43 transitions;
 - parser JSON, decoded DTR AST, translated LF AST, and LF source export pass;

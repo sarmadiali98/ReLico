@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper-named AutonomousVehicles mode
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/AutonomousVehicles.rebeca`, 517 lines, 10 classes.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, AutonomousVehicles.rebeca (adapted, not used verbatim)`, 517 lines, 10 classes.
 - **Original blockers:** environment variables (12); rebec-typed state variables (A1); dynamic sender capture (`segRequestingCross`); 34 `sender`/`instanceof` reply-dispatch sites; null-encoded topology (~40 null constructor arguments and 7-way null-chain forwarding); computed delays; `assertion(false)` x8.
 - **Redesign:** the approved category-3 redesign — tag routing over full static bindings, per the mapping in [`ADAPTATION.md`](ADAPTATION.md). 409 lines, 7 classes, 39 instances (33 segments + 6 facilities).
 
