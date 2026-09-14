@@ -1,6 +1,6 @@
 # `general--arbitrary-rebec-ordering--positive`
 
-A **general**-family positive benchmark: a DTR-fragment redesign of the examples2 model `Arbitrary_Ordering_Rebec`, which the model checker rejects with a queue overflow.
+A **general**-family positive benchmark: a DTR-fragment redesign of the ordering and composition model `Arbitrary_Ordering_Rebec`, which the model checker rejects with a queue overflow.
 
 ## Provenance
 

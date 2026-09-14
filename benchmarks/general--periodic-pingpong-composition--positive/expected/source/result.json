@@ -1,6 +1,6 @@
 {
   "benchmark_id": "general--periodic-pingpong-composition--positive",
   "schema_version": 1,
-  "sha256": "6a9615c7fa8a2443a18331a64d159409a1ab5f6476c601f1280c38dae45b26cd",
+  "sha256": "e28e7fe3535a8a89fc4623071389fbbbac298f0031f37ca8e5165eb69a860cbd",
   "status": "pass"
 }

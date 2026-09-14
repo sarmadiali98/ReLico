@@ -2,16 +2,16 @@
 
 Exact commands to reproduce every artifact and result of the ESP32
 smart-home case study. All commands run from the repository root
-(`/Users/ali/Desktop/ReLico` in the recorded runs; any clone works with
+(`the repository root` in the recorded runs; any clone works with
 the paths adjusted accordingly).
 
 Tool versions used in the recorded runs:
 
 | Tool | Version |
 |---|---|
-| lfc | 0.11.0 (`/Users/ali/.local/bin/lfc`) |
-| Python + pytest | Python 3.11.6, pytest 9.1.1 (`/opt/homebrew/bin/python3.11`) |
-| lake | at `/Users/ali/.elan/bin/lake` (Lean 4) |
+| lfc | 0.11.0 (`lfc` on `PATH`) |
+| Python + pytest | Python 3.11.6, pytest 9.1.1 (`python3`) |
+| lake | `lake` on `PATH` (Lean 4, pinned in `lean-toolchain`) |
 | macOS | Apple Silicon |
 
 ## 1. Formal artifact: generate and check
@@ -35,7 +35,7 @@ diff esp32/smarthome/generated/TranslatedLFProgram.lf \
 The same check runs inside the test suite:
 
 ```bash
-/opt/homebrew/bin/python3.11 -m pytest \
+python3 -m pytest \
   esp32/smarthome/hardware/tests/test_property_markers.py \
   esp32/smarthome/hardware/tests/test_sensor_io.py -v
 ```
@@ -51,7 +51,7 @@ benchmark manifest) are:
 # 0. (optional) parser stage: model.rebeca -> model.json
 #    requires the parser artifact zip and Maven; see the benchmark
 #    manifest for the exact invocation
-/opt/homebrew/bin/python3.11 tools/relico_bench_stage.py parser-json \
+python3 tools/relico_bench_stage.py parser-json \
   --family general --repo . \
   --source benchmarks/general--smarthome-case-study--positive/source/model.rebeca \
   --actual <work-dir> \
@@ -59,23 +59,23 @@ benchmark manifest) are:
   --output <work-dir>/parser-json/model.json
 
 # 1. decoded DTR AST: model.json -> model.txt
-/opt/homebrew/bin/python3.11 tools/relico_bench_stage.py lean-export \
+python3 tools/relico_bench_stage.py lean-export \
   --family general --mode decoded-dtr-ast --repo . \
-  --lake /Users/ali/.elan/bin/lake \
+  --lake "$RELICO_LAKE" \
   --input <work-dir>/parser-json/model.json \
   --output <work-dir>/decoded-dtr-ast/model.txt
 
 # 2. translated LF AST: model.json -> program.txt
-/opt/homebrew/bin/python3.11 tools/relico_bench_stage.py lean-export \
+python3 tools/relico_bench_stage.py lean-export \
   --family general --mode translated-lf-ast --repo . \
-  --lake /Users/ali/.elan/bin/lake \
+  --lake "$RELICO_LAKE" \
   --input <work-dir>/parser-json/model.json \
   --output <work-dir>/translated-lf-ast/program.txt
 
 # 3. LF source: model.json -> TranslatedLFProgram.lf
-/opt/homebrew/bin/python3.11 tools/relico_bench_stage.py lean-export \
+python3 tools/relico_bench_stage.py lean-export \
   --family general --mode lf-source --repo . \
-  --lake /Users/ali/.elan/bin/lake \
+  --lake "$RELICO_LAKE" \
   --input <work-dir>/parser-json/model.json \
   --output <work-dir>/lf-source/TranslatedLFProgram.lf
 ```
@@ -88,8 +88,8 @@ The end-to-end benchmark (all nine stages, including RMC and runtime)
 can be executed through the benchmark runner:
 
 ```bash
-/opt/homebrew/bin/python3.11 tools/relico_bench.py --show general--smarthome-case-study--positive
-/opt/homebrew/bin/python3.11 tools/relico_bench.py --benchmark general--smarthome-case-study--positive
+python3 tools/relico_bench.py --show general--smarthome-case-study--positive
+python3 tools/relico_bench.py --benchmark general--smarthome-case-study--positive
 ```
 
 This re-runs source, RMC, parser-json, the three Lean export stages,
@@ -139,7 +139,7 @@ topology must stay aligned with the formal artifact (enforced by
 ## 3. Run tests
 
 ```bash
-/opt/homebrew/bin/python3.11 -m pytest \
+python3 -m pytest \
   esp32/smarthome/hardware/tests/ \
   esp32/smarthome/bridge/tests/ \
   esp32/smarthome/scenario/tests/ -v

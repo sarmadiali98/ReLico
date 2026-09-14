@@ -4,7 +4,7 @@ A **general**-family positive benchmark: the paper-named TinyOSPV6-TDMA sensing 
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/tinyos-prop/TinyOSPV6-TDMA.rebeca`, 253 lines.
+- **Original source:** `the official Rebeca examples at rebeca-lang.org, tinyos-prop/TinyOSPV6-TDMA.rebeca (adapted, not used verbatim)`, 253 lines.
 - **Original blockers:** environment variables; rebec-typed message and state parameters; sender capture; nondeterministic first-tick delays; computed delays; `currentMessageWaitingTime`; assertions; delay statements; `byte`; compound assignment.
 - **Redesign:** device tags, static tag dispatch, fixed delays, completion-coupled drivers, and a demand-driven TDMA lifecycle; see [`ADAPTATION.md`](ADAPTATION.md).
 

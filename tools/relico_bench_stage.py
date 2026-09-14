@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 from relico_bench_properties import validate_properties
 
 RMC_SHA256 = "a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5"
-PARSER_ZIP_SHA256 = "b58052952cb753d554696dd1c23dc4c43f43648228221a8ff2f494311dc41586"
+PARSER_ZIP_SHA256 = "bd10366acf8d1ed7f392cdd424bfaea5be162cb291f9521ad3d3cfd32be8dcaf"
 LFC_SHA256 = "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a"
 
 # The canonical identity of a translated program across the whole pipeline:
@@ -480,7 +480,6 @@ def parser_json_stage(options: argparse.Namespace) -> None:
 
     environment = os.environ.copy()
     environment["RELICO_MAVEN"] = str(maven)
-    environment["PATH"] = "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
     run_checked(
         [

@@ -13,6 +13,6 @@ Measured 2026-09-09 through the repository stage pipeline.
 | compile | `lfc 0.11.0`, C++ target | pass |
 | runtime | generated binary, 5 msec logical-time budget | pass |
 
-The fixture source is byte-identical to `examples.zip:ReLico-main/PingPong/PingPong.rebeca`.
+The fixture source is byte-identical to `lf-lang/lf-verifier-benchmarks, rebeca/PingPong/PingPong.rebeca (adapted, not used verbatim)`.
 `PingPong.property` is intentionally excluded. All eight expected artifacts were copied from the
 successful pipeline outputs and SHA-256-pinned in `manifest.json`.

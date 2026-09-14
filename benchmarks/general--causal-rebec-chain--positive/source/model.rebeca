@@ -1,5 +1,5 @@
 // Benchmark: general--causal-rebec-chain--positive
-// Source: examples2.zip Causal_Dependency_Rebec, unmodified.
+// Source: ordering and composition case authored for this evaluation, committed unmodified.
 reactiveclass Receiver(100){
     knownrebecs{
         Switch switch_;

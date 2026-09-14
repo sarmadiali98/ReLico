@@ -1,6 +1,6 @@
 # `general--trigger-pingpong-composition--positive`
 
-A **general**-family positive benchmark from the `examples2` corpus (`Trigger_Activated_PingPong_Composition.rebeca`), integrated without adaptation.
+A **general**-family positive benchmark from the ordering and composition corpus authored for this evaluation (`Trigger_Activated_PingPong_Composition.rebeca`), integrated without adaptation.
 
 ## Provenance
 

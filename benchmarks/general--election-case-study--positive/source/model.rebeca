@@ -1,5 +1,5 @@
 // Benchmark: general--election-case-study--positive
-// Source: examples.zip/ReLico-main/Election/Election.rebeca. The original
+// Source: lf-lang/lf-verifier-benchmarks, rebeca/Election/Election.rebeca (adapted, not used verbatim). The original
 // property file is excluded; translation and runtime behavior only.
 reactiveclass Checker(5) {
     statevars {

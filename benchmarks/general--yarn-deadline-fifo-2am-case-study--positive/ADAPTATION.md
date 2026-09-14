@@ -1,6 +1,6 @@
 # YARN deadline FIFO 2AM - adaptation record
 
-Source: `examples.zip:ReLico-main/yarn-prop/yarn-deadline-fifo-2AMs.rebeca`.
+Source: `the official Rebeca examples at rebeca-lang.org, yarn-prop/yarn-deadline-fifo-2AMs.rebeca (adapted, not used verbatim)`.
 
 ## Property boundary
 

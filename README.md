@@ -6,8 +6,6 @@ ReLico is an executable Lean 4 translation framework from a supported fragment o
 
 ReLico moves the DTR-to-LF translator into the Lean proof boundary. The same Lean definitions construct the target LF model and appear in structural and semantic correctness results. Parsing, interchange with the existing Timed Rebeca frontend, LF source generation, `lfc`, generated C++, and execution remain outside that proof boundary.
 
-Repository: <https://github.com/sarmadiali98/ReLico>
-
 ## Current Status
 
 The active executable path is the **General family**. It supports multiple reactive classes and actor instances, known rebecs and external sends, typed message payloads and constructor arguments, integer and Boolean state, supported unary and binary expressions, assignments, conditionals, local declarations, and nonnegative constant send delays. Actor and message-server priorities are represented by generated reaction declaration order.

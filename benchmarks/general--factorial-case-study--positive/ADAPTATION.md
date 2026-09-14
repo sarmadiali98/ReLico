@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--factorial-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/Factorial/Factorial.rebeca`, 84 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
+Source: `lf-lang/lf-verifier-benchmarks, benchmarks/src/Factorial.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 84 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
 
 ## Original blocker
 

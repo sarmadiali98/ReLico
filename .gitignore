@@ -19,10 +19,6 @@ generated/
 tmp/
 .temp/
 
-# Local provenance archives (not part of the distributed artifact)
-examples.zip
-examples2.zip
-
 # Agent/session state and local scratch
 .qwen/
 .qwen-exports/

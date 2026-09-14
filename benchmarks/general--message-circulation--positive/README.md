@@ -1,6 +1,6 @@
 # `general--message-circulation--positive`
 
-A **general**-family positive benchmark: a DTR-fragment redesign of the examples2 model `A_First_Example`, which the model checker rejects with a queue overflow.
+A **general**-family positive benchmark: a DTR-fragment redesign of the ordering and composition model `A_First_Example`, which the model checker rejects with a queue overflow.
 
 ## Provenance
 

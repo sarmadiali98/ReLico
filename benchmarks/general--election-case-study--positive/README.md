@@ -7,7 +7,7 @@ reactive classes, six instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/Election/Election.rebeca`.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, rebeca/Election/Election.rebeca (adapted, not used verbatim)`.
 - **Original property:** `Election.property` remains excluded. Two benchmark-local RMC assertions
   now check the adapted Timed Rebeca source; they do not check or establish property preservation
   for the translated LF program.

@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--tcsma-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/benchmarks/tcsma.rebeca`, 215 lines, the paper-named TCSMA model. The benchmark source is 189 lines; the difference is the removed never-read bookkeeping layer (see below) plus the added gating.
+Source: `the official Rebeca examples at rebeca-lang.org, benchmarks/tcsma.rebeca (adapted, not used verbatim)`, 215 lines, the paper-named TCSMA model. The benchmark source is 189 lines; the difference is the removed never-read bookkeeping layer (see below) plus the added gating.
 
 ## Original blockers
 

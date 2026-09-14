@@ -7,7 +7,7 @@ three instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/Alarm/Alarm.rebeca`, 70 lines.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, rebeca/Alarm/Alarm.rebeca (adapted, not used verbatim)`, 70 lines.
 - **Original property:** `Alarm.property` is intentionally excluded. This fixture evaluates
   translation and runtime behavior only; it does not translate or enforce the property.
 - **Adaptation:** no semantic correction or timing redesign; see [`ADAPTATION.md`](ADAPTATION.md).

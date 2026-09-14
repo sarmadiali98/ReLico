@@ -1,6 +1,6 @@
 {
   "benchmark_id": "general--arbitrary-msgsrv-ordering--positive",
   "schema_version": 1,
-  "sha256": "6bf559b3862318caa284683a991336632215aa849d9d7255e98d4a8dde328c33",
+  "sha256": "3f030aa126760051509979f57e848534d56ccc67da1acc74661d13089b50b083",
   "status": "pass"
 }

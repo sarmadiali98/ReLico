@@ -2,12 +2,12 @@
 
 Status: **complete** - the approved adaptation set passes the full benchmark pipeline.
 
-Source: `examples.zip:ReLico-main/ASPIN.rebeca`, a 4x4 torus network-on-chip model with one
+Source: `the official Rebeca examples at rebeca-lang.org, ASPIN.rebeca (adapted, not used verbatim)`, a 4x4 torus network-on-chip model with one
 `Manager`, sixteen `Router` instances, and one packet routed from `r00` to `r23`.
 
 ## Property boundary
 
-The archive contains no ASPIN `.property` file. This fixture evaluates translation and runtime
+The upstream source contains no ASPIN `.property` file. This fixture evaluates translation and runtime
 behavior. It does not introduce or encode a property assertion.
 
 ## Forced fragment adaptations

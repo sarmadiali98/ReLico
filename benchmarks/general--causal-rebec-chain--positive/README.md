@@ -1,6 +1,6 @@
 # `general--causal-rebec-chain--positive`
 
-A **general**-family positive benchmark from the `examples2` corpus (`Causal_Dependency_Rebec.rebeca`), integrated without adaptation.
+A **general**-family positive benchmark from the ordering and composition corpus authored for this evaluation (`Causal_Dependency_Rebec.rebeca`), integrated without adaptation.
 
 ## Provenance
 

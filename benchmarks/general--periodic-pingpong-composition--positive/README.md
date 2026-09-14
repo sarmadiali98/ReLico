@@ -1,6 +1,6 @@
 # `general--periodic-pingpong-composition--positive`
 
-A **general**-family positive benchmark: a DTR-fragment redesign of the examples2 model `Periodic_PingPong_Composition`, which the model checker rejects with a queue overflow.
+A **general**-family positive benchmark: a DTR-fragment redesign of the ordering and composition model `Periodic_PingPong_Composition`, which the model checker rejects with a queue overflow.
 
 ## Provenance
 

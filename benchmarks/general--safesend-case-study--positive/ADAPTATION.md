@@ -2,7 +2,7 @@
 
 Status: **implemented** as `general--safesend-case-study--positive`, all eight stages green including `rmc`.
 
-Source: `examples.zip:ReLico-main/SafeSend/SafeSend.rebeca`, 99 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
+Source: `lf-lang/lf-verifier-benchmarks, benchmarks/src/SafeSend.lf rendered to Timed Rebeca (adapted, not used verbatim)`, 99 lines, one of the paper's RQ1 verification benchmarks. The benchmark source is the original under a four-line header comment plus the single adaptation below.
 
 ## Original blocker
 

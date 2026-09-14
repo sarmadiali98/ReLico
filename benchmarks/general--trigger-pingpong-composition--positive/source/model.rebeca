@@ -1,5 +1,5 @@
 // Benchmark: general--trigger-pingpong-composition--positive
-// Source: examples2.zip Trigger_Activated_PingPong_Composition, unmodified.
+// Source: ordering and composition case authored for this evaluation, committed unmodified.
 reactiveclass Node(100) {
     knownrebecs {
         Node next;

@@ -1,5 +1,5 @@
 // Benchmark: general--aspin-case-study--positive
-// Source: examples.zip/ReLico-main/ASPIN.rebeca. The archive contains no
+// Source: the official Rebeca examples at rebeca-lang.org, ASPIN.rebeca (adapted, not used verbatim). The upstream source contains no
 // ASPIN property file; this fixture checks translation and runtime behavior.
 reactiveclass Manager(10) {
     knownrebecs {

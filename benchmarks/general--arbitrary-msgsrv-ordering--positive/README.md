@@ -1,6 +1,6 @@
 # `general--arbitrary-msgsrv-ordering--positive`
 
-A **general**-family positive benchmark from the `examples2` corpus (`Aribitrary_Ordering_messageserver.rebeca`), integrated without adaptation.
+A **general**-family positive benchmark from the ordering and composition corpus authored for this evaluation (`Aribitrary_Ordering_messageserver.rebeca`), integrated without adaptation.
 
 ## Provenance
 

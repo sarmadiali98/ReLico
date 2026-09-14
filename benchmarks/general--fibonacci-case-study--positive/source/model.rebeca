@@ -1,5 +1,5 @@
 // Benchmark: general--fibonacci-case-study--positive
-// Source: examples.zip/ReLico-main/Fibonacci/Fibonacci.rebeca. The original
+// Source: lf-lang/lf-verifier-benchmarks, benchmarks/src/Fibonacci.lf rendered to Timed Rebeca (adapted, not used verbatim). The original
 // property file is excluded; translation and runtime behavior only.
 reactiveclass Source(5) {
     knownrebecs {

@@ -5,7 +5,7 @@ all eight stages green including `rmc`, after the approved category-2
 transformation (ruling evidence: [`ROUTING_COMPARISON.md`](ROUTING_COMPARISON.md))
 and the ping-pending boundedness fix below.
 
-Source: `examples.zip:ReLico-main/LeasingNRPFD/LeasingNRPFD.rebeca`,
+Source: `the Leasing NRP FD model of the Consistency of Distributed Controllers project at rebeca-lang.org (adapted, not used verbatim; the associated paper is cited in evaluation/registry/PROVENANCE.md)`,
 359 lines.
 
 ## Original blocker

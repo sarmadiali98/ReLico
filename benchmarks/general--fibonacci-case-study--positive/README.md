@@ -7,7 +7,7 @@ instances.
 
 ## Provenance
 
-- **Original source:** `examples.zip:ReLico-main/Fibonacci/Fibonacci.rebeca`.
+- **Original source:** `lf-lang/lf-verifier-benchmarks, benchmarks/src/Fibonacci.lf rendered to Timed Rebeca (adapted, not used verbatim)`.
 - **Original property:** `Fibonacci.property` is excluded; this fixture evaluates translation and
   runtime behavior only.
 - **Adaptation:** no semantic correction or timing redesign; see [`ADAPTATION.md`](ADAPTATION.md).
