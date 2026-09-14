@@ -2356,7 +2356,7 @@ target semantics starts stepping into a branch. Until then the sentence is as st
 
 Quantified over the three `.schedule` components rather than over a name-extracting function,
 unlike `compileGeneralBody_setPortNames_provenance`'s `LF.setPortNamesOfBody`. That function
-exists because `docs/STAGE_E_DESIGN.md` §10.2 owes a `Nodup` claim about the *list* of set ports;
+exists because design doc §10.2 owes a `Nodup` claim about the *list* of set ports;
 no claim here is about a list of action names, so a second extraction function would be a
 definition with one caller.
 -/

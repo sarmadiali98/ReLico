@@ -233,7 +233,7 @@ def runGeneralFrontendTests
 
     -- The only positive whose class sends one message to one known rebec from
     -- two distinct sites, with two different `after` values and a payload of
-    -- arity two. It is what makes `docs/STAGE_E_DESIGN.md` §6's per-send-site
+    -- arity two. It is what makes design doc §6's per-send-site
     -- ports reachable from a real exporter document rather than only from a
     -- hand-built `DTR.GeneralModel`, which §10.2 asked for.
     expectAccept

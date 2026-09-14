@@ -87,7 +87,8 @@ class DiscoveryTests(unittest.TestCase):
             "fixture::general--main-actor-priority--negative",
         )
         self.assertEqual(case.tier, "external")
-        self.assertEqual(case.prerequisite_env, "RELICO_PARSER_ARTIFACT")
+        self.assertEqual(case.prerequisite_env, "")
+        self.assertEqual(case.provider, "upstream-rebeca-compiler-2.25")
 
     def test_default_selection_excludes_external_toolchains(self) -> None:
         options = SimpleNamespace(
@@ -167,19 +168,21 @@ class DiscoveryTests(unittest.TestCase):
             self.runner.safe_result_name("a--b"),
         )
 
-    def test_missing_external_artifact_is_unavailable(self) -> None:
+    def test_external_case_runs_without_private_artifact_gate(self) -> None:
         case = self.runner.discover_external_actor_priority_case()
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            with (
-                mock.patch.object(self.runner, "RESULTS_ROOT", root),
-                mock.patch.dict("os.environ", {}, clear=True),
-            ):
-                result = self.runner.run_case(case)
-        self.assertEqual(result.status, "unavailable")
         self.assertEqual(
-            result.reason_code,
-            "missing_environment_path:RELICO_PARSER_ARTIFACT",
+            case.command,
+            (
+                "/bin/bash",
+                str(
+                    self.runner.REPOSITORY_ROOT
+                    / "tests"
+                    / "translator"
+                    / "general--main-actor-priority--negative"
+                    / "run-test.sh"
+                ),
+                str(self.runner.RESULTS_ROOT / "legacy-actor-priority.json"),
+            ),
         )
 
     def test_reports_count_only_logical_cases(self) -> None:

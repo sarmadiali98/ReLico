@@ -96,12 +96,9 @@
       "exclude_if_manifest_exists": true,
       "evidence": [
         {
-          "availability": {
-            "environment": "RELICO_PARSER_ARTIFACT"
-          },
           "id_template": "external-run::{directory_name}",
           "runner_id_template": "fixture::{directory_name}",
-          "type": "conditional-external-execution"
+          "type": "external-execution"
         }
       ]
     },

@@ -326,7 +326,7 @@ def validate_catalog() -> dict[str, int]:
         "translator_fixtures": len(fixture_ids),
         "lean_logical_cases": len(logical_ids),
         "python_logical_cases": sum(case.suite == "python" for case in discovered),
-        "conditional_external_cases": len(external_ids),
+        "external_cases": len(external_ids),
         "logical_cases": len(all_logical_ids),
         "evidence_records": evidence_records,
         "discoverable_executions": len(discovered),

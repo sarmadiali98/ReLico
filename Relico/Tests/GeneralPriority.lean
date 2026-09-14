@@ -5,7 +5,7 @@ set_option autoImplicit false
 /-!
 # Value-level pins for the general priority sorts
 
-`docs/STAGE_F_DESIGN.md` §10. This is the first test module for the general family: `Relico/Tests/`
+design doc §10. This is the first test module for the general family: `Relico/Tests/`
 held 172 files and none of them mentioned a general-family declaration, so before this file nothing
 pinned `GeneralActorPriority.normalize` or `GeneralMessageServerPriority.normalize` at any input.
 

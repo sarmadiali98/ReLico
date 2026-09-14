@@ -3,16 +3,15 @@ set -euo pipefail
 
 export PYTHONDONTWRITEBYTECODE=1
 
-if test "$#" -ne 2
+if test "$#" -ne 1
 then
   printf '%s\n' \
-    'usage: run-approach-a-exclusion.sh PARSER_ARTIFACT RESULT_JSON' \
+    'usage: run-test.sh RESULT_JSON' \
     >&2
   exit 64
 fi
 
-PARSER_ARTIFACT="$1"
-RESULT_JSON="$2"
+RESULT_JSON="$1"
 
 FIXTURE_ROOT="$(
   cd "$(
@@ -64,6 +63,12 @@ fi
 WRAPPER="$REPO_ROOT/frontend/java-bridge/run-multistore-payload-from-zip.sh"
 SOURCE="$FIXTURE_ROOT/source/model.rebeca"
 EXPECTED="$FIXTURE_ROOT/expected/frontend-output-required-substring.txt"
+PARSER_VERSION='2.25'
+PARSER_COMMIT='94ca579e0f2e3528d8de608a9e86316ecb78d608'
+PARSER_SHA256='bd10366acf8d1ed7f392cdd424bfaea5be162cb291f9521ad3d3cfd32be8dcaf'
+PARSER_URL="https://github.com/rebeca-lang/org.rebecalang.compiler/archive/$PARSER_COMMIT.zip"
+PARSER_CACHE="${RELICO_PARSER_CACHE:-$HOME/.cache/relico/parser/$PARSER_VERSION}"
+PARSER_ARTIFACT="${RELICO_PARSER_ARTIFACT:-$PARSER_CACHE/org.rebecalang.compiler-$PARSER_COMMIT.zip}"
 
 PYTHON_BIN="$(
   command -v python3
@@ -77,10 +82,51 @@ then
   exit 67
 fi
 
-test -f "$PARSER_ARTIFACT"
 test -s "$SOURCE"
 test -s "$EXPECTED"
 test -n "$PYTHON_BIN"
+
+if ! test -f "$PARSER_ARTIFACT"
+then
+  /bin/mkdir -p "$PARSER_CACHE"
+  PARSER_DOWNLOAD="$PARSER_ARTIFACT.download"
+
+  if ! /usr/bin/curl \
+    --fail \
+    --location \
+    --silent \
+    --show-error \
+    --output "$PARSER_DOWNLOAD" \
+    "$PARSER_URL"
+  then
+    /bin/rm -f "$PARSER_DOWNLOAD"
+    printf 'ERROR: unable to download Rebeca compiler %s from %s\n' \
+      "$PARSER_VERSION" \
+      "$PARSER_URL" \
+      >&2
+    printf '%s\n' \
+      'Set RELICO_PARSER_ARTIFACT to a local copy for offline execution.' \
+      >&2
+    exit 69
+  fi
+
+  /bin/mv "$PARSER_DOWNLOAD" "$PARSER_ARTIFACT"
+fi
+
+OBSERVED_PARSER_SHA256="$(
+  /usr/bin/shasum -a 256 "$PARSER_ARTIFACT" \
+    | /usr/bin/cut -d ' ' -f 1
+)"
+
+if test "$OBSERVED_PARSER_SHA256" != "$PARSER_SHA256"
+then
+  printf 'ERROR: parser artifact SHA-256 mismatch: expected=%s observed=%s path=%s\n' \
+    "$PARSER_SHA256" \
+    "$OBSERVED_PARSER_SHA256" \
+    "$PARSER_ARTIFACT" \
+    >&2
+  exit 70
+fi
 
 TMP_ROOT="$(
   /usr/bin/mktemp -d \

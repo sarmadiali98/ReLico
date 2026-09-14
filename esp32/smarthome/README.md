@@ -171,9 +171,9 @@ live-hardware execution on the new pipeline is claimed. See
 |---|---|
 | `docs/ARTIFACT_REPRODUCTION.md` | exact commands to reproduce every artifact and result |
 | `docs/ARTIFACT_INVENTORY.md` | complete file inventory with evidence roles |
-| `docs/STAGE6_RUNTIME_VALIDATION.md` | Stage 6 execution record, results, differences from esp32-old |
+| `docs/ARTIFACT_REPRODUCTION.md` | commands and evidence needed to reproduce the runtime artifact |
 | `docs/PROPERTY_OBSERVATION_MAPPING.md` | property → observation point mapping |
-| `docs/MIGRATION_MAPPING.md` | migration from the old ESP32 workflow, stage history |
+
 
 ## Relation to the benchmark
 

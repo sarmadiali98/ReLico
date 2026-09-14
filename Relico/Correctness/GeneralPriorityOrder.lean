@@ -6,7 +6,7 @@ set_option autoImplicit false
 /-!
 # Stage F: emitted reaction order realizes priority, at both levels
 
-`docs/STAGE_F_DESIGN.md` §6 and §9.2. This module carries **both** of stage F's obligations. Level 1 is
+design doc §6 and §9.2. This module carries **both** of stage F's obligations. Level 1 is
 §III-D's requirement that within one message server's group, that server's port reactions are ordered by
 the **sending actor's** priority. Level 2 is Lemma 2's same-actor case one level out: whole per-server
 groups, ordered by **message-server** priority.

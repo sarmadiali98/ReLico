@@ -284,12 +284,10 @@ def discover_external_actor_priority_case() -> TestCase:
         command=(
             "/bin/bash",
             str(runner),
-            os.environ.get("RELICO_PARSER_ARTIFACT", ""),
             str(RESULTS_ROOT / "legacy-actor-priority.json"),
         ),
         tier="external",
-        provider="legacy-external",
-        prerequisite_env="RELICO_PARSER_ARTIFACT",
+        provider="upstream-rebeca-compiler-2.25",
     )
 
 

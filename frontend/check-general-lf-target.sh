@@ -111,7 +111,7 @@ REPO="$(
 # Overridable, because the path is a per-machine install location rather than a
 # repository fact. The default is the one measured on 2026-08-19, and matches the
 # path pinned by tools/paper-measurements/lf_semantics_probe.sh.
-LFC="${LFC:-/Users/ali/.local/share/lingua-franca/cli/bin/lfc}"
+LFC="${LFC:-$(command -v lfc || echo "/usr/local/bin/lfc")}"
 
 PRINTER_TEST_MAIN="$REPO/frontend/lean-bridge/GeneralLfPrinterTestMain.lean"
 

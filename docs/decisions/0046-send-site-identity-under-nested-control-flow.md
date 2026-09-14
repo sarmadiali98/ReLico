@@ -224,7 +224,7 @@ an internal segment unbounded, while `generalTauSteps_forward` walks a finite ch
 
 **Appended after the fact. Sections 1 to 6 are the approved decision and are left exactly as approved**;
 this section records where implementation confirmed the decision and where it falsified the decision's own
-predictions. Nothing above is edited, for the reason `AGENTS.md` gives about historical records.
+predictions. Nothing above is edited; this is an as-implemented record appended to the approved decision.
 
 ### Confirmed
 

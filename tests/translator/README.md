@@ -2,7 +2,7 @@
 
 This directory contains the ReLico translator capability fixtures: purpose-built, registry-backed
 source-to-runtime examples that demonstrate supported translator capabilities and expected
-rejection boundaries. General-family rows demonstrate the active fragment's capabilities;
+rejection boundaries. General-family rows demonstrate the fragment's capabilities;
 earlier-family rows are regression surfaces for their own declared fragments. Each fixture
 isolates a supported capability, formal correspondence claim, runtime contract, or expected
 rejection boundary.
@@ -21,7 +21,7 @@ is `tests/catalog/catalog.json`, with canonical workflow stages in `tests/catalo
 runner discovers individual Python and Lean software cases, the aggregate `RelicoTests` formal gate,
 and every implemented translator fixture. The default run executes the portable catalog, unit, and
 formal tiers; integration and external cases are selected explicitly because they require pinned
-Java, RMC, `lfc`, C++, runtime, or separately provisioned parser artifacts.
+Java, RMC, `lfc`, C++, runtime, or parser toolchains.
 
 ```text
 tools/relico_test.sh
@@ -45,9 +45,10 @@ directories remain committed golden oracles. A fixture passes only when its gene
 match those committed files directly. Missing external prerequisites are reported as `unavailable`,
 not as passes or omitted cases.
 
-The externally provisioned `general--main-actor-priority--negative` boundary case is always visible
-in the external tier. It executes when `RELICO_PARSER_ARTIFACT` names the required parser archive and
-otherwise reports `unavailable`. It remains separate from the 65 registry-backed fixtures.
+The `general--main-actor-priority--negative` boundary case is always visible in the external tier.
+Its runner fetches and SHA-pins the public Rebeca compiler 2.25 source archive, or accepts the same
+archive through `RELICO_PARSER_ARTIFACT` for offline execution. It remains separate from the 65
+registry-backed fixtures.
 
 Negative integration cases must name the boundary expected to reject the input, assert the expected
 exit and diagnostic, and forbid downstream artifacts. Formal obligation coverage and executable
@@ -60,7 +61,7 @@ missing test modules, missing named test values, invalid polarities, and non-imp
 
 Focused software cases are visible in this tree under directories ending in `--software`. Their
 `cases.tsv` files are the discovery catalogs; every row maps one stable case ID to its executable
-Lean assertion. Current totals are derived by catalog validation rather than copied into prose.
+Lean assertion. Totals are derived by catalog validation rather than copied into prose.
 
 ## Counting policy
 

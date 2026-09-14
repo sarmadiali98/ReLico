@@ -31,7 +31,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(self.counts["application_benchmarks"], 41)
         self.assertEqual(self.counts["promoted_negative_fixtures"], 2)
         self.assertEqual(self.counts["lean_logical_cases"], 59)
-        self.assertEqual(self.counts["conditional_external_cases"], 1)
+        self.assertEqual(self.counts["external_cases"], 1)
 
     def test_multiple_evidence_records_do_not_inflate_logical_cases(self) -> None:
         self.assertNotEqual(
