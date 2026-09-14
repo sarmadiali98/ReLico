@@ -456,7 +456,7 @@ beyond its statement: it is satisfiable, and satisfiable at every reactor simult
 The F27 premise is satisfiable: an empty block pairs with an empty occurrence list.
 
 Thin, and deliberately so — it is `generalConsumeBlockMatch.nil` under a name that says why this
-module cites it. `docs/STAGE_G_FINDINGS.md` F66 part 5 is a finding about a relation conjunct that
+module cites it. finding F66 part 5 is a finding about a relation conjunct that
 was trivially true at the initial state and load-bearing after a step, and F86 is that trap's mirror
 image; a milestone that settled F27 by making the pairing a premise without ever exhibiting the
 premise satisfied would be inviting the same defect a third time.

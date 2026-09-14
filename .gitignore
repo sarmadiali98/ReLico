@@ -19,6 +19,47 @@ generated/
 tmp/
 .temp/
 
+# Local provenance archives (not part of the distributed artifact)
+examples.zip
+examples2.zip
+
+# Agent/session state and local scratch
+.qwen/
+.qwen-exports/
+.rtk/
+.tmp/
+.pytest_cache/
+opencode.json*
+
+# Root lfc build outputs
+bin/
+build/
+include/
+lib/
+share/
+src-gen/
+
+# Paper sources (kept outside the artifact)
+main.tex
+refs.bib
+leanreport.*
+leanpresentation.*
+lf_diagram.png
+
+# Superseded ESP32 pipeline
+esp32-old/
+
+# Developer handoff documents
+AGENTS.md
+CLAUDE.md
+QWEN_CONTEXT.md
+CURRENT_CHAT_HANDOFF.md
+RELICO_AGENT_HANDOFF.md
+RELICO_FORWARD_ROADMAP_AUDIT.md
+ESP32_DESIGN_DOCUMENT.md
+ESP32_MIGRATION_REPORT.md
+docs/archive/
+
 # Benchmark execution evidence
 tests/translator/*/actual/
 tests/translator/*/.expected-regeneration/

@@ -45,7 +45,7 @@ newest, and it is not an oversight: setting one port twice in one reaction body 
 the first value, since a port holds one value per tag, so it is exactly the hazard
 stage E was rewritten to remove. It is absent here because it is proved of the
 *translation's output* rather than imposed on *arbitrary programs*
-(`docs/STAGE_E_DESIGN.md` §10.2). Two reasons in that order. A hand-built LF program
+(design doc §10.2). Two reasons in that order. A hand-built LF program
 setting one port twice is a faithful model of an LF program a person could write, and
 this predicate's job is to say what `lfc` and its toolchain will accept, which such a
 program is; and making it a conjunct here would let the translation discharge the
@@ -102,7 +102,7 @@ is emitted as a C++ reference member, the collision is fatal one layer *later* t
 the validator, and this predicate is stricter than `lfc`'s validator and exactly as
 strict as the toolchain behind it.
 
-That is the sense in which `docs/STAGE_E_DESIGN.md` §9 calls this line conservative:
+That is the sense in which design doc §9 calls this line conservative:
 not hedging against an unknown, but declining to delegate a rejection to a diagnostic
 that names neither the reactor nor the offending name and that no user could act on.
 F32 rests on it — the guard stage E installs on the translation's own output refuses
@@ -158,7 +158,7 @@ though types now exist on both sides. Two reasons, in order of weight. First, th
 side does not type expressions either — `DTR/GeneralWellFormed.lean` places no
 restriction on expressions at all — so a type check here would refuse programs this
 repository's own frontend accepts, which is the same trap that killed the
-domain-restriction option in `docs/STAGE_D_DESIGN.md` §3. Second, typing an expression
+domain-restriction option in design doc §3. Second, typing an expression
 needs the types of the parameters in scope, and a reaction's parameters are bare
 names by design, their types being fixed by the action that triggers the reaction.
 The residual gap is the narrowed finding F28.
@@ -439,7 +439,7 @@ struct's name at the single site that used it, so two sites could not disagree; 
 E stores that name at both ends of a connection. The translation builds both ends from
 one row of the routing table, so they cannot drift in practice — this conjunct is what
 makes that a checked fact instead of a trusted one, and it is the conjunct the
-acceptance-implies-well-formedness theorem of `docs/STAGE_E_DESIGN.md` §8 discharges
+acceptance-implies-well-formedness theorem of design doc §8 discharges
 by construction.
 -/
 def connectionWellFormed

@@ -26,7 +26,7 @@ missing. Meanwhile `frontend/fixtures/general/expressions.rebeca` is a committed
 and a `boolean` state variable, the elaborator really constructs those nodes, and
 DTR well-formedness restricts expressions not at all. Restricting the translation's
 domain instead would have refused this repository's own frontend on this
-repository's own fixture. The reasoning is recorded in `docs/STAGE_D_DESIGN.md` §3.
+repository's own fixture. The reasoning is recorded in design doc §3.
 
 The shape difference worth naming is that a `GeneralProgram` holds a *list* of
 reactors and a separate *list* of instances, rather than one reactor paired with
@@ -257,7 +257,7 @@ widening this type rather than by restricting the translation's domain. The old
 argument for waiting was that no printer in this development could emit an operator,
 so a widened expression would be a construct nothing could print. Stage D removes
 that objection by teaching the printer operators in the same change, which is why
-the two halves land together and neither is dead code. `docs/STAGE_D_DESIGN.md` §3
+the two halves land together and neither is dead code. design doc §3
 records the evidence that decided it, and §5.3 the shape.
 
 **As of stage I, `.parameterVar` no longer means only a parameter — here as on
@@ -316,7 +316,7 @@ program-level `public preamble` struct used as a **port** type under real
 `lfc 0.11.0` and delivered its fields. So the arity restriction was the paper's
 grammar rather than the target's capability, and stage E lifts it on the port side
 the same way stage D lifted it on the action side, per
-`docs/STAGE_E_DESIGN.md` §5.1. The divergence from Fig. 5 is deliberate and filed
+design doc §5.1. The divergence from Fig. 5 is deliberate and filed
 as a finding rather than absorbed silently.
 
 A typed logical action's payload arity follows the parameter list of the
@@ -329,7 +329,7 @@ correction rather than an opinion: a program-level `public preamble` struct carr
 three fields including a `bool`, and a code-block action type
 `{= std::pair<int,int> =}`, were compiled separately by real `lfc 0.11.0` and both
 ran and delivered their values. Stage D removes the refusal and emits a struct
-derived from the action's own parameter list, per `docs/STAGE_D_DESIGN.md` §5.4. The
+derived from the action's own parameter list, per design doc §5.4. The
 finding is filed as F23.
 
 What is *not* fixed, and is recorded rather than hidden: nothing in this **type**
@@ -349,7 +349,7 @@ statement exists. `setPort` carries **no** delay, and that is not an omission: o
 DTR side a send's `after` is a property of the statement, and on the LF side it is a
 property of the connection the value travels along. Stage E keys ports by send site
 precisely so that each statement's delay has its own connection to sit on, which is
-where the delay of a `setPort` is recorded — see `docs/STAGE_E_DESIGN.md` §6.
+where the delay of a `setPort` is recorded — see design doc §6.
 
 There is `if` but no `for`. Fig. 5's `LFStmt` has both. Stage H adds the conditional on
 **both sides at once**, which is what the earlier note here required: an LF conditional alone
@@ -647,7 +647,7 @@ There is no `void` constructor, so a port carrying nothing is unrepresentable an
 arity-zero external send is refused by the translation rather than mistranslated. That
 refusal is provisional and says so: whether `lfc 0.11.0` accepts `input p: void` is
 **unmeasured**, the probe and its prediction are written down in
-`docs/STAGE_E_DESIGN.md` §11.2, and the day it runs this type gains a constructor or
+design doc §11.2, and the day it runs this type gains a constructor or
 the refusal becomes permanent. The project does not guess about the target.
 -/
 inductive GeneralPortPayload where
@@ -1131,7 +1131,7 @@ mutual
 The output ports one reaction body sets, in source order, **with repeats preserved**.
 
 The repeats are the entire reason this function exists, so it is not a `filterMap` composed
-with a dedup and it must never become one. `docs/STAGE_E_DESIGN.md` §10.2 owes a theorem
+with a dedup and it must never become one. design doc §10.2 owes a theorem
 saying *"no reaction of an emitted reactor sets one output port twice"*; that sentence is a
 claim about `Nodup` of exactly this list, and it cannot be stated without a list that would
 show the repeat if there were one.

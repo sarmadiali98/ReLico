@@ -19,9 +19,7 @@ checks.
 **Residues are part of the claim.** Where a row's theorem carries an undischarged premise, the
 `Residues / scope` column names it. Reading a row without that column overstates it.
 
-Nothing here restates the reasoning behind a claim. `docs/STAGE_G_FINDINGS.md`'s *"The C7
-contribution"* section carries the argument; the decision records carry the choices; this file carries
-only the mapping from claim to instrument.
+Nothing here restates the reasoning behind a claim. The decision records carry the architectural choices; this file carries only the mapping from claim to instrument.
 
 ## What the project undertakes to prove
 
@@ -121,8 +119,7 @@ Each of these is a recorded decision, not an omission.
 
 This file maps claims to instruments and nothing else. For why each claim has the shape it does:
 
-- `docs/STAGE_G_FINDINGS.md`, *"The C7 contribution"*, the argument, the three residues with their
-  measurements, the invariant layers.
+- The decision records and claim tables provide the supporting rationale, measurements, and invariant layers.
 - `docs/decisions/0042-within-tag-partial-quotient.md`, why the quotient is partial.
 - `docs/decisions/0043-forward-instant-block-weak-step.md`, why forward is a weak-step theorem.
 - `docs/decisions/0044-c8-general-label-weak-bisimulation.md`, why the structure is label-level.

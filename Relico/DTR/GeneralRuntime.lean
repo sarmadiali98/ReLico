@@ -20,12 +20,12 @@ exactly a state type and a label type — `DetailedMultiStorePayloadState` and
 `DetailedMultiStorePayloadLabel`, two declarations and nothing else — while
 `Relico/DTR/DetailedMultiStorePayloadSemantics.lean` holds the single inductive
 `DetailedMultiStorePayloadStep`. Following it means the G2a-ii/G2a-iii boundary in
-`docs/STAGE_G_DESIGN.md` §13 lands on a seam the repository already uses.
+design doc §13 lands on a seam the repository already uses.
 
 ## The label type is `GeneralLabel`, not `GeneralDtrAction`
 
-`docs/STAGE_G_DESIGN.md` §7 **first specified** `GeneralDtrAction` and `GeneralLfAction`; it now records
-this respelling instead, and `docs/STAGE_G_FINDINGS.md` F66 part 7 — the finding that chose the original
+design doc §7 **first specified** `GeneralDtrAction` and `GeneralLfAction`; it now records
+this respelling instead, and finding F66 part 7 — the finding that chose the original
 names — records that the names it proposed are not the ones that landed. Its *reason* is kept
 here in full — an LTS label and an LF logical-action declaration must not share an identifier, and
 `ϕ : Act_1 → Act_2` needs two types rather than one — and both types are still declared separately, one

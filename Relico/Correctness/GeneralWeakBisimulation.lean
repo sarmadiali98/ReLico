@@ -14,7 +14,7 @@ namespace Correctness
 Stage G row 8 (**G2c**). This module holds the part of Definition 1's two transfer conditions that is
 **independent of the open decision recorded as F76**, and deliberately stops short of the part that is not.
 
-`docs/STAGE_G_FINDINGS.md` **F76** measured that the two run-level selectors disagree: the source's
+finding **F76** measured that the two run-level selectors disagree: the source's
 `DTR.GeneralActorSelection.selectedActor` keys on `(arrival, priority)`, while the target's
 `LF.GeneralRuntimeState.earliestPendingEvent?` keys on `(Tag.time, Tag.microstep)` and is priority-blind,
 breaking a same-tag tie by queue append order instead. So the transfer conditions are **false as stated in
@@ -176,7 +176,7 @@ theorem generalCorrespondence_advance
 /--
 **A target whose earliest event is strictly future forces the source to be quiescent.**
 
-The lemma row 8 owes and `docs/STAGE_G_DESIGN.md` §7 does not list. `DTR.GeneralStep.timeProgress` carries
+The lemma row 8 owes and design doc §7 does not list. `DTR.GeneralStep.timeProgress` carries
 three premises and `LF.GeneralStep.timeAdvance` two, so the two rules are *not* in premise-for-premise
 correspondence and the backward transfer condition cannot transcribe. `hForward` and `hSelected` cross by
 Lemma 1; `hQuiescent` has no counterpart to cross from and must be **derived** from the target's own
@@ -558,7 +558,7 @@ theorem generalTimeAdvance_backward
 /--
 **Forward, at the `.timeAdvance` label, lifted to a weak transition.**
 
-The lift `docs/STAGE_G_FINDINGS.md` **F78** records as owed. The architecture the paper states is a *weak*
+The lift finding **F78** records as owed. The architecture the paper states is a *weak*
 bisimulation, and `generalTimeAdvance_forward` above concludes with a bare `LF.GeneralStep` — a step
 correspondence, which is strictly **weaker** than the architecture claims, because nothing in it permits the
 matched target transition to sit inside internal traffic. Until this module produces a `Common.WeakStep`, the

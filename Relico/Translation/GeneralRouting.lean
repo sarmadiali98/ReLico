@@ -55,7 +55,7 @@ declared. One builder is what makes that unsayable. (F37 is a different guarante
 compares the two *ends of a connection*, payload and all, which catches a sender and a
 receiver disagreeing but says nothing about an action and a port on the same reactor.)
 
-## Three places this file departs from `docs/STAGE_E_DESIGN.md`
+## Three places this file departs from design doc
 
 **§4.1 loses to §7.1 on what `SendSite.index` counts.** §4.1 says the index *"counts
 external sends only"*; §7.1 says it is *"the position within that body's statement list"*.
@@ -872,7 +872,7 @@ before code generation because reactor-cpp implements no spacing policy for logi
 **once**, because a reaction's trigger list is a disjunction rather than a queue (section
 14a). So neither one action for k sends nor one reaction for k actions is faithful, and the
 only shape left standing is one action **and** one reaction per site (section 14b). Recorded
-as finding F56 in `docs/STAGE_E_FINDINGS.md` and in §6.3 of the design.
+as finding F56 in finding and in §6.3 of the design.
 
 Two consequences are worth stating where the code is rather than only in the design. The
 first is that this is not a tidiness argument: `self.tick(); self.tick();` in one body
@@ -1977,7 +1977,7 @@ def routesOfInstances
 The main block's instances, in the order the translation walks them: **actor-priority order, ties
 broken by main-block declaration order**.
 
-This is stage F's level-1 mechanism and the only place it enters routing. `docs/STAGE_F_DESIGN.md`
+This is stage F's level-1 mechanism and the only place it enters routing. design doc
 §1.1 owes §III-D of the paper an ordering of one message server's port reactions by the *sending*
 actor's priority. Port reactions for a server are the routes into that server, filtered out of this
 table in table order, and filtering preserves order — so ordering the instance list here orders those
@@ -1998,7 +1998,7 @@ def priorityOrderedInstances
 The walked order is a permutation of the declared order.
 
 Everything that depends on the route *set* rather than its order transfers through this one lemma
-instead of being re-proved — `docs/STAGE_F_DESIGN.md` §7.3 lists which: endpoint uniqueness, site
+instead of being re-proved — design doc §7.3 lists which: endpoint uniqueness, site
 totality, port-name distinctness and the guard-relative setPort `Nodup`.
 -/
 theorem priorityOrderedInstances_perm
@@ -2060,7 +2060,7 @@ main-block declaration order — and within one instance the order is canonical 
 sorts, here or anywhere below: connection order is observable in the emitted program, so a translation
 that sorted would be making a semantic choice in a projection."* The premise was right and the
 conclusion was backwards: the emitted order *is* a semantic choice, which is exactly why it cannot be
-left to declaration order once the source language annotates priorities. `docs/STAGE_F_DESIGN.md` §2.1
+left to declaration order once the source language annotates priorities. design doc §2.1
 measured that reaction declaration order is the only mechanism the target offers, since
 `LF.GeneralReaction.priority` is never read by the printer.
 
@@ -2646,7 +2646,7 @@ theorem exists_generalEntryAtSite?_of_mem_sites
 fact out of it: a resolved entry sits at the site of the send it was resolved from. Getting
 that fact requires ruling out the four refusals, and the four are ruled out the way this
 repository rules out every other one — with a forward equation per outcome, rewritten into the
-hypothesis. `docs/STAGE_D_DESIGN.md` §9.1's argument applies unchanged: no `match` appears in
+hypothesis. design doc §9.1's argument applies unchanged: no `match` appears in
 any statement here, so no proof below depends on a matcher constant elaborated inside a
 theorem.
 
@@ -4276,7 +4276,7 @@ theorem generalConnectionsOf_targetEndpoints_nodup
 /-!
 ## Instance-declaration order
 
-`docs/STAGE_E_DESIGN.md` §10.2's fourth owed item: an explicit statement that a receiver's port
+design doc §10.2's fourth owed item: an explicit statement that a receiver's port
 reactions for one message server appear in main-block instance-declaration order. The *docstring*
 half of that item already sits on `generalRoutesIntoMessageServer` above, and says in as many words
 that route order is instance-declaration order and that reaction order realizing priority is stage
@@ -4292,7 +4292,7 @@ says the same thing, and says it at every cut point rather than only at the head
 are `earlier ++ later`, every route owed to an instance declared in `earlier` precedes every route
 owed to one declared in `later`.
 
-Appended at file end deliberately, so that no line number cited from `docs/STAGE_E_FINDINGS.md` or
+Appended at file end deliberately, so that no line number cited from finding or
 from another module moves.
 -/
 
@@ -4605,12 +4605,12 @@ The same statement about the model's own table, split at a cut in the walked ins
 `routesOf` is `routesOfInstances` at `priorityOrderedInstances model`, so the cut this theorem takes a
 hypothesis about is a cut in **actor-priority order**, not in main-block declaration order. Before
 stage F the two lists were the same and the hypothesis was keyed to `model.instances`; re-keying it was
-one of the three edits `docs/STAGE_F_DESIGN.md` §7.2 budgets, and it makes the statement stronger
+one of the three edits design doc §7.2 budgets, and it makes the statement stronger
 rather than weaker, because a split of the walked list is a split of the list the translator really
 consumes. The two coincide exactly when the sort is the identity, which is the case for every fixture
 in the corpus that predates stage F.
 
-`docs/STAGE_E_DESIGN.md` §10.2's item asked for a statement about where a cut falls; that is still what
+design doc §10.2's item asked for a statement about where a cut falls; that is still what
 this is, with the order it cuts now named explicitly.
 -/
 theorem routesOf_split
@@ -4797,12 +4797,12 @@ theorem generalRoutesIntoMessageServer_append
 /-!
 ## Duplicate-free port names, on the route side
 
-`docs/STAGE_G_FINDINGS.md` F80 asks row 8 not for a weakened Lemma 2 but for the refutation stated
+finding F80 asks row 8 not for a weakened Lemma 2 but for the refutation stated
 as a theorem, in two halves. The first half is landed, in `Relico/LF/GeneralSemantics.lean` as
 `LF.GeneralProgram.reactionFor?_perm_of_nodup_triggers`: reaction lookup stops reading declaration
 order once the triggers are pairwise distinct. The second half is that the translator's triggers
 *are* pairwise distinct — and that half is **guard relative**, not unconditional. F42 in
-`docs/STAGE_E_FINDINGS.md` refutes injectivity of `inputPortNameFor`: `capitalizeName` folds case,
+finding refutes injectivity of `inputPortNameFor`: `capitalizeName` folds case,
 so senders `hub` and `Hub` name one input port, and both spellings are legal Rebeca. What makes the
 emitted port triggers distinct is therefore not that a collision cannot arise. It is that
 `LF.GeneralReactor.declaredNames` carries those same names and `decide declaredNames.Nodup` is one

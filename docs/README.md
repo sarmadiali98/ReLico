@@ -1,6 +1,6 @@
 # ReLico Documentation
 
-This index separates documentation for the current system from historical development records. Current scope and correctness claims should be read from the first two sections.
+This index provides the documentation entry points for the ReLico artifact.
 
 ## Current Documentation
 
@@ -40,7 +40,7 @@ The singleton and finite-store claim documents describe compatibility families, 
 - [Test catalog](../tests/README.md)
 - [Examples](../examples/README.md)
 
-The VMCAI 2027 evaluation suite is under active development and is not frozen for artifact submission.
+The VMCAI 2027 artifact evaluation scope is described in the evaluation catalog.
 
 ## Developer Notes
 
@@ -49,11 +49,6 @@ The VMCAI 2027 evaluation suite is under active development and is not frozen fo
 
 ## Historical Development Notes
 
-- `STAGE_*_DESIGN.md` and `STAGE_*_FINDINGS.md` record dated development stages.
 - [`decisions/`](decisions/) contains dated design decisions.
 - [`actor-priority/`](actor-priority/) records the phased actor-priority investigation and integration work.
-- [Paper correction ledger](PAPER_CORRECTIONS.md) is a research ledger, not current product documentation.
 - [Paper-fragment transcription](dtr-fragment/PAPER_FRAGMENT_RESTRICTIONS.md) analyzes the paper fragment; it is not the active accepted-fragment definition.
-- [`archive/`](archive/) contains superseded roadmaps, handoffs, and state records.
-
-Historical documents may use old project names, paths, counts, or present-tense status statements. They are retained as records and are not authoritative for the current tool.

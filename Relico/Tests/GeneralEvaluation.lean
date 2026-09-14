@@ -5,7 +5,7 @@ set_option autoImplicit false
 /-!
 # Value-level pins for general expression evaluation
 
-`docs/STAGE_G_DESIGN.md` §7, obligation G2a-i. `Relico/DTR/GeneralEvaluation.lean`,
+design doc §7, obligation G2a-i. `Relico/DTR/GeneralEvaluation.lean`,
 `Relico/LF/GeneralEvaluation.lean` and `Relico/Correctness/GeneralEvaluation.lean` prove that the two
 evaluators agree under the translation, that they fail in exactly the same cases, and that the agreement
 hypothesis is satisfiable. This module pins the things those theorems are structurally unable to see.
@@ -22,13 +22,13 @@ generated C++ computes.
 The only instrument that sees the difference is a value pin at a **negative dividend**, because that is
 the sole input class on which truncating and flooring division disagree. `-7 / 2` is `-3` under
 truncation and `-4` under flooring; `-7 % 2` is `-1` under truncation and `1` under flooring. The four
-pins below fix the truncating answers on both sides, so `docs/STAGE_G_FINDINGS.md` F67's claim — that the
+pins below fix the truncating answers on both sides, so finding F67's claim — that the
 operator semantics is C++'s, taken from what `LF.GeneralCppPrinter` actually emits — is checkable rather
 than merely asserted in a docstring.
 
 Note that these pins state the expected values as literals. Writing them as `Int.tdiv (-7) 2` would make
 them tautologies that hold under any definition of the operator, which is exactly the failure mode
-`docs/STAGE_F_FINDINGS.md` F60 records for an assertion that was invariant under the sort it was
+finding F60 records for an assertion that was invariant under the sort it was
 credited with pinning.
 
 ## The theorems cannot see the refusals

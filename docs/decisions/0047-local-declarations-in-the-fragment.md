@@ -20,7 +20,7 @@ record, is where the surprise lives.
 
 ## 1. Context
 
-The 49-model Rebeca corpus census (recorded in `RELICO_AGENT_HANDOFF.md`, 2026-09-04) measured nine
+The 49-model Rebeca corpus census (recorded in the 2026-09-04 investigation notes) measured nine
 models containing local variable declarations — and measured that **zero** models are unlocked by
 locals alone: every one of the nine also needs `sender`, arrays, `while`, `deadline` or `env`.
 Local declarations were therefore justified as a prerequisite the corpus needs in combination, not

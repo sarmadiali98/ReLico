@@ -12,11 +12,11 @@ namespace GeneralSemantics
 /-!
 # Compile-time pins for the two general step relations
 
-`docs/STAGE_G_DESIGN.md` §13, obligation G2a-iii. `Relico/DTR/GeneralSemantics.lean` and
+design doc §13, obligation G2a-iii. `Relico/DTR/GeneralSemantics.lean` and
 `Relico/LF/GeneralSemantics.lean` declare the two step relations, their scheduler and lookup functions, and
 the inversion lemmas. This module pins what those theorems are structurally unable to see.
 
-The standard every pin below is held to is `docs/STAGE_F_FINDINGS.md` F60's: **a pin earns its place only if
+The standard every pin below is held to is finding F60's: **a pin earns its place only if
 some specific wrong implementation fails it.** That is why the section "What is deliberately not pinned" at
 the end is as long as it is — several obvious-looking assertions are invariant under the very thing they
 would appear to check, and F60 records one that shipped.
@@ -71,9 +71,9 @@ exactly the failure mode F60 records and the reason the `decide` pin below exist
 
 ## The generic weak-transition machinery is instantiated, not merely said to be instantiable
 
-The last five pins. Both step relations' docstrings claim, citing `docs/STAGE_G_FINDINGS.md` F70, that G2c
+The last five pins. Both step relations' docstrings claim, citing finding F70, that G2c
 may instantiate `Common.TauSteps` and `Common.WeakStep` at them rather than restate either. That was a claim
-about future work with nothing checking it, which is the shape `docs/STAGE_E_FINDINGS.md` F53 records: three
+about future work with nothing checking it, which is the shape finding F53 records: three
 "by construction" claims that outlived the findings refuting them. Each of the five is an elaboration check
 against a different specific mistake — the index order, a `Bool`-valued `isTau`, and a τ set that swallowed
 `timeAdvance`. The `visible` pins are built with the constructor rather than `Common.WeakStep.of_step`,

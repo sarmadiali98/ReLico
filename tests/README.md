@@ -17,7 +17,7 @@ benchmarks so that the same assertion is not counted more than once.
 - `translator/` contains focused software catalogs and source-to-runtime translator fixtures.
 
 The verified object is the executable Lean DTR-to-LF translation for each family's declared fragment
-and theorem hypotheses. For the active General family, the exact correspondence scope and remaining
+and theorem hypotheses. For the General family, the exact correspondence scope and remaining
 premises are recorded in
 [`docs/claims/general-family-correctness.md`](../docs/claims/general-family-correctness.md). Parser and
 JSON export, LF printing, `lfc`, generated C++, runtime, OS, and hardware remain trusted components;
@@ -31,7 +31,7 @@ their tests provide integration evidence rather than extending the proof boundar
 | `unit` | Focused Python and individually executable Lean software cases |
 | `formal` | Aggregate build of all imported Lean test and proof modules |
 | `integration` | Registry-backed source-to-runtime translator fixtures |
-| `external` | Separately provisioned parser-boundary cases |
+| `external` | Parser-boundary cases using pinned upstream source |
 
 Run the portable tiers with:
 

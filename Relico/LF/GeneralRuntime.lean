@@ -19,7 +19,7 @@ state-and-labels from the step inductive exactly here.
 
 ## The tag, `upd`, and the tag order are all reused, not rebuilt
 
-`docs/STAGE_G_DESIGN.md` §13 **listed** "the superdense tag and `upd`" as work this obligation introduces —
+design doc §13 **listed** "the superdense tag and `upd`" as work this obligation introduces —
 §7's module table said the same. That was wrong, and wrong by more than it looks. Both sections now say
 "reused, not built"; the correction is recorded as **F69**. Four things the design treated as new already
 exist, proved, from vertical slice v0:
@@ -61,7 +61,7 @@ one name for one convention and leaves every existing call site untouched.
 
 ## The label type is `GeneralLabel`
 
-Not `GeneralLfAction`, which `docs/STAGE_G_DESIGN.md` §7 specified first and no longer does. The full
+Not `GeneralLfAction`, which design doc §7 specified first and no longer does. The full
 argument, with its three measurements, is recorded once in
 `Relico/DTR/GeneralRuntime.lean` and deliberately not repeated here. The short form: `Label` is the
 house word, and `LF.GeneralLabel` removes a collision with the syntactic `LF.GeneralAction` that

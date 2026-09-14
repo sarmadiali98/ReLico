@@ -88,7 +88,7 @@ def messageReactionNameFor
 /--
 The name of the reaction that runs one message server's body on one incoming arrow.
 
-`docs/STAGE_E_DESIGN.md` §7.3: a receiving class gets one reaction per route that lands on
+design doc §7.3: a receiving class gets one reaction per route that lands on
 it, named after the input port that triggers it. The action reaction keeps
 `messageReactionNameFor`, so a message server reached both by self-sends and from outside has
 one reaction per delivery mechanism and their names say which is which.
@@ -309,7 +309,7 @@ theorem messageReactionNameFor_injective :
 /-!
 ### What can be proved about the port names, and what cannot
 
-`docs/STAGE_E_DESIGN.md` §4.3 asks for *"two one-sided injectivity lemmas … with the message
+design doc §4.3 asks for *"two one-sided injectivity lemmas … with the message
 fixed the name determines the rebec, and with the rebec fixed the name determines the
 message"*, on the stated ground that *"both reduce to suffix or prefix cancellation"*.
 
@@ -336,7 +336,7 @@ time and compares the results, so the collisions are asserted there rather than 
 
 **Those three labels are named here because the earlier version of this paragraph promised
 them and they did not exist**, in this docstring and two others, for a day — recorded as
-finding F44 in `docs/STAGE_E_FINDINGS.md`. A docstring that describes a test is a claim about
+finding F44 in finding. A docstring that describes a test is a claim about
 the suite and has to be checkable by grepping for the label, which is why the labels appear
 here rather than a sentence saying the matter is covered.
 -/
@@ -416,7 +416,7 @@ construction argument would need — `(message, known rebec, site)` to input por
 non-injective one.
 
 So the clause is earned by a check, not by naming. See F48 and F49 in
-`docs/STAGE_E_FINDINGS.md`, and `Translation.assembleGeneralProgram_targetEndpointsUnique` in
+finding, and `Translation.assembleGeneralProgram_targetEndpointsUnique` in
 `Relico/Translation/GeneralBasic.lean` for the theorem that does establish it, whose
 hypotheses include the well-formedness guard precisely because this lemma cannot replace it.
 -/

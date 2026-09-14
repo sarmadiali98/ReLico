@@ -11,13 +11,13 @@ namespace GeneralRuntime
 /-!
 # Compile-time pins for the general runtime state types
 
-`docs/STAGE_G_DESIGN.md` §13, obligation G2a-ii. `Relico/DTR/GeneralRuntime.lean` and
+design doc §13, obligation G2a-ii. `Relico/DTR/GeneralRuntime.lean` and
 `Relico/LF/GeneralRuntime.lean` declare the two runtime state types, the two label types, the τ
 classification and the observable projection, and they prove the erasure lemmas. This module pins the
 things those theorems are structurally unable to see.
 
 Every pin below is chosen so that some specific wrong implementation fails it. That standard is
-`docs/STAGE_F_FINDINGS.md` F60's, which records an assertion that was invariant under the sort it was
+finding F60's, which records an assertion that was invariant under the sort it was
 credited with pinning, and it is the reason several obvious-looking pins are **absent** here — see the
 last section.
 

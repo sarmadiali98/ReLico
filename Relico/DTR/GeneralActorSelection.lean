@@ -4,7 +4,7 @@ import Relico.DTR.GeneralPriority
 /-!
 # Which ready actor takes the next step
 
-Stage G's first obligation. `docs/STAGE_G_DESIGN.md` §5 owes a deterministic choice of the actor that
+Stage G's first obligation. design doc §5 owes a deterministic choice of the actor that
 takes the next source transition, because the correctness statement stage G proves — the paper's
 Theorem 1, weak bisimilarity — quantifies over source executions, and an execution is not determined
 until the schedule is.
@@ -739,7 +739,7 @@ This is the step that upgrades the total preorder to a strict total order, and i
 Note what the hypothesis forbids: `Nodup` on a list of `Option Nat` rules out **two absent
 priorities** as well as two equal explicit ones. A model with two unannotated actors does not satisfy
 it, which is exactly why this cannot be a well-formedness clause — the same conclusion
-`docs/STAGE_F_DESIGN.md` §6 reached for message servers.
+design doc §6 reached for message servers.
 -/
 private theorem instance_eq_of_priority_eq
     (instances :

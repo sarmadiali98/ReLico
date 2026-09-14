@@ -8,7 +8,7 @@ side — `GeneralSyntax`, `GeneralWellFormed`, `GeneralPriority`, `GeneralState`
 — and not one of them says what an expression denotes. That gap is not optional for stage G, and the
 reason is the shape of the result being proved rather than a preference for completeness.
 
-`docs/STAGE_G_DESIGN.md` §7 commits stage G to the paper's Theorem 1, whose correspondence relation is
+design doc §7 commits stage G to the paper's Theorem 1, whose correspondence relation is
 
 ```
 R = {(s,s') | ∀x ∈ AID. ∃r ∈ RID · r = map_A(x) ∧ s(x) = (e_x,b_x,π_x) ∧ s'(r) = (η_r,q_r,µ_r)
@@ -18,7 +18,7 @@ R = {(s,s') | ∀x ∈ AID. ∃r ∈ RID · r = map_A(x) ∧ s(x) = (e_x,b_x,π_
 The first conjunct relates the two **valuations**. Without an evaluator nothing ever changes a
 valuation, so `e_x ≡ η_r` would be preserved by every step for the empty reason that both sides are
 constant — the paper's relation reproduced with a decorative conjunct. That is the defect recorded as
-`docs/STAGE_G_FINDINGS.md` F66 part 5, and this module is the first half of its repair.
+finding F66 part 5, and this module is the first half of its repair.
 
 ## One store serves state variables and message parameters
 
@@ -62,7 +62,7 @@ claim about what the generated program computes.
 
 This repository contained no integer division anywhere before this module, so there was no convention
 to inherit and the choice had to be made from the target rather than from precedent. Recorded as
-`docs/STAGE_G_FINDINGS.md` F67.
+finding F67.
 
 ## Division by zero: `none` means "no claim", not "computes nothing"
 

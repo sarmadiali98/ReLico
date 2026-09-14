@@ -24,6 +24,5 @@ The shared execution catalog is `evaluation/registry/benchmarks.tsv`. Rows with 
 their source and manifest beneath this directory. Generated `actual/` and
 `.expected-regeneration/` directories are never committed.
 
-The VMCAI 2027 benchmark suite remains under active development and is not yet frozen for artifact
-submission. See [`evaluation/README.md`](../evaluation/README.md) for current registry and evidence
+The VMCAI 2027 benchmark suite is included as part of the artifact evaluation. See [`evaluation/README.md`](../evaluation/README.md) for registry and evidence
 semantics.

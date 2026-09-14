@@ -22,7 +22,7 @@ that it holds at an initial state. Lemma 1, the time equivalence, is the second 
 
 The module lives under `Correctness/` because it is the first general-family declaration that mentions
 both languages at once, which is the boundary `Relico/Correctness/GeneralEvaluation.lean` established
-one obligation earlier and which `docs/STAGE_G_FINDINGS.md` F66 part 3 records as the corpus convention.
+one obligation earlier and which finding F66 part 3 records as the corpus convention.
 
 ## The paper's relation, and the four ways ours differs from it
 
@@ -42,7 +42,7 @@ caller holding only a lookup can convert with `Store.mem_of_lookup`. No `Nodup` 
 anywhere as a result, which is the second reason to prefer it: a duplicate actor name is legal in the
 source AST and the well-formedness layer does not forbid it.
 
-**Nothing here constrains the microstep.** `docs/STAGE_G_DESIGN.md` §15 item 3 predicted that a τ step
+**Nothing here constrains the microstep.** design doc §15 item 3 predicted that a τ step
 must not change any state `R` constrains; F75 part 1 measures that this is false for five of the six
 τ-emitting constructors, all of which change a valuation, a bag, a queue or a continuation. The one τ
 step with **no counterpart on the other side** is `LF.GeneralStep.microstepAdvance`, which is P24's
@@ -159,7 +159,7 @@ An empty bag agrees with an empty queue.
 
 Stated for the same reason `generalValuationAgrees_empty` is stated one module earlier: it makes the
 definition demonstrably **satisfiable**, so the results below are not theorems about an empty hypothesis.
-`docs/STAGE_G_FINDINGS.md` F66 part 5 is a finding about a conjunct of the paper's own relation being
+finding F66 part 5 is a finding about a conjunct of the paper's own relation being
 trivially true, and a module that took an unsatisfiable hypothesis would repeat that defect while
 building green.
 
@@ -1672,10 +1672,10 @@ The one τ step with no source counterpart keeps the relation.
 logical time and a later microstep, so the target moves to it while the source cannot move at all. The
 paper's Theorem 1 has no case for this, which is what P24 records; what makes the omission harmless is
 precisely this theorem, because a τ step that lands in a related state is absorbed by the *weak*
-transition relation the architecture is built on (`docs/STAGE_G_FINDINGS.md`, and
+transition relation the architecture is built on (finding, and
 `Relico/Common/WeakTransition.lean` for the generic machinery).
 
-This is also the checkable residue of `docs/STAGE_G_DESIGN.md` §15 item 3, whose stated form — that a τ
+This is also the checkable residue of design doc §15 item 3, whose stated form — that a τ
 step changes nothing `R` constrains — is false for the other five τ-emitting constructors. F75 part 1
 records that measurement.
 
@@ -1742,7 +1742,7 @@ and idle bodies.
 
 The hypotheses are exactly what a caller relating two states it did not build must check, which is why
 the theorem survives its unconditional sibling: nothing downstream should re-derive the initial states
-just to apply the initial case. `docs/STAGE_G_DESIGN.md` §7 item 1 records the scoped form's history,
+just to apply the initial case. design doc §7 item 1 records the scoped form's history,
 and **F75** part 2 the reason both exist.
 
 The source continuations need no hypothesis — `ofConfiguration` sets them all to `[]` by construction,

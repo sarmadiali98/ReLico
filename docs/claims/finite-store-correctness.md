@@ -1,8 +1,8 @@
 # Finite-store correctness claim
 
-> **Historical compatibility-family claim.** This document describes the finite-store family and
+> **Compatibility-family claim.** This document describes the finite-store family and
 > its theorem stack. Its exclusions and limitations apply to that family, not to ReLico as a whole.
-> See [`general-family-correctness.md`](general-family-correctness.md) for the active General family.
+> See [`general-family-correctness.md`](general-family-correctness.md) for the General family.
 
 ## Supported source fragment
 
@@ -150,7 +150,7 @@ The check succeeds only when:
 
 ## Remaining language exclusions
 
-The current claim does not include:
+This claim does not include:
 
 - multiple actors;
 - multiple reactive classes;

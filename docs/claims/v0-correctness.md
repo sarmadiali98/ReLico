@@ -1,8 +1,8 @@
 # Vertical-slice v0 correctness claim
 
-> **Historical compatibility-family claim.** This document records the original singleton
-> milestone. It does not describe the active General family. See
-> [`general-family-correctness.md`](general-family-correctness.md) for the current active-family claim.
+> **Compatibility-family claim.** This document records the original singleton
+> compatibility-family description. It does not describe the General family. See
+> [`general-family-correctness.md`](general-family-correctness.md) for the General-family claim.
 
 ## Executable translation path
 
@@ -37,7 +37,7 @@ action, one startup reaction, and one message reaction.
 
 Established results
 
-The Lean development currently establishes:
+The Lean development establishes:
 
 Source-model well-formedness.
 Structural well-formedness of generated LF programs.
@@ -83,7 +83,7 @@ introducing executions outside the permitted DTR execution space.
 
 Trusted and excluded components
 
-The current proof covers the Lean DTR AST, Lean LF AST, executable
+The proof covers the Lean DTR AST, Lean LF AST, executable
 translation function, and the declared operational semantics.
 
 The following remain outside the proof:

@@ -28,8 +28,10 @@ screen over unsolicited external models. They are reported separately and are no
 capability-fixture or application-benchmark counts.
 
 The executable populations together count 242 logical software cases: 65 capability fixtures,
-59 focused Lean cases, 117 Python cases, and one external-parser-gated case. Formal obligations
-are not logical cases and are never added to that total.
+59 focused Lean cases, 117 Python cases, and one external parser-boundary case. Formal obligations
+are not logical cases and are never added to that total. The external case fetches a SHA-pinned
+Rebeca compiler 2.25 source archive from its public upstream repository and also accepts a local,
+digest-identical archive for offline execution.
 
 The capability ledger mapping every declared General-fragment capability to its evidence is
 [`tests/catalog/general-accepted-fragment.tsv`](../tests/catalog/general-accepted-fragment.tsv).
@@ -37,12 +39,12 @@ As of the completed capability suite, every declared capability has mapped evide
 `uncovered`; the `uncovered` marker remains the ledger's honest state for any future gap, rather
 than silent omission.
 
-## Registry and Current Population
+## Registry and Population
 
 The registry originated as a reviewed 102-row source plan and has been amended since. The current
 catalog holds 106 rows: 65 translator capability fixtures and 41 application benchmarks. "Planned"
-describes the registry's provenance, not every row's current implementation status;
-`benchmarks.tsv` and the corresponding manifests determine current status.
+describes the registry's provenance, not every row's implementation status;
+`benchmarks.tsv` and the corresponding manifests determine status.
 
 The registry directory contains:
 
@@ -121,7 +123,7 @@ part of the semantic corpus and is excluded from its benchmark, verdict, and cat
 `tools/relico_bench.py` validate, list, inspect, and execute registry-backed fixtures and benchmarks.
 See [`tests/README.md`](../tests/README.md) for logical-case counting and evidence semantics.
 
-The current benchmark interface supports:
+The benchmark interface supports:
 
 - registry validation
 - benchmark listing
@@ -167,6 +169,4 @@ execution also rejects rows that are not marked `implemented`.
 
 ## Evaluation Status
 
-The VMCAI 2027 evaluation suite is still under active development and has not yet been frozen for
-artifact submission. Current manifests and registry status describe the repository today; they are
-not final paper-result mappings or final artifact reproduction instructions.
+The VMCAI 2027 evaluation suite is included as part of the artifact evaluation. The manifests and registry status describe the artifact contents; they are not final paper-result mappings or final artifact reproduction instructions.

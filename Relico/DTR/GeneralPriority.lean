@@ -3,7 +3,7 @@ import Relico.DTR.GeneralSyntax
 /-!
 # Stage F: the general priority sort
 
-`docs/STAGE_F_DESIGN.md` §4.3. Stage F needs a stable priority sort at **two** element types —
+design doc §4.3. Stage F needs a stable priority sort at **two** element types —
 `DTR.GeneralActorInstance` for level 1 (§III-D, ordering a message server's port reactions by the
 sending actor's priority) and `DTR.GeneralMessageServer` for level 2 (ordering the per-server groups
 by message-server priority). This module is that sort, once, generic in the element type and
@@ -139,7 +139,7 @@ theorem priority_lower_numeric_precedes
 /-!
 ### The order is a total preorder
 
-`docs/STAGE_F_DESIGN.md` §6 rests on this, and so does the guard-relative shape of the ordering
+design doc §6 rests on this, and so does the guard-relative shape of the ordering
 theorems: without a distinctness hypothesis the order is a total preorder in which ties are possible,
 and with one it is a strict total order. Both halves are proved here rather than asserted, because §6
 declines to add a `wellFormed` clause on the strength of the second half and that argument should not
@@ -187,7 +187,7 @@ theorem priorityPrecedesOrEqual_total
 /--
 Two priorities that precede each other are equal. Together with totality this is what turns the
 preorder into a strict total order once priorities are known distinct, which is the step
-`docs/STAGE_F_DESIGN.md` §6 needs and the step that makes `PrioritiesDistinct` the right hypothesis.
+design doc §6 needs and the step that makes `PrioritiesDistinct` the right hypothesis.
 -/
 theorem priorityPrecedesOrEqual_antisymm
     {left right : Option Nat}
@@ -520,7 +520,7 @@ theorem insert_perm
 /--
 Priority normalization is a permutation of the source declaration list.
 
-This is the lemma `docs/STAGE_F_DESIGN.md` §7.3 leans on: because the sort only permutes, every
+This is the lemma design doc §7.3 leans on: because the sort only permutes, every
 property of the route or reaction *set* rather than its order transfers through it, which is what keeps
 #47's site totality, #58's endpoint uniqueness and #60's setPort `Nodup` from needing re-proof.
 -/
@@ -580,7 +580,7 @@ theorem map_normalize_nodup
 /--
 Two elements that precede each other carry the same priority.
 
-This is the form `docs/STAGE_F_DESIGN.md` §6's guard-relative theorems consume: combined with a
+This is the form design doc §6's guard-relative theorems consume: combined with a
 distinctness hypothesis it rules out ties, which is exactly the step that upgrades the total preorder
 to a strict total order.
 -/
@@ -608,7 +608,7 @@ theorem precedesOrEqual_antisymm_priority
 /--
 The distinctness guard survives the sort.
 
-`docs/STAGE_F_DESIGN.md` §6 states the strict ordering theorems with `PrioritiesDistinct` as a
+design doc §6 states the strict ordering theorems with `PrioritiesDistinct` as a
 hypothesis about the **source** model, while the list actually emitted is the sorted one. This lemma is
 the bridge, and without it the guard would have to be assumed twice. It is stated on the raw `Nodup` so
 that this module keeps `Relico.DTR.GeneralSyntax` as its only import, mirroring
@@ -654,7 +654,7 @@ what changes that: `Relico/Tests/GeneralPriority.lean` lands beside it, pinning 
 below, and the sentence is dated rather than deleted because the measurement is what motivated the
 lemmas that follow.
 
-`docs/STAGE_F_DESIGN.md` §6 requires two statements at each level: an **unconditional** one, that
+design doc §6 requires two statements at each level: an **unconditional** one, that
 emitted order equals sorted order, and a **guard-relative** one, that emitted order *realizes priority
 strictly* under a distinctness hypothesis. The second cannot be stated at all without the lemmas below,
 so they are stage F's foundation rather than an optional extra.
@@ -884,7 +884,7 @@ theorem normalize_sorted
 /-!
 ### From sortedness to the append split
 
-`docs/STAGE_F_DESIGN.md` §9.2 states stage F's ordering results as append splits rather than as name
+design doc §9.2 states stage F's ordering results as append splits rather than as name
 orders, for the reason given there: the blueprint's key — a message-server name identifying one
 reaction — does not exist in the general family, where one instance contributes a whole block of port
 reactions. So the two lemmas below are the ones the translation theorems actually consume, and both are
@@ -1025,7 +1025,7 @@ theorem nodup_append_ne
 The unconditional ordering result: however the normalized list is split, the left part precedes or ties
 the right part.
 
-No guard. True of every model the pipeline accepts, which is what `docs/STAGE_F_DESIGN.md` §6 means by
+No guard. True of every model the pipeline accepts, which is what design doc §6 means by
 the unconditional half of each level.
 -/
 theorem normalize_append_precedes
@@ -1070,7 +1070,7 @@ theorem normalize_append_precedes
 The guard-relative ordering result: with source priorities distinct, the precedence across the split is
 strict, in the sense that the two priorities cannot coincide.
 
-`docs/STAGE_F_DESIGN.md` §6 settles that distinctness is a **hypothesis** and not a `wellFormed`
+design doc §6 settles that distinctness is a **hypothesis** and not a `wellFormed`
 clause, because `PrioritiesDistinct` is `(map priority).Nodup` over `List (Option Nat)` and so forbids
 two *absent* priorities, which would reject `expressions.rebeca` and `control-flow.rebeca` outright.
 This is the statement that decision buys: strictness where it is asked for, and the unconditional form
@@ -1177,7 +1177,7 @@ end GeneralPriority
 /-!
 ## Level 2: message servers, ordered by message-server priority
 
-`docs/STAGE_F_DESIGN.md` §9. Orders the per-server groups of one reactive class. The walk site this
+design doc §9. Orders the per-server groups of one reactive class. The walk site this
 replaces is `reactiveClass.messageServers` at `Relico/Translation/GeneralBasic.lean:1927`.
 -/
 
@@ -1266,7 +1266,7 @@ The unconditional level-2 ordering result, in the append-split shape
 Ties are possible and are resolved by source declaration order, which is `normalize`'s stability and
 what decision `0041` requires. At this element type a tie is the ordinary case rather than the corner
 one: an unannotated message server is permitted, so any class with two unannotated servers ties them,
-and `docs/STAGE_F_DESIGN.md` §6 records that this is exactly why the guard below cannot be a
+and design doc §6 records that this is exactly why the guard below cannot be a
 `wellFormed` clause.
 -/
 theorem normalize_append_precedes
@@ -1328,7 +1328,7 @@ end GeneralMessageServerPriority
 /-!
 ## Level 1: actor instances, ordered by actor priority
 
-`docs/STAGE_F_DESIGN.md` §4.1 and §7.2. Orders one message server's port reactions by the sending
+design doc §4.1 and §7.2. Orders one message server's port reactions by the sending
 actor's priority, by ordering the instance list the routes are derived from.
 
 This is the **first consumer of `DTR.GeneralActorInstance.priority` in the translation**. Before stage F

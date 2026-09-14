@@ -35,7 +35,7 @@ set -u
 
 PROBE_FILTER=${PROBE_FILTER:-}
 
-LFC=/Users/ali/.local/share/lingua-franca/cli/bin/lfc
+LFC=${LFC:-$(command -v lfc || command -v lfc 2>/dev/null || echo "/usr/local/bin/lfc")}
 ROOT=/tmp/relico_lf_probe
 
 rm -rf "$ROOT"; mkdir -p "$ROOT"

@@ -20,7 +20,7 @@ Table I's rules are `ASSIGN`, `SEND`, `CONDITIONAL-T`, `CONDITIONAL-F`, `TAKE` a
 `GeneralStmt` has no conditional, so four survive: `assign` and `send` carry τ, `take` carries `ms`, and
 `timeProgress` carries `t`. The two missing conditional rules are **not** an omission — `DTR.GeneralBody`
 is a flat statement list whose own docstring records that the stage admitting branching must change the
-type, so what stage G proves is the conditional-free sub-fragment. `docs/STAGE_G_DESIGN.md` §7 states the
+type, so what stage G proves is the conditional-free sub-fragment. design doc §7 states the
 restriction and G6 owes its declaration.
 
 ## Why the relation is indexed state → label → state, in that order

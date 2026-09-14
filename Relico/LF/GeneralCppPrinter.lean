@@ -78,14 +78,14 @@ reaction's parameters to the constructor's formals, deliberately, so that
 that is pinned, not read off, by
 `Translation.compileGeneralReactiveClass_startupParameters`. Those names are the
 *reactor's* parameters, and a reactor parameter is readable in a reaction body with no
-binder and no trigger at all (measured, `docs/STAGE_D_DESIGN.md` §5.5), so the right
+binder and no trigger at all (measured, design doc §5.5), so the right
 emission is the empty string and not a diagnostic. Left as it was, the arm would have
 refused `frontend/fixtures/general/constructor-arguments.rebeca` — a committed positive
 fixture of this very family — for no reason but that its constructor has a parameter list
 *and* a body. Finding F33.
 
 An input-port trigger with two or more parameters is refused, and this one is a genuine
-disagreement with `docs/STAGE_D_DESIGN.md` §6, which said all three parameter-read
+disagreement with design doc §6, which said all three parameter-read
 refusals go. It is wrong on this one. A `GeneralPortDecl` carries a single declared type
 and therefore delivers exactly one value, so there is no struct to name and no second
 value to bind — unlike an action, whose own parameter list supplies both. The design
@@ -365,7 +365,7 @@ entirely. That the two payload struct names come from two different reactors is 
 asymmetry reaching the printer.
 
 The `setPort` arms enumerate the payload constructor and the argument list *together*, with
-no wildcard on the payload. `docs/STAGE_E_DESIGN.md` §5.3 records that `input p: void` is
+no wildcard on the payload. design doc §5.3 records that `input p: void` is
 unmeasured under `lfc 0.11.0` and that the day the probe runs `GeneralPortPayload` gains a
 constructor; a wildcard here would print something plausible for it instead of failing to
 build.
@@ -754,7 +754,7 @@ exactly that struct from the same field.
 
 There is no `void` arm because `GeneralPortPayload` has no `void` constructor, and that
 absence is a measurement gap rather than a judgment: see the type's own docstring and
-`docs/STAGE_E_DESIGN.md` §5.3.
+design doc §5.3.
 -/
 def renderGeneralPortPayloadType :
     LF.GeneralPortPayload →
@@ -971,7 +971,7 @@ adds a fourth trigger still gets a build error.
 
 An input port with two or more parameters was an error through stage D, on the ground that a
 `GeneralPortDecl` declares one type and so delivers one value and, unlike an action, has no
-parameter list to destructure. §5.2 of `docs/STAGE_E_DESIGN.md` makes the first half of that
+parameter list to destructure. §5.2 of design doc makes the first half of that
 sentence false — a port now declares a payload — and the second half was never the obstacle:
 the parameter list being destructured is the *reaction's*, and a port-triggered reaction gets
 it from the message server exactly as an action-triggered one does. So the arm is now the

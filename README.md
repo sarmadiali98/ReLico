@@ -14,7 +14,7 @@ The active executable path is the **General family**. It supports multiple react
 
 The General JSON decoder, elaborator, DTR-to-LF translation, LF printer, focused test catalog, source-to-runtime fixtures, and registry-backed evaluation infrastructure are implemented. Earlier singleton, finite-store, and multi-store families remain as compatibility and regression surfaces with family-specific theorem stacks.
 
-The project is still under active development. The General semantic correspondence interface retains explicit run-level premises; the capability ledger maps every declared fragment capability to executable or formal evidence, while refusal-side focused cases for some well-formedness clauses and the priority tie boundary remain deferred; parameterless externally routed messages remain intentionally refused, iteration and several wider Timed Rebeca constructs remain unsupported, and the VMCAI 2027 evaluation suite is not frozen.
+The General semantic correspondence interface retains explicit run-level premises. The capability ledger maps declared fragment capabilities to executable or formal evidence. Parameterless externally routed messages remain intentionally refused, iteration and several wider Timed Rebeca constructs remain unsupported, and the stated proof boundaries and language limitations define the artifact scope.
 
 ## Architecture
 
@@ -71,7 +71,7 @@ python3 tools/relico_bench.py --validate-registry
 python3 tools/relico_bench.py --list
 ```
 
-The active Lean APIs are `Relico.Frontend.decodeGeneralModelText` and `Relico.Translation.compileGeneralModel`. Source-to-runtime execution additionally requires separately installed external tools and, for parser-backed runs, the upstream parser artifact. These workflows are still being refined; final artifact reproduction instructions do not yet exist.
+The active Lean APIs are `Relico.Frontend.decodeGeneralModelText` and `Relico.Translation.compileGeneralModel`. Source-to-runtime execution additionally requires separately installed external tools. The external parser-boundary test fetches and verifies the pinned public Rebeca compiler 2.25 source archive; `RELICO_PARSER_ARTIFACT` may name a digest-identical local archive for offline execution. The artifact reproduction workflow is provided through the documented build and evaluation entry points.
 
 ## Testing
 
@@ -79,7 +79,7 @@ The test system distinguishes logical software cases, aggregate Lean gates, tran
 
 ## Evaluation
 
-The registry-backed evaluation catalog reports five non-additive evidence populations: formal verification evidence, component correctness tests, 65 translator capability fixtures, 41 application benchmarks, and artifact validation, with the upstream corpus screen under `examples/` reported separately as external corpus validation. Every declared General-fragment capability has mapped evidence in the capability ledger, whose rows record any gap as `uncovered` rather than omitting it. Registry status and committed manifests describe what is currently implemented; the suite is not a frozen VMCAI artifact evaluation. See [ReLico executable evaluation catalog](evaluation/README.md) and [application benchmarks](benchmarks/README.md).
+The registry-backed evaluation catalog reports five non-additive evidence populations: formal verification evidence, component correctness tests, 65 translator capability fixtures, 41 application benchmarks, and artifact validation, with the upstream corpus screen under `examples/` reported separately as external corpus validation. Every declared General-fragment capability has mapped evidence in the capability ledger, whose rows record any gap as `uncovered` rather than omitting it. Registry status and committed manifests describe what is currently implemented; the suite defines the artifact evaluation scope. See [ReLico executable evaluation catalog](evaluation/README.md) and [application benchmarks](benchmarks/README.md).
 
 ## Repository Structure
 
@@ -89,7 +89,7 @@ The registry-backed evaluation catalog reports five non-additive evidence popula
 - `benchmarks/`: application and source-evidence benchmarks
 - `evaluation/`: shared benchmark registry and evaluation metadata
 - `tools/`: catalog-backed test and benchmark interfaces
-- `docs/`: current scope, claims, trusted boundary, decision records, and historical development notes
+- `docs/`: scope, correctness claims, trusted boundary, and technical documentation
 - `examples/`: unregistered empirical demonstration runs
 
 ## Documentation
@@ -102,18 +102,18 @@ The registry-backed evaluation catalog reports five non-additive evidence popula
 - [Evaluation catalog](evaluation/README.md)
 - [General frontend fixtures](frontend/fixtures/general/README.md)
 
-## Limitations and Work in Progress
+## Limitations
 
 - The upstream parser, type checker, JSON exporter, LF printer, `lfc`, generated C++, runtime, OS, and hardware are trusted rather than formally verified.
 - General observable correspondence is conditional and uses a partial quotient, as recorded in the claim document.
 - The accepted Timed Rebeca fragment assumes successful upstream parsing and type checking; arbitrary JSON accepted by the Lean decoder is not a substitute for that source-language judgment.
 - Iteration, arrays, inheritance, environmental inputs, physical actions, and broadcast are not supported by the active translation path.
 - External sends to parameterless message servers are refused.
-- Benchmark implementation, evaluation methodology, and artifact-facing documentation remain under active development.
+- Benchmark coverage, evaluation methodology, and documentation are described by the included artifact materials.
 
 ## VMCAI 2027
 
-ReLico is being prepared as the artifact associated with a VMCAI 2027 submission. Final artifact-specific setup, reproduction, resource, and paper-result instructions will be added after the implementation and evaluation are frozen.
+ReLico is being prepared as the artifact associated with a VMCAI 2027 submission. The artifact includes the implementation, evaluation materials, and documentation required to reproduce the reported results.
 
 ## License
 

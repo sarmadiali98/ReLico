@@ -5,7 +5,7 @@ set_option autoImplicit false
 /-!
 # Value-level pins for general actor selection
 
-`docs/STAGE_G_DESIGN.md` §5. `Relico/DTR/GeneralActorSelection.lean` proves that the selected actor is a
+design doc §5. `Relico/DTR/GeneralActorSelection.lean` proves that the selected actor is a
 member of the cohort, that it precedes every member, that selection succeeds exactly when the cohort is
 non-empty, and — under a distinctness guard — that it is the only minimum. This module pins the things
 those theorems are structurally unable to see.

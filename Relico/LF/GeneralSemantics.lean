@@ -271,7 +271,7 @@ triggers across the whole list would imply this at every kind, so this is the we
 the stronger theorem — and it is exactly what the induction in
 `findReactionForKind?_eq_some_of_mem` consumes. The bridge from a `Nodup`-of-triggers form is *not* stated
 here, because which form the translator actually yields is decided by the translator-side proof, and writing
-a bridge against a guessed shape is the defect class `docs/STAGE_G_FINDINGS.md` F75 records.
+a bridge against a guessed shape is the defect class finding F75 records.
 
 **The hypothesis cannot be dropped, and the witness is already built.** Test 11 of
 `Relico/Tests/GeneralSemantics.lean` is a reactor holding two reactions triggered by one action, the first
@@ -623,7 +623,7 @@ private theorem eq_of_nodup_map
 
 `LF.UniquelyTriggered` deliberately does not state this, because the shape the translator can actually
 supply had to be measured first — writing a bridge against a guessed shape is the defect class
-`docs/STAGE_G_FINDINGS.md` F75 records. It has now been measured, and `Nodup` on the mapped trigger
+finding F75 records. It has now been measured, and `Nodup` on the mapped trigger
 list is not merely *a* usable form but the **only** form the two sides can share:
 `Relico.Translation.GeneralBasic` cannot reach `Relico.LF.GeneralSemantics`, so no theorem stated
 beside the translator can so much as mention `UniquelyTriggered`. The two statements meet in
@@ -814,11 +814,11 @@ theorem reactionFor?_eq_findReactionForKind?_of_reactorOfInstance?
 cannot change which reaction an event dispatches to, provided at most one of them is triggered by that
 event's kind.
 
-`docs/STAGE_G_FINDINGS.md` F80 records that stage F's two ordering theorems —
+finding F80 records that stage F's two ordering theorems —
 `portReactions_realizeActorPriority` and `messageServerReactions_realizeMessageServerPriority` — are
 **inert at run level**: they fix the order of the emitted reaction list, and nothing the runtime does
 consults that order. This states that inertness positively rather than as an absence, in the shape
-`docs/STAGE_E_FINDINGS.md` F50 and task `#60` used for §10.2's refuted `setPort` obligation — when an owed
+finding F50 and task `#60` used for §10.2's refuted `setPort` obligation — when an owed
 claim turns out to be false, state and prove what is true in its place.
 
 **The full argument has two halves and this is the first.** `normalize_perm`

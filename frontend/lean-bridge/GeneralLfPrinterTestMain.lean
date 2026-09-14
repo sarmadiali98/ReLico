@@ -1943,7 +1943,7 @@ two readings compute the same list and nothing here could say which one is imple
 **A receiver whose constructor body is empty**, so its reactor has no startup reaction at
 all. All **24** committed `expected/lf-source/*.lf` files have a startup reaction with a
 non-empty body, so `renderGeneralStartupReaction`'s empty arm has never reached a real
-`lfc` — stage C's design says so at `docs/STAGE_C_DESIGN.md:750` and leaves it owed.
+`lfc` — stage C's design says so at stage design doc 750 and leaves it owed.
 
 **A second instance of the receiving class that nothing sends to**, so its three input
 ports are declared and unconnected. Input ports are a projection of the *class*
@@ -2397,7 +2397,7 @@ private def routedModel :
 and all eight share one `Except String`. Two are pinned in `translationAssertions` above,
 against `compileGeneralModel`: the arity-zero payload and the undeclared message server.
 The other six are pinned here. The inventory, and the line that *decides* each cause as
-distinct from the line that raises it, is finding F47 in `docs/STAGE_E_FINDINGS.md`. That
+distinct from the line that raises it, is finding F47 in finding. That
 finding exists because two docstrings in `Relico/Translation/GeneralBasic.lean` credited
 this coverage to `lean-reject` fixtures — documents the *frontend* refuses, which
 therefore never reach a translation function at all.
@@ -3455,7 +3455,7 @@ private def printerAssertions :
       parameterisedStartupReaction)
 
   -- F30, retracted, with the retraction as an assertion rather than a note. Stage D
-  -- refused this shape and recorded a disagreement with `docs/STAGE_D_DESIGN.md` §6,
+  -- refused this shape and recorded a disagreement with design doc §6,
   -- which had said all three go; §6 was right and F30 was wrong. The binder is derived
   -- from the *port* name, so the emitted text differs from the action case above in
   -- exactly one identifier — which is the sharpest available statement that a port and an
@@ -3793,7 +3793,7 @@ private def portNameCollisionAssertions :
 
   -- F42's own channel, and the one that survives both fixes above. `capitalizeName` folds
   -- the first character's case, so two distinct known rebecs give one infix. This is why
-  -- `docs/STAGE_E_DESIGN.md` §4.3's second one-sided injectivity lemma is false and why
+  -- design doc §4.3's second one-sided injectivity lemma is false and why
   -- `outputPortInfixFor_eq_of_outputPortNameFor_eq` is the strongest form that holds.
   expectString
     "PORT_NAME_CASE_FOLDING_COLLIDES"
@@ -4672,7 +4672,7 @@ private def sharedTargetAssertions :
   -- failure here says which one and this group does not quietly weaken into "some clause holds".
   --
   -- The label says EIGHT and the group now checks nine, and that is left alone on purpose: four
-  -- transcripts in `docs/STAGE_E_FINDINGS.md` quote `PASS_SHARED_TARGET_EIGHT_CLAUSES_HOLD` as
+  -- transcripts in finding quote `PASS_SHARED_TARGET_EIGHT_CLAUSES_HOLD` as
   -- run, and renaming the marker would make those records irreproducible to buy something the
   -- expected string below already says. The count survives in the label and nowhere else.
   expectString
@@ -4715,7 +4715,7 @@ one output port twice; a second model would let a future change fix one and leav
 and would hide that both are consequences of one unescaped separator.
 
 What is new is where the assertions look. F48 read the sending class's output port
-*environment* and the emitted *connection* list, both program-level objects. `docs/STAGE_E_DESIGN.md`
+*environment* and the emitted *connection* list, both program-level objects. design doc
 §10.2's sentence — *"no reaction of an emitted reactor sets one output port twice"* — is not a
 claim about either: it is a claim about the statement list inside one compiled reaction body,
 and this is the only block in the file that opens one.
@@ -5460,7 +5460,7 @@ Then **70 to 76**, which is the same repair a second time and by now not a coinc
 `lean-reject` documents that structurally cannot reach a translation function; measuring
 the inventory found eight causes with two texts asserted. That is finding F47, and the six
 here are the missing six. F44 and F47 are two of the four instances
-`docs/STAGE_E_FINDINGS.md` records of one root cause: a claim about this suite written as
+finding records of one root cause: a claim about this suite written as
 prose instead of as a label a `grep` can falsify. Every assertion added in both rounds is
 named, and the names are the point.
 
@@ -5484,7 +5484,7 @@ program is built by hand *for a clause*, rather than to be printed or to be refu
 block's model has to go through the translation to be a witness, and this one has to not.
 
 Then **86 to 88**, and this pair is the first in stage E to be added because a theorem the
-*design document* owed was refuted, rather than one a docstring claimed. `docs/STAGE_E_DESIGN.md`
+*design document* owed was refuted, rather than one a docstring claimed. design doc
 §10.2 owes *"no reaction of an emitted reactor sets one output port twice"* and derives it from
 sites being addresses; distinct sites do not give distinct names, so the sentence is false and
 `ALIASED_SETPORT_TWICE_IN_ONE_REACTION` is one emitted reaction that breaks it. That is finding
@@ -5683,7 +5683,7 @@ def emitRepeatedSelfSendProgram :
 /-!
 ### The G5 witness: priority order deranging declaration order, observed at run time
 
-`docs/STAGE_G_DESIGN.md` §10 asks for one model whose run distinguishes priority order
+design doc §10 asks for one model whose run distinguishes priority order
 from declaration order, because everything before it gated priority as *text*: a
 translator that emitted the right declaration order while running in the wrong one would
 pass every gate in this repository. This model is that witness, and the observation
@@ -5698,7 +5698,7 @@ time — that asymmetry is a property of the target, not a choice of this file:
   `Translation.generalPriorityOrderedMessageServers` walks them `late, early`, and the
   hub reactor's reactions are **declared** in that order. Both deliveries arrive at one
   complete tag on two port-triggered reactions of one reactor — the exact shape stage F
-  measured (`STAGE_F_DESIGN.md` §2.1, probe pair `stageF_onesender_twoports`): at one
+  measured (design doc §2.1, probe pair `stageF_onesender_twoports`): at one
   tag, **declaration order decides**. So the run prints `LATE` before `EARLY`, while the
   class declares `early` first.
 * **Level 1, text only.** The two senders are declared `early, late` and prioritised the
@@ -6084,7 +6084,7 @@ Stage H taught the printer to emit a conditional and pinned the text by `rfl` in
 `Relico/Tests/GeneralConditional.lean`. What no gate did was hand that text to the target
 compiler: every program this file emitted before this one is branch-free, so a green
 `GENERAL_LF_TARGET_OK` said nothing about whether `lfc` accepts
-`if (…) { … } else { … }` inside a reaction body. `docs/STAGE_I_FINDINGS.md`'s F90 records
+`if (…) { … } else { … }` inside a reaction body. finding's F90 records
 the gap and the measurement that established it, `grep -c 'if ('` over the gate's own log
 returning zero. This model closes it.
 

@@ -59,7 +59,7 @@ by how many messages carry each one — and G2c is where the consume case will n
 Before the repair, `timeProgress` allowed the source to advance to an arbitrary future instant, so no
 statement of this form could be true. The rule now carries `nextArrival config.erase = some future` as a
 premise, which makes the source's instant *the* minimum rather than *a* future time, and the equality below
-is what pairs it with the target's. `docs/STAGE_G_FINDINGS.md` F74 records the defect and the repair.
+is what pairs it with the target's. finding F74 records the defect and the repair.
 -/
 
 /--

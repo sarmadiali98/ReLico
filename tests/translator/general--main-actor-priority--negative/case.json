@@ -14,12 +14,19 @@
   "deferred_obligation": "Multi-actor actor-priority selection remains an Approach B obligation.",
   "fixture_id": "approach-a-single-main-actor-payload-exclusion",
   "fixture_kind": "frontend-supported-fragment-negative-regression",
+  "parser_source": {
+    "archive_sha256": "bd10366acf8d1ed7f392cdd424bfaea5be162cb291f9521ad3d3cfd32be8dcaf",
+    "commit": "94ca579e0f2e3528d8de608a9e86316ecb78d608",
+    "license": "GPL-2.0",
+    "repository": "https://github.com/rebeca-lang/org.rebecalang.compiler",
+    "tag": "2.25"
+  },
   "positive_controls": [
     "actor-priority-absent",
     "local-message-server-priority"
   ],
   "prohibited_claim": "Actor priority is globally unnecessary.",
-  "runner": "run-approach-a-exclusion.sh",
+  "runner": "run-test.sh",
   "schema_version": 1,
   "scope_statement": "The current exactly-one-main-actor frontend profile rejects main-actor priority while accepting payload and local priority.",
   "semantic_level": "main-actor-priority",

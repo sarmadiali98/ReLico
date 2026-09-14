@@ -51,13 +51,13 @@ of obligation G2a-iii will premise a successful evaluation, so where evaluation 
 exists and the configuration is stuck. Because failure corresponds exactly, a stuck source
 configuration has a stuck target counterpart and neither side can move — so there is no execution on one
 side to be matched by a missing execution on the other, and the rules acquire no propagation case for
-failure. `docs/STAGE_G_DESIGN.md` §14 item 8 raised the worry that partiality would weaken the theorem;
+failure. design doc §14 item 8 raised the worry that partiality would weaken the theorem;
 this corollary is the answer, and it is an answer by proof rather than by assumption.
 
 What the corollary does **not** do is make a divide-by-zero program correct with respect to the real
 generated code. Both sides being stuck models both sides having no defined result, whereas the emitted
 C++ has undefined behaviour rather than a stuck state. That gap is the fragment restriction recorded in
-`Relico/DTR/GeneralEvaluation.lean`'s module note and in `docs/STAGE_G_FINDINGS.md` F67, and obligation
+`Relico/DTR/GeneralEvaluation.lean`'s module note and in finding F67, and obligation
 G6 owes its declaration.
 -/
 
@@ -103,7 +103,7 @@ The empty valuations agree.
 
 Trivial, and worth stating anyway: together with `generalValuationAgrees_image` it establishes that
 `GeneralValuationAgrees` is **satisfiable**, so the theorems taking it as a hypothesis are not vacuous.
-That is not a hypothetical concern in this development. `docs/STAGE_G_FINDINGS.md` F66 part 5 is a
+That is not a hypothetical concern in this development. finding F66 part 5 is a
 finding about a conjunct of the paper's own correspondence relation being trivially true, so a stage-G
 module that took an unsatisfiable hypothesis and proved everything about it would be repeating the
 defect it was written to repair, and would build green while doing so.
@@ -543,7 +543,7 @@ theorem compileGeneralExpr_preserves_bool
 /--
 The two evaluators fail in exactly the same cases.
 
-A corollary of the theorem above, but the one that carries the argument of `docs/STAGE_G_DESIGN.md` §14
+A corollary of the theorem above, but the one that carries the argument of design doc §14
 item 8: partiality does not weaken Theorem 1, because a source expression that has no value is compiled
 to a target expression that has no value, so the step rules premised on successful evaluation have no
 instance on either side and the two configurations are stuck together. See the module note.

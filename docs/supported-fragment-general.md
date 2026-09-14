@@ -1,9 +1,9 @@
 # The General Family's Accepted Fragment
 
-> **Current scope document.** This document defines the active General-family acceptance and theorem-eligibility boundaries. Dated stage references explain provenance; current behavior is determined by the production predicates and declarations named below.
+> **Scope document.** This document defines the General-family acceptance and theorem-eligibility boundaries. Accepted behavior is determined by the production predicates and declarations named below.
 
 > **Status.** This is the authoritative declaration of what the general family's translator accepts,
-> landed 2026-08-27 as G6 document 1 (`docs/STAGE_G_DESIGN.md` §11 item 1; audit item C9 in
+> landed 2026-08-27 as G6 document 1 (`G_DESIGN.md` §11 item 1; audit item C9 in
 > `RELICO_FORWARD_ROADMAP_AUDIT.md` §C). It exists because three sites quantify the project's claim
 > over "the supported fragment" — `README.md`'s opening line, and `docs/trusted-boundary.md`'s
 > verified-boundary and intended-claim sections — and until now the only document declaring a
@@ -109,7 +109,7 @@ where an `after` field is read.
 
 `DTR.GeneralModel.wellFormed` is the conjunction of exactly five clauses, **five**, not the four the
 approved stage-B design named; the fifth was added when repeated names were measured as making a
-model mean something the frontend did not say (recorded in `docs/STAGE_B_FINDINGS.md`):
+model mean something the frontend did not say (recorded in the design rationale):
 
 1. `bindingsMatchDeclarations`; every instance's bindings name known rebecs its class declares;
 2. `argumentsMatchConstructor`, every instance's arguments match the arity and types of its class's
@@ -201,7 +201,7 @@ contain them, and no theorem quantifies over stdout.
 
 **By design, not by schedule.** Arbitrary LF programs. The LF subset is *generated* and never
 parsed; a correctness theorem over it could only ever be a theorem about the translator's own
-output. This is not a milestone exclusion and no later stage discharges it.
+output. This is part of the defined fragment boundary and is not changed by later additions.
 
 **Target-limited, by ruling and permanently.** Division and modulo by zero. The correctness result transfers
 to real target behaviour only on executions in which no division or modulo by zero occurs. On the model sides
@@ -228,7 +228,7 @@ excluded by unrepresentability rather than by diagnostic.
 ## The theorem-eligibility table
 
 > **G6 document 2**, landed 2026-08-28 (audit item C10). The binding 2026-08-18 decision
-> (`docs/STAGE_B_DESIGN.md`, option **D**) put the two priority-distinctness predicates *outside*
+> (`the corresponding design record`, option **D**) put the two priority-distinctness predicates *outside*
 > `wellFormed` and *inside* the theorems that need them, and its operative sentence is the rule this
 > section operationalizes: *"A theorem that needs determinism and does not name them is a bug in that
 > theorem."* The same decision required that the boundary between elaborable and theorem-eligible

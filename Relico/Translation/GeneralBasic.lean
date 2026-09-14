@@ -103,7 +103,7 @@ name at each of the four sites that have to agree on it.
 The address is `GeneralBodyKey` plus the statement's 0-based position in its body's statement
 list — a position, *not* a count of the sends before it, so the indices that name send sites
 are sparse and no `cons` lemma acquires an arithmetic side condition.
-`docs/STAGE_E_DESIGN.md` §4.1 says instead that the index *"counts external sends only"*;
+design doc §4.1 says instead that the index *"counts external sends only"*;
 §7.1, which is the section that fixes the interface, says position; the code follows §7.1 and
 the divergence is recorded here because §4.1 is the more quotable of the two. Both readings
 agree on every body with at most one external send, which is every fixture inherited from
@@ -285,7 +285,7 @@ names an expression mentions and places no restriction on the expression itself,
 LF side's `exprWellFormed` is deliberately name-resolution only, so a type check
 inserted here would refuse programs this repository's own frontend accepts. That is the
 trap that ruled out restricting the translation's domain instead of widening the target,
-recorded in `docs/STAGE_D_DESIGN.md` §3.
+recorded in design doc §3.
 -/
 def compileGeneralExpr :
     DTR.GeneralExpr →
@@ -620,7 +620,7 @@ Stage D kept a family of six executable `Bool` predicates here — `generalStmtS
 `generalClassesSelfSendOnly` and `generalModelSelfSendOnly` — and §9.3 of its design pinned
 the refusal surface with an `iff` between the last of them and acceptance by this file. Stage
 E deletes all six, along with the proof chain at the end of this file that related them to
-compilation. `docs/STAGE_E_DESIGN.md` §10.1 lists every deleted name.
+compilation. design doc §10.1 lists every deleted name.
 
 The deletion gets a paragraph because weakening was available and would have been worse. The
 predicates remain definable and one direction of the `iff` remains provable, so a reader may
@@ -951,7 +951,7 @@ theorem compileGeneralBody_nil
 /-!
 ### The `cons` equation, split by outcome
 
-`docs/STAGE_D_DESIGN.md` §9.1 asks for one `cons` equation stated in terms of
+design doc §9.1 asks for one `cons` equation stated in terms of
 `compileGeneralStmt`. Stating it that way puts a `match` inside a theorem statement, and a
 `match` written in a statement elaborates to a *fresh* matcher constant; the proof then
 rests on that constant agreeing definitionally with the one inside the definition, which
@@ -1113,7 +1113,7 @@ never reads `LF.GeneralReaction.priority` — nothing in the emitted Lingua Fran
 it, because the target has no reaction-priority attribute. Local message-server priority is
 realized in LF by reaction *declaration order* instead, the one ordering hook the target
 actually provides, measured rather than assumed. Choosing that order is a sort over the
-message-server list, and it is stage F's level-2 obligation (`docs/STAGE_F_DESIGN.md` §9), not a
+message-server list, and it is stage F's level-2 obligation (design doc §9), not a
 matter of populating this field. A stage that wrote `priority := some n` here would look
 finished, prove nothing, and change no emitted character.
 -/
@@ -1885,7 +1885,7 @@ One class's message servers, in the order the translation walks them: **message-
 order, ties broken by class declaration order**.
 
 This is stage F's level-2 mechanism and the only place it enters reaction construction.
-`docs/STAGE_F_DESIGN.md` §1.1 owes Lemma 2 of the paper an ordering of one actor's reaction
+design doc §1.1 owes Lemma 2 of the paper an ordering of one actor's reaction
 *blocks* by the priority of the message server each block serves. A block is one message server's
 reaction group — its action reactions, then one port reaction per route into it — and
 `compileGeneralMessageServerReactions` emits those groups in the order of the list it is handed.
@@ -2503,7 +2503,7 @@ at all; what those two fixtures establish is that `sendTargetsDeclared` and
 `sendsResolveToMessageServers` reject such a document upstream, which is the reason the first
 and third causes here are unreachable from frontend output — not evidence that these branches
 were taken. The distinction is the whole point of the paragraph in §8 that calls these branches
-defensive. Recorded as finding F47 in `docs/STAGE_E_FINDINGS.md`, together with the measurement
+defensive. Recorded as finding F47 in finding, together with the measurement
 that of the eight refusal causes reachable through `routesOf`, exactly two had their text
 asserted anywhere when the finding was written. All eight are asserted now, in
 `frontend/lean-bridge/GeneralLfPrinterTestMain.lean` and only there, because a hand-built model
@@ -2813,7 +2813,7 @@ theorem assembleGeneralProgram_connections
 ## The output guard
 
 F32's third road, and the reason this section exists rather than a hypothesis on the
-preservation theorem. `docs/STAGE_E_DESIGN.md` §9: the translation decides
+preservation theorem. design doc §9: the translation decides
 `LF.GeneralProgram.wellFormed` **on its own output** and refuses when it is false. That makes
 preservation true with no extra hypothesis and — this is the part that decided it — with no
 DTR-side import, which matters because this module imports DTR *syntax* only and so cannot
@@ -6521,7 +6521,7 @@ proof but the strongest form available: **a construction proof does not exist.**
 
 An earlier version of this docstring said such a proof "would say the routing *cannot* produce
 a repeated target and would therefore let the guard's clause be retired as dead", and deferred
-it behind the site-totality induction below. Finding **F48** in `docs/STAGE_E_FINDINGS.md`
+it behind the site-totality induction below. Finding **F48** in finding
 refutes all three parts, by evaluation rather than by argument. Routing *can* produce a repeated
 target from a model `DTR.GeneralModel.wellFormed` accepts: a class that sends `reportTo` to a
 declared known rebec `hub` and `report` to a declared known rebec `toHub`, instantiated with
@@ -7434,7 +7434,7 @@ The defensive arm at `compileGeneralStmt` — the one whose diagnostic says *"th
 the translator and not in the model"* — is unreachable whenever the environment it is given came
 from `outputPortEnvOf`. This section proves that.
 
-`docs/STAGE_E_DESIGN.md` §8 asks for a sufficient condition for acceptance, and this section does
+design doc §8 asks for a sufficient condition for acceptance, and this section does
 **not** deliver it. What it delivers is *totality*: **given a resolved environment, compiling a
 reactive class cannot fail at all.** The two are incomparable rather than ordered, and an earlier
 version of this docstring claimed the second bought more than §8 asked for, which is false in both
@@ -9443,7 +9443,7 @@ private theorem compileGeneralBody_setPortNames_provenance
 sites of one body distinct output port names, **then** no compiled reaction body sets one
 output port twice.
 
-`docs/STAGE_E_DESIGN.md` §10.2 asks for the unconditional sentence — *"no reaction of an
+design doc §10.2 asks for the unconditional sentence — *"no reaction of an
 emitted reactor sets one output port twice"* — and argues it *"follows from the site being an
 address (§7.1): two `setPort`s in one compiled body come from two statements at two indices of
 one body, so their sites differ, so `outputPortEnvOf` gave them different port names **or
@@ -10044,7 +10044,7 @@ theorem compileGeneralBody_setPortNames_nodup
 /-!
 ## §8 revisited: where each refusal lives
 
-`docs/STAGE_E_DESIGN.md` §8 asks, as its second owed statement, for a decidable predicate over DTR
+design doc §8 asks, as its second owed statement, for a decidable predicate over DTR
 models that implies acceptance. That statement is **false as worded**, and the empty model refutes
 it, which is finding **F52**: `⟨[], []⟩` satisfies all three conjuncts §8 names and is still
 refused, because the guard requires a reactor and an instance.
@@ -10171,7 +10171,7 @@ theorem compileGeneralReactiveClasses_ok_env
 /--
 Acceptance, factored: routing, resolution, guard — and nothing in between.
 
-The theorem `docs/STAGE_E_DESIGN.md` §8 should have asked for, in place of the predicate finding F52
+The theorem design doc §8 should have asked for, in place of the predicate finding F52
 refutes. Read left to right it localises every refusal `compileGeneralModel` can produce to one of
 two sites: either `routesOf` refused, or some class's `outputPortEnvOf` refused, or the assembled
 program failed the guard. Read right to left it says those three are jointly sufficient.
@@ -10296,7 +10296,7 @@ theorem compileGeneralModel_ok_iff
 /-!
 ## Instance-declaration order
 
-`docs/STAGE_E_DESIGN.md` §10.2's fourth owed item, composite half. The routing half is
+design doc §10.2's fourth owed item, composite half. The routing half is
 `routesOf_split` in `Relico/Translation/GeneralRouting.lean`; what this section adds is the step
 from a split routing table to a split group of reactions, and the statement that puts the two
 together.
@@ -10341,7 +10341,7 @@ theorem assembleGeneralPortReactions_append
 A receiver's port reactions for one message server appear in the order the translation walks the main
 block, which since stage F is **actor-priority order, ties broken by main-block declaration order**.
 
-`docs/STAGE_E_DESIGN.md` §10.2 owes this statement explicitly, and this is it. Read the hypothesis
+design doc §10.2 owes this statement explicitly, and this is it. Read the hypothesis
 `priorityOrderedInstances model = earlier ++ later` as a cut anywhere in the walked instance list: the
 first conjunct says the routing table splits at that cut, the second says the group of port reactions
 for any one message server splits at the same point. Together they say that every reaction owed to an
@@ -10354,7 +10354,7 @@ previously read `model.instances = earlier ++ later`, which was the same list wh
 implies a split of the table — a sort does not distribute over an arbitrary append — while a split of
 the walked list does. Conjunct 2 never mentioned a model and was unaffected: it says only that port
 reaction assembly distributes over append, i.e. that it is order-preserving, and it is what makes this
-theorem composable with the sort at all. `docs/STAGE_F_DESIGN.md` §7.1 and §7.2 record the reasoning
+theorem composable with the sort at all. design doc §7.1 and §7.2 record the reasoning
 and the count of declarations that alternative choices would have cost.
 
 **This statement carries the structural half of the priority claim, not the claim itself.** The
@@ -10455,7 +10455,7 @@ which is the only honest form available.
 
 Unconditionally the claim is false, and the obvious route to it is closed. A port trigger is
 `.inputPort (generalInputPortOfRoute route)`, and `generalInputPortOfRoute` is
-`inputPortNameFor route.senderInstance route.outputPort`, which F42 (`docs/STAGE_E_FINDINGS.md`)
+`inputPortNameFor route.senderInstance route.outputPort`, which F42 (finding)
 measured to be **not injective**: `capitalizeName` folds case, so senders `hub` and `Hub` name one
 input port, and both spellings are legal Rebeca. What makes the emitted triggers distinct is
 therefore not the naming function but the guard — `LF.GeneralReactor.declaredNames` carries the input

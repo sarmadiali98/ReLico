@@ -1327,7 +1327,7 @@ have to travel from one bag to the whole store — and the store's minimum is fo
 over a different shape. `earliestFutureArrival` filters messages and keeps a running
 best; `earliestFutureArrivalOf` combines two `Option`s per key-value pair, one from
 the head bag and one from the tail store. Neither the statements nor the proofs
-transfer by renaming, which is why §13 of `docs/STAGE_G_DESIGN.md` makes this row 7's
+transfer by renaming, which is why §13 of design doc makes this row 7's
 work rather than part of the F74 repair that introduced the definition.
 
 Soundness produces *three* witnesses here instead of one — an actor name, that

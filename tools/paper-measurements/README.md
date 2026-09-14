@@ -1,9 +1,8 @@
 # Measurement scripts behind the paper-corrections ledger
 
 These three scripts produced the measured numbers cited in
-[`docs/PAPER_CORRECTIONS.md`](../../docs/PAPER_CORRECTIONS.md) and in
-[`docs/dtr-fragment/PAPER_FRAGMENT_RESTRICTIONS.md`](../../docs/dtr-fragment/PAPER_FRAGMENT_RESTRICTIONS.md).
-They live in git so that every claim in the ledger is reproducible rather than asserted. They were
+the artifact documentation and measurement records.
+They are included in the artifact so that reported measurements can be reproduced. They were
 previously kept in gitignored `tmp/`, which meant a single `rm -rf tmp` would have left the ledger
 citing evidence nobody could regenerate.
 
@@ -55,7 +54,7 @@ which is a channel LF does not model: the language fixes port values and reactor
 interleaving of raw target-language statements. Where a probe's question is "does this compile" or "does
 this value survive", that does not matter. Where the question is about **order**, it matters entirely —
 such a probe measures `reactor-cpp` at one version, not the language, and cannot license a theorem. See
-**F77** in [`../../docs/STAGE_G_FINDINGS.md`](../../docs/STAGE_G_FINDINGS.md), which was written after
+**F77** in the design documentation, which was written after
 section 16 produced nine order measurements of which exactly one is citable. The rule it lands on: name
 the construct of the specification the observed quantity is meant to follow from, before reading the
 output.
