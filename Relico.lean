@@ -665,6 +665,7 @@ import Relico.Correctness.GeneralObservable
 import Relico.Correctness.GeneralTraceTransfer
 import Relico.Correctness.GeneralLabelWeakBisimulation
 import Relico.Correctness.WeakBisimulationTrace
+import Relico.Correctness.GeneralConsumeAnswer
 
 import Relico.LF.GeneralKindOrigin
 
