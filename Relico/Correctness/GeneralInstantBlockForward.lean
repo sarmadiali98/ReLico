@@ -18,7 +18,7 @@ Two things are already proved and are used unchanged:
   α′ question.
 
 That residue is why this module's `.consume` answer is a **premise** rather than a construction. It is
-quantified over the block's own steps — `hConsumeAnswer` below — in exactly the shape the core lemma
+quantified over the block's own steps — `hConsumeResidue` below — in exactly the shape the core lemma
 produces, so a caller who can supply representatives discharges it by applying the core lemma once per
 occurrence and nothing else. Faking it here, by picking a representative or by promoting one with an
 exact-tag quotient, would silently claim the frozen question was settled.
@@ -57,6 +57,8 @@ clause.
 -/
 import Relico.Correctness.GeneralInstantBlock
 import Relico.Correctness.GeneralStatementForward
+import Relico.Correctness.GeneralConsumeAnswer
+import Relico.DTR.GeneralNoOverdue
 
 set_option autoImplicit false
 
@@ -461,6 +463,161 @@ theorem generalReactorIdle_of_actorIdle
 
   rfl
 
+theorem generalPairedReactorLookup_of_take
+    {model : DTR.GeneralModel}
+    {config : DTR.GeneralRuntimeConfiguration}
+    {state : LF.GeneralRuntimeState}
+    {actorName : ActorName}
+    {actor : DTR.GeneralActorRuntime}
+    (hCorrespondence :
+      GeneralStateCorrespondence
+        model
+        config
+        state)
+    (hUniqueT :
+      LF.GeneralStoreKeyUnique state)
+    (hActor :
+      Store.lookup config.actors actorName =
+        some actor)
+    (hIdle :
+      actor.idle = true) :
+    ∃ (env : Translation.GeneralOutputPortEnv)
+      (reactor : LF.GeneralReactorRuntime),
+      outputPortEnvOfActorName model actorName = some env ∧
+        Store.lookup state.reactors actorName =
+          some reactor ∧
+          (actorName, reactor) ∈ state.reactors ∧
+          GeneralActorCorresponds
+            env
+            actorName
+            actor
+            reactor
+            state.pending ∧
+          reactor.idle = true := by
+
+  obtain ⟨env, reactorRT, hEnv, hReactorMem, hPaired⟩ :=
+    hCorrespondence.reactorOfActor
+      actorName
+      actor
+      (Store.mem_of_lookup
+        config.actors
+        actorName
+        actor
+        hActor)
+
+  exact
+    ⟨env,
+     reactorRT,
+     hEnv,
+     Store.lookup_of_mem_of_keysUnique
+       state.reactors
+       hUniqueT
+       hReactorMem,
+     hReactorMem,
+     hPaired,
+     generalReactorIdle_of_actorIdle
+       hPaired
+       hIdle⟩
+
+theorem generalConsumeMatch_of_take
+    {model : DTR.GeneralModel}
+    {config : DTR.GeneralRuntimeConfiguration}
+    {state : LF.GeneralRuntimeState}
+    {actorName : ActorName}
+    {actor : DTR.GeneralActorRuntime}
+    {message : DTR.GeneralMessage}
+    {earlier later : DTR.GeneralMessageBag}
+    (hCorrespondence :
+      GeneralStateCorrespondence model config state)
+    (hActor :
+      Store.lookup config.actors actorName = some actor)
+    (hDue :
+      actor.state.bag = earlier ++ message :: later) :
+    ∃ event ∈ state.pending,
+      GeneralConsumeMatch actorName message event := by
+
+  obtain ⟨env, reactor, hEnv, hReactor, hPaired⟩ :=
+    hCorrespondence.reactorOfActor
+      actorName
+      actor
+      (Store.mem_of_lookup config.actors actorName actor hActor)
+
+  have hMessage : message ∈ actor.state.bag := by
+    rw [hDue]
+    simp
+
+  obtain ⟨pairs, hPairs, hBagPerm, hQueuePerm⟩ :=
+    hPaired.messages
+
+  obtain ⟨pair, hPairMember, hPairFst⟩ :=
+    List.mem_map.mp
+      (hBagPerm.mem_iff.mp hMessage)
+
+  have hEventMember : pair.2 ∈ state.pending :=
+    (List.mem_filter.mp
+      (hQueuePerm.mem_iff.mpr
+        (List.mem_map.mpr
+          ⟨pair, hPairMember, rfl⟩))).left
+
+  refine ⟨pair.2, hEventMember, ?_⟩
+  rw [← hPairFst]
+  exact hPairs pair hPairMember
+
+theorem generalConsumeEventTime_of_take
+    {model : DTR.GeneralModel}
+    {config : DTR.GeneralRuntimeConfiguration}
+    {state : LF.GeneralRuntimeState}
+    {actorName : ActorName}
+    {actor : DTR.GeneralActorRuntime}
+    {selected : DTR.GlobalMultiStorePayloadActorPriority.ReadyActor}
+    {message : DTR.GeneralMessage}
+    {earlier later : DTR.GeneralMessageBag}
+    {event : LF.GeneralPendingEvent}
+    (hCorrespondence :
+      GeneralStateCorrespondence model config state)
+    (hNoOverdue :
+      DTR.GeneralNoOverdue config)
+    (hSelected :
+      DTR.GeneralActorSelection.selectedActor model config.erase =
+        some selected)
+    (hName :
+      selected.actorName = actorName)
+    (hActor :
+      Store.lookup config.actors actorName = some actor)
+    (hDue :
+      actor.state.bag = earlier ++ message :: later)
+    (hArrival :
+      message.arrival = selected.logicalTime)
+    (hMatch :
+      GeneralConsumeMatch actorName message event) :
+    event.tag.time = state.currentTag.time := by
+
+  exact
+    hMatch.2.1.trans
+      ((DTR.generalNoOverdue_arrival_of_take
+        hNoOverdue
+        hSelected
+        hName
+        hActor
+        hDue
+        hArrival).trans hCorrespondence.logicalTime.symm)
+
+theorem generalConsumeQueueSplit_of_earliestPendingEvent
+    {before : LF.GeneralRuntimeState}
+    {event : LF.GeneralPendingEvent}
+    (hEarliest :
+      LF.GeneralRuntimeState.earliestPendingEvent? before =
+        some event) :
+    ∃ earlier later : LF.GeneralEventQueue,
+      before.pending = earlier ++ event :: later := by
+
+  exact
+    List.append_of_mem
+      (LF.GeneralRuntimeState.earliestPendingEvent?_mem
+        before
+        event
+        hEarliest)
+
 /--
 **Every pending target event is strictly future when the source has no ready actor.**
 
@@ -610,15 +767,17 @@ proof uses: every label of the block is a `.consume`. It is what refutes `Common
 induction, so a τ label cannot enter the block and quietly vanish from the projected trace. The
 arrival-time half of that conjunct is not needed here and is not asked for.
 
-**`hConsumeAnswer` is the α′ residue, quantified over the block's own steps.** Its shape is exactly what
-`generalConsume_forward_weak_of_fireRepresentative` produces, so a caller discharges it by applying that
-core lemma once per occurrence: given a corresponding pair with both stores key-unique and a source
-`.consume` step, it returns the fired event, the target's weak step at that event's own label, the match,
-the post-state correspondence, and the target invariant re-established. The last of those is included
-because it **cannot** be propagated: the answer's weak step is a modulo step, and transporting key
-uniqueness across α is unsound. The representative package that the core lemma takes as a premise is
-therefore still a premise here — this theorem composes the block, it does not settle the frozen α′
-question.
+**`hConsumeResidue` is the α′ residue, quantified over the block's own steps.** Given a corresponding
+pair with both stores key-unique and a source `.consume` step, it returns the six explicit residue facts
+this proof still owes: `GeneralNoPastPending`, `GeneralKindOrigin`, the arrival-equals-`now` fact,
+`UniqueDueAtSelected`, the front-same-tag clause, and the server-name clause (the last two guarded by
+`GeneralConsumeMatch`). `generalConsumeAnswer` consumes those six and builds the visible consume — the
+fired event, the target's weak step at that event's own label, the match, the post-state correspondence,
+and the target invariant re-established. That invariant re-establishment is produced there rather than
+propagated, because it **cannot** be propagated: the answer's weak step is a modulo step, and
+transporting key uniqueness across α is unsound. The representative package feeding
+`generalConsume_forward_weak_of_fireRepresentative` therefore still lives behind `generalConsumeAnswer` —
+this theorem composes the block, it does not settle the frozen α′ question.
 
 **`generalConsumeBlockMatch` is produced, not consumed, and this does not settle F27.** The match is
 built for the occurrence list this transfer constructs, which follows the source's own order. F27 asks
@@ -661,7 +820,9 @@ theorem generalInstantBlock_forward
         (fun candidate =>
           candidate.name)
         model.instances).Nodup)
-    (hConsumeAnswer :
+    (hModelWellFormed :
+      model.wellFormed = true)
+    (hConsumeResidue :
       ∀ (stepConfig stepConfig' : DTR.GeneralRuntimeConfiguration)
         (stepState : LF.GeneralRuntimeState)
         (receiver : ActorName)
@@ -679,25 +840,41 @@ theorem generalInstantBlock_forward
             receiver
             message)
           stepConfig' →
-        ∃ (stepState' : LF.GeneralRuntimeState)
-          (event : LF.GeneralPendingEvent),
-          Common.WeakStep
-              (LF.GeneralStepModulo program)
-              LF.GeneralLabel.isTau
-              stepState
-              (LF.GeneralLabel.consume
+        LF.GeneralNoPastPending stepState ∧
+          LF.GeneralKindOrigin
+            model
+            program
+            routes
+            stepState ∧
+          message.arrival = stepConfig.now ∧
+          DTR.GeneralActorSelection.UniqueDueAtSelected
+            stepConfig.erase
+            {
+              actorName := receiver
+              logicalTime := stepConfig.now
+            } ∧
+          (∀ (front back : LF.GeneralEventQueue)
+            (event : LF.GeneralPendingEvent),
+            stepState.pending = front ++ event :: back →
+            GeneralConsumeMatch receiver message event →
+            event.tag = stepState.currentTag ∧
+              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+          (∀ (event : LF.GeneralPendingEvent)
+            (reaction : LF.GeneralReaction)
+            (reactiveClass : DTR.GeneralReactiveClass)
+            (serverK : DTR.GeneralMessageServer),
+            event ∈ stepState.pending →
+            GeneralConsumeMatch receiver message event →
+            program.reactionFor?
                 event.target
-                event.kind)
-              stepState' ∧
-            GeneralConsumeMatch
-              receiver
-              message
-              event ∧
-            GeneralStateCorrespondence
-              model
-              stepConfig'
-              stepState' ∧
-            LF.GeneralStoreKeyUnique stepState')
+                event.kind =
+              some reaction →
+            reactiveClass ∈ model.classes →
+            serverK ∈ reactiveClass.messageServers →
+            reaction.parameters =
+              serverK.parameters.map
+                (fun parameter => parameter.name) →
+            serverK.name = message.messageName))
     (hCorrespondence :
       GeneralStateCorrespondence
         model
@@ -794,15 +971,15 @@ theorem generalInstantBlock_forward
               hUniqueT
               hRawPrefix
 
-          -- The visible consume, by the answer premise.
+          -- The genuine α′ residue for this step, supplied by the caller.
           obtain
-              ⟨stateAfter,
-               event,
-               hAnswerStep,
-               hAnswerMatch,
-               hCorrespondenceAfter,
-               hUniqueTAfter⟩ :=
-            hConsumeAnswer
+              ⟨hResNoPast,
+               hResOrigin,
+               hResArrival,
+               hResUniqueDue,
+               hResFrontSameTag,
+               hResServerName⟩ :=
+            hConsumeResidue
               _
               _
               stateBefore
@@ -812,6 +989,30 @@ theorem generalInstantBlock_forward
               hUniqueSBefore
               hUniqueTBefore
               hTakeStep
+
+          -- The visible consume, built from the residue by `generalConsumeAnswer`.
+          obtain
+              ⟨stateAfter,
+               event,
+               hAnswerStep,
+               hAnswerMatch,
+               hCorrespondenceAfter,
+               hUniqueTAfter⟩ :=
+            generalConsumeAnswer
+              hModelWellFormed
+              hCompiled
+              hEnvNodup
+              hNames
+              hCorrespondenceBefore
+              hUniqueSBefore
+              hUniqueTBefore
+              hTakeStep
+              hResNoPast
+              hResOrigin
+              hResArrival
+              hResUniqueDue
+              hResFrontSameTag
+              hResServerName
 
           have hUniqueSAfter :
               DTR.GeneralStoreKeyUnique _ :=
@@ -900,7 +1101,7 @@ direction's readiness layer made that obvious.
 
 **What actually blocks a full `generalInstantBlock_target` is the spine's data, not its endpoint.**
 `GeneralInstantBlockSpine`'s `consume` constructor carries `LF.GeneralStep.fire`'s six premises at an
-α-representative, while this theorem's `hConsumeAnswer` returns a `Common.WeakStep` — a `Prop` that says a
+α-representative, while this theorem's `hConsumeResidue` returns a `Common.WeakStep` — a `Prop` that says a
 transition exists and records neither which event fired nor at which representative.
 `GeneralInstantBlockSpine.weakSteps` runs spine to execution and has no converse for exactly that reason.
 Closing the gap means **strengthening the answer premise to return the spine entry**, not proving another
@@ -939,7 +1140,9 @@ theorem generalInstantBlock_forward_of_source
         (fun candidate =>
           candidate.name)
         model.instances).Nodup)
-    (hConsumeAnswer :
+    (hModelWellFormed :
+      model.wellFormed = true)
+    (hConsumeResidue :
       ∀ (stepConfig stepConfig' : DTR.GeneralRuntimeConfiguration)
         (stepState : LF.GeneralRuntimeState)
         (receiver : ActorName)
@@ -957,25 +1160,41 @@ theorem generalInstantBlock_forward_of_source
             receiver
             message)
           stepConfig' →
-        ∃ (stepState' : LF.GeneralRuntimeState)
-          (event : LF.GeneralPendingEvent),
-          Common.WeakStep
-              (LF.GeneralStepModulo program)
-              LF.GeneralLabel.isTau
-              stepState
-              (LF.GeneralLabel.consume
+        LF.GeneralNoPastPending stepState ∧
+          LF.GeneralKindOrigin
+            model
+            program
+            routes
+            stepState ∧
+          message.arrival = stepConfig.now ∧
+          DTR.GeneralActorSelection.UniqueDueAtSelected
+            stepConfig.erase
+            {
+              actorName := receiver
+              logicalTime := stepConfig.now
+            } ∧
+          (∀ (front back : LF.GeneralEventQueue)
+            (event : LF.GeneralPendingEvent),
+            stepState.pending = front ++ event :: back →
+            GeneralConsumeMatch receiver message event →
+            event.tag = stepState.currentTag ∧
+              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+          (∀ (event : LF.GeneralPendingEvent)
+            (reaction : LF.GeneralReaction)
+            (reactiveClass : DTR.GeneralReactiveClass)
+            (serverK : DTR.GeneralMessageServer),
+            event ∈ stepState.pending →
+            GeneralConsumeMatch receiver message event →
+            program.reactionFor?
                 event.target
-                event.kind)
-              stepState' ∧
-            GeneralConsumeMatch
-              receiver
-              message
-              event ∧
-            GeneralStateCorrespondence
-              model
-              stepConfig'
-              stepState' ∧
-            LF.GeneralStoreKeyUnique stepState')
+                event.kind =
+              some reaction →
+            reactiveClass ∈ model.classes →
+            serverK ∈ reactiveClass.messageServers →
+            reaction.parameters =
+              serverK.parameters.map
+                (fun parameter => parameter.name) →
+            serverK.name = message.messageName))
     (hCorrespondence :
       GeneralStateCorrespondence
         model
@@ -1018,7 +1237,8 @@ theorem generalInstantBlock_forward_of_source
       hRoutes
       hEnvNodup
       hNames
-      hConsumeAnswer
+      hModelWellFormed
+      hConsumeResidue
       hCorrespondence
       hUniqueS
       hUniqueT
