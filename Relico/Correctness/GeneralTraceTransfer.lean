@@ -95,6 +95,150 @@ private theorem generalStoreKeyUnique_of_sourceTauStepsLocal
             headStep)
 
 /--
+A weak step absorbs a τ closure on its left.
+
+`Common.TauSteps.trans` concatenates the closures. The middle step's own `tau` alternative is harmless: a
+τ-labelled weak step is carried by the constructor whatever the label index says, and the concatenation is
+still the right splice.
+-/
+private theorem weakStep_prependTauLocal
+    {State : Type}
+    {Label : Type}
+    {step : Common.LabeledTransition State Label}
+    {isTau : Label → Prop}
+    {source middle target : State}
+    {label : Label}
+    (hPrefix :
+      Common.TauSteps
+        step
+        isTau
+        source
+        middle)
+    (hStep :
+      Common.WeakStep
+        step
+        isTau
+        middle
+        label
+        target) :
+    Common.WeakStep
+      step
+      isTau
+      source
+      label
+      target := by
+
+  cases hStep with
+
+  | tau hTau hSteps =>
+      exact
+        Common.WeakStep.tau
+          hTau
+          (Common.TauSteps.trans
+            hPrefix
+            hSteps)
+
+  | visible hVisible hInner hRaw hSuffix =>
+      exact
+        Common.WeakStep.visible
+          hVisible
+          (Common.TauSteps.trans
+            hPrefix
+            hInner)
+          hRaw
+          hSuffix
+
+/--
+A weak step absorbs a τ closure on its right.
+-/
+private theorem weakStep_appendTauLocal
+    {State : Type}
+    {Label : Type}
+    {step : Common.LabeledTransition State Label}
+    {isTau : Label → Prop}
+    {source middle target : State}
+    {label : Label}
+    (hStep :
+      Common.WeakStep
+        step
+        isTau
+        source
+        label
+        middle)
+    (hSuffix :
+      Common.TauSteps
+        step
+        isTau
+        middle
+        target) :
+    Common.WeakStep
+      step
+      isTau
+      source
+      label
+      target := by
+
+  cases hStep with
+
+  | tau hTau hSteps =>
+      exact
+        Common.WeakStep.tau
+          hTau
+          (Common.TauSteps.trans
+            hSteps
+            hSuffix)
+
+  | visible hVisible hPrefix hRaw hInner =>
+      exact
+        Common.WeakStep.visible
+          hVisible
+          hPrefix
+          hRaw
+          (Common.TauSteps.trans
+            hInner
+            hSuffix)
+
+/--
+A weak step at an internal label is its τ closure.
+
+The `visible` alternative is refuted by the label's own τ-ness: the constructor's first field contradicts
+it. This is what lets a τ answer's weak step be spliced as a raw closure rather than nested as a weak step.
+-/
+private theorem weakStep_tauSteps_of_tauLabelLocal
+    {State : Type}
+    {Label : Type}
+    {step : Common.LabeledTransition State Label}
+    {isTau : Label → Prop}
+    {source target : State}
+    {label : Label}
+    (hTau :
+      isTau label)
+    (hStep :
+      Common.WeakStep
+        step
+        isTau
+        source
+        label
+        target) :
+    Common.TauSteps
+      step
+      isTau
+      source
+      target := by
+
+  cases hStep with
+
+  | tau _ hSteps =>
+      exact
+        hSteps
+
+  | visible hVisible _ _ _ =>
+      exact
+        absurd
+          hTau
+          hVisible
+
+/--
 A visible weak step absorbs a τ closure on either end.
 
 The splice each visible case performs: the source's own weak step pads its visible step with τ segments, the
@@ -822,9 +966,13 @@ re-established and the two labels observing the same thing. This is
 
 **Three cases, two reused, one a premise.**
 
-* **`.consume`** — `hConsumeAnswer`, whose shape is exactly
-  `generalConsume_backward_weakStep_of_takeRepresentative`'s conclusion. A caller discharges it by applying
-  that theorem, supplying its `hName` per-step actor agreement. Unchanged from what landed.
+* **`.consume`** — `hConsumeResidue`, the **per-segment** residue: one `LF.GeneralStepModulo` consume segment
+  at a time, with the τ padding around it answered here by threading `hTauAnswer`. A caller discharges it per
+  occurrence by `generalConsumeBackwardAnswer`, which applies
+  `generalConsume_backward_weakStep_of_takeRepresentative` to the occurrence's take package and upgrades the
+  conclusion to the full relation at the occurrence's canonical endpoint — supplying `hName`, the per-step
+  actor agreement, on the way. The α-freedom sits inside the segment, which is exactly where the caller's
+  own representative choice put it; no modulo step is inverted.
 * **`.timeAdvance`** — `hTimeAnswer`, whose shape is exactly `generalTimeAdvance_backward_weak`'s
   conclusion. Also a premise rather than an inlined application, and for a reason worth stating: that
   theorem is proved against `LF.GeneralStep`, while this transfer is handed an `LF.GeneralStepModulo` step.
@@ -857,8 +1005,8 @@ store-key invariants are threaded. The τ premise's observation obligation close
 `ofTargetLabel_eq_none_iff_isTau` and `ofSourceLabel_eq_none_iff_isTau` together — a target τ step must be
 answered by a source label that is *also* internal, which the premise's own `isTau` conclusion supplies.
 
-No theorem shape changed, `hConsumeAnswer` unchanged, `GeneralInstantBlock` untouched, no runtime field, no
-F27 change.
+The consume premise is now the per-segment residue `hConsumeResidue`; `GeneralInstantBlock` untouched, no
+runtime field, no F27 change.
 -/
 theorem generalTraceTransfer_backward
     {model : DTR.GeneralModel}
@@ -891,23 +1039,22 @@ theorem generalTraceTransfer_backward
               model
               stepConfig'
               stepState')
-    (hConsumeAnswer :
+    (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
+        (before after : LF.GeneralRuntimeState)
         (target : ActorName)
         (kind : LF.GeneralEventKind),
         GeneralTraceRelated
           model
           stepConfig
-          stepState →
-        Common.WeakStep
-          (LF.GeneralStepModulo program)
-          LF.GeneralLabel.isTau
-          stepState
+          before →
+        LF.GeneralStepModulo
+          program
+          before
           (LF.GeneralLabel.consume
             target
             kind)
-          stepState' →
+          after →
         ∃ (message : DTR.GeneralMessage)
           (stepConfig' : DTR.GeneralRuntimeConfiguration),
           Common.WeakStep
@@ -921,7 +1068,7 @@ theorem generalTraceTransfer_backward
             GeneralTraceRelated
               model
               stepConfig'
-              stepState')
+              after)
     (hTimeAnswer :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (stepState stepState' : LF.GeneralRuntimeState)
@@ -1039,24 +1186,343 @@ theorem generalTraceTransfer_backward
 
   | consume target kind =>
 
-      obtain ⟨message, config', hSourceStep, hSourceRelated⟩ :=
-        hConsumeAnswer
-          config
-          state
-          state'
-          target
-          kind
-          hRelated
-          hStep
+      -- The weak step's own decomposition: a τ prefix, the single consume segment, a τ suffix. The τ
+      -- padding is answered by `hTauAnswer` on both sides of the segment, so the residue premise only
+      -- carries one consume segment at a time — the caller's own representative choice sits inside it.
+      cases hStep with
 
-      exact
-        ⟨DTR.GeneralLabel.consume
-           target
-           message,
-         config',
-         hSourceStep,
-         hSourceRelated,
-         rfl⟩
+      | tau hTau _ =>
+          exact
+            absurd
+              hTau
+              (LF.GeneralLabel.not_isTau_consume
+                target
+                kind)
+
+      | visible _hVisible hPrefix hSegment hSuffix =>
+          rename_i segmentBefore segmentAfter
+
+          -- The τ prefix, answered; the relation re-establishes at the segment's source.
+          obtain ⟨_, configPrefix, hPrefixTau, hPrefixStep, hRelatedBefore⟩ :=
+            hTauAnswer
+              config
+              state
+              segmentBefore
+              LF.GeneralLabel.tau
+              hRelated
+              LF.GeneralLabel.isTau_tau
+              (Common.WeakStep.of_tauSteps
+                LF.GeneralLabel.isTau_tau
+                hPrefix)
+
+          -- The segment's residue: the source consume answering the target's own consume segment.
+          obtain ⟨message, configConsume, hConsumeStep, hRelatedAfter⟩ :=
+            hConsumeResidue
+              configPrefix
+              segmentBefore
+              segmentAfter
+              target
+              kind
+              hRelatedBefore
+              hSegment
+
+          -- The τ suffix, answered the same way.
+          obtain ⟨_, configFinal, hSuffixTau, hSuffixStep, hRelatedFinal⟩ :=
+            hTauAnswer
+              configConsume
+              segmentAfter
+              state'
+              LF.GeneralLabel.tau
+              hRelatedAfter
+              LF.GeneralLabel.isTau_tau
+              (Common.WeakStep.of_tauSteps
+                LF.GeneralLabel.isTau_tau
+                hSuffix)
+
+          -- Both τ answers are τ-labelled, so each is a raw closure and the three pieces splice into
+          -- one weak step at the consume label.
+          have hPrefixTauSteps :=
+            weakStep_tauSteps_of_tauLabelLocal
+              hPrefixTau
+              hPrefixStep
+
+          have hSuffixTauSteps :=
+            weakStep_tauSteps_of_tauLabelLocal
+              hSuffixTau
+              hSuffixStep
+
+          exact
+            ⟨DTR.GeneralLabel.consume
+               target
+               message,
+             configFinal,
+             weakStep_prependTauLocal
+               hPrefixTauSteps
+               (weakStep_appendTauLocal
+                 hConsumeStep
+                 hSuffixTauSteps),
+             hRelatedFinal,
+             rfl⟩
+
+/--
+**The per-occurrence discharge of the backward `.consume` residue** — the mirror of
+`Correctness.generalConsumeAnswer`.
+
+`generalTraceTransfer_backward`'s `hConsumeResidue` answers one `LF.GeneralStepModulo` consume segment at a
+time. This theorem is what a caller holding a real occurrence applies: it takes the take package the
+occurrence's fire premises supply — the binder list
+`generalConsume_backward_weakStep_of_takeRepresentative` reads, with the τ alignment collapsed to the
+vacuous one — and returns the residue premise's shape at that occurrence's own canonical endpoint.
+
+Three things sit on top of the core theorem, and none of them is new content:
+
+* the relation is upgraded to `GeneralTraceRelated` — the endpoint's `LF.GeneralStoreKeyUnique` comes from
+  `Store.keysUnique_update` over the representative's own invariant, which the caller reads off the
+  representative package's `hBeforeReactors` and their relation at `state`;
+* the answered label is stated at the *target's* receiver: `hMatch`'s own target conjunct and `hTarget` tie
+  `actorName` to it. `hName`, the F76 scheduler-compatibility residue, stays an explicit premise — this
+  theorem does not derive which actor the source selects;
+* the answered endpoint is the core theorem's pinned literal, the same construction the occurrence's raw
+  segment performs. A caller whose segment was built from these premises identifies their `after` with it
+  and instantiates the residue premise at exactly this state.
+
+The τ padding is not this theorem's business: the residue premise is per-segment, and
+`generalTraceTransfer_backward` threads `hTauAnswer` around the segment itself.
+-/
+theorem generalConsumeBackwardAnswer
+    (program : LF.GeneralProgram)
+    (model : DTR.GeneralModel)
+    (config : DTR.GeneralRuntimeConfiguration)
+    (state : LF.GeneralRuntimeState)
+    (hRelated : GeneralTraceRelated model config state)
+    (actorName : ActorName)
+    (actor : DTR.GeneralActorRuntime)
+    (message : DTR.GeneralMessage)
+    (earlier later : DTR.GeneralMessageBag)
+    (hDue :
+      actor.state.bag =
+        earlier ++ message :: later)
+    (server : DTR.GeneralMessageServer)
+    (event : LF.GeneralPendingEvent)
+    (hMatch :
+      GeneralConsumeMatch
+        actorName
+        message
+        event)
+    (hEventTime :
+      event.tag.time =
+        state.currentTag.time)
+    (selected :
+      DTR.GlobalMultiStorePayloadActorPriority.ReadyActor)
+    (hSelected :
+      DTR.GeneralActorSelection.selectedActor
+          model
+          config.erase =
+        some selected)
+    (hName :
+      selected.actorName = actorName)
+    (hActor :
+      Store.lookup config.actors actorName =
+        some actor)
+    (hIdle :
+      actor.idle = true)
+    (hArrival :
+      message.arrival = selected.logicalTime)
+    (hServer :
+      DTR.GeneralModel.messageServerFor?
+          model
+          actorName
+          message.messageName =
+        some server)
+    (before : LF.GeneralRuntimeState)
+    (hAlpha :
+      LF.generalStateAlphaEquiv
+        before
+        state)
+    (hEarliest :
+      LF.GeneralRuntimeState.earliestPendingEvent?
+          before =
+        some event)
+    (hTagAligned :
+      event.tag = before.currentTag)
+    (earlier' later' : LF.GeneralEventQueue)
+    (hQueue :
+      before.pending =
+        earlier' ++ event :: later')
+    (reactorRT : LF.GeneralReactorRuntime)
+    (hUniqueT :
+      before.reactors.filter
+          (fun entry =>
+            decide (entry.1 = event.target)) =
+        [(event.target, reactorRT)])
+    (hReactorBefore :
+      Store.lookup
+          before.reactors
+          event.target =
+        some reactorRT)
+    (hIdleRT :
+      reactorRT.idle = true)
+    (reaction : LF.GeneralReaction)
+    (hReaction :
+      LF.GeneralProgram.reactionFor?
+          program
+          event.target
+          event.kind =
+        some reaction)
+    (hParams :
+      reaction.parameters =
+        server.parameters.map
+          (fun parameter =>
+            parameter.name))
+    (env : Translation.GeneralOutputPortEnv)
+    (hEnv :
+      outputPortEnvOfActorName model actorName =
+        some env)
+    (hBody :
+      GeneralContinuationCompiles
+        env
+        server.body
+        reaction.body)
+    (hPaired :
+      GeneralActorCorresponds
+        env
+        actorName
+        actor
+        reactorRT
+        state.pending)
+    (hUniqueTStore :
+      LF.GeneralStoreKeyUnique before)
+    (target : ActorName)
+    (hTarget :
+      event.target = target) :
+    ∃ config' : DTR.GeneralRuntimeConfiguration,
+      Common.WeakStep
+          (DTR.GeneralStep model)
+          DTR.GeneralLabel.isTau
+          config
+          (DTR.GeneralLabel.consume
+            target
+            message)
+          config' ∧
+        GeneralTraceRelated
+          model
+          config'
+          {
+          currentTag := before.currentTag
+
+          reactors :=
+            Store.update
+              before.reactors
+              event.target
+              {
+              valuation :=
+                LF.bindReactionParameters
+                  reaction.parameters
+                  event.payload
+                  reactorRT.valuation
+
+              activeBody := reaction.body
+              frames := []
+            }
+
+          pending := earlier' ++ later'
+        } := by
+
+  obtain ⟨hCorrespondence, hUniqueSStore, _⟩ :=
+    hRelated
+
+  obtain ⟨hTake, _hTargetStep, hPostCorrespondence, hPostUniqueS⟩ :=
+    generalConsume_backward_weakStep_of_takeRepresentative
+      program
+      model
+      config
+      state
+      hCorrespondence
+      actorName
+      actor
+      message
+      earlier
+      later
+      hDue
+      server
+      event
+      hMatch
+      hEventTime
+      selected
+      hSelected
+      hName
+      hActor
+      hIdle
+      hArrival
+      hServer
+      state
+      (Common.TauSteps.refl state)
+      rfl
+      rfl
+      before
+      hAlpha
+      hEarliest
+      hTagAligned
+      earlier'
+      later'
+      hQueue
+      reactorRT
+      hUniqueT
+      hReactorBefore
+      hIdleRT
+      reaction
+      hReaction
+      hParams
+      env
+      hEnv
+      hBody
+      hUniqueSStore
+      hPaired
+
+  have hActorEq :
+      actorName = target :=
+    (hTarget.symm.trans hMatch.1).symm
+
+  refine
+    ⟨{
+      now := config.now
+
+      actors :=
+        Store.update
+          config.actors
+          actorName
+          {
+            state :=
+              {
+                valuation :=
+                  DTR.bindParameters
+                    server.parameters
+                    message.payload
+                    actor.state.valuation
+
+                bag := earlier ++ later
+              }
+
+            activeBody := server.body
+            frames := []
+          }
+    },
+     ?_,
+     ?_⟩
+
+  · rw [← hActorEq]
+
+    exact
+      hTake
+
+  · refine
+      ⟨hPostCorrespondence,
+       hPostUniqueS,
+       ?_⟩
+
+    exact
+      Store.keysUnique_update
+        hUniqueTStore
 
 /--
 **Backward trace agreement for the general family, with the transfer condition assembled.**
@@ -1067,8 +1533,9 @@ observable-trace story a bisimulation rather than a simulation.
 Three residues rather than the forward direction's one, and the count is the honest measurement: the target
 has five τ constructors against the source's three, `microstepAdvance` has no source counterpart, and the
 quotient has no sound inverse. Each residue is per-step and named. Two of the three have existing theorems
-whose conclusions are exactly their shapes — `generalConsume_backward_weakStep_of_takeRepresentative` and
-`generalTimeAdvance_backward_weak` — so a caller holding raw target steps discharges them directly.
+whose conclusions are exactly their shapes — `generalConsume_backward_weakStep_of_takeRepresentative` (via
+its discharge adapter `generalConsumeBackwardAnswer`) and `generalTimeAdvance_backward_weak` — so a caller
+holding raw target steps discharges them directly.
 -/
 theorem generalTraceAgreement_backward_of_answers
     {model : DTR.GeneralModel}
@@ -1101,23 +1568,22 @@ theorem generalTraceAgreement_backward_of_answers
               model
               stepConfig'
               stepState')
-    (hConsumeAnswer :
+    (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
+        (before after : LF.GeneralRuntimeState)
         (target : ActorName)
         (kind : LF.GeneralEventKind),
         GeneralTraceRelated
           model
           stepConfig
-          stepState →
-        Common.WeakStep
-          (LF.GeneralStepModulo program)
-          LF.GeneralLabel.isTau
-          stepState
+          before →
+        LF.GeneralStepModulo
+          program
+          before
           (LF.GeneralLabel.consume
             target
             kind)
-          stepState' →
+          after →
         ∃ (message : DTR.GeneralMessage)
           (stepConfig' : DTR.GeneralRuntimeConfiguration),
           Common.WeakStep
@@ -1131,7 +1597,7 @@ theorem generalTraceAgreement_backward_of_answers
             GeneralTraceRelated
               model
               stepConfig'
-              stepState')
+              after)
     (hTimeAnswer :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (stepState stepState' : LF.GeneralRuntimeState)
@@ -1198,7 +1664,7 @@ theorem generalTraceAgreement_backward_of_answers
     (GeneralTraceRelated model)
     (generalTraceTransfer_backward
       hTauAnswer
-      hConsumeAnswer
+      hConsumeResidue
       hTimeAnswer)
     hRelated
     hSteps
