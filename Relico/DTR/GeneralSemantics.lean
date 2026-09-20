@@ -762,6 +762,100 @@ inductive GeneralStep
           actors := config.actors
         }
 
+/-!
+## Deterministic take
+
+`take` carries `DTR.GeneralLabel.consume actorName message`. The rule reaches the
+taken message by a bag decomposition rather than from the head, so without help two
+take steps from the same configuration can carry different messages — the source
+nondeterminism flagged at this rule's header (F27). The lemma below closes it:
+under the uniqueness bound `DTR.GeneralActorSelection.UniqueDueAtSelected`, any
+two decompositions of the selected actor's bag whose taken messages both carry the
+selected arrival are the same decomposition, so the `.consume` label and the
+post-state bag are pinned. That is the source-side fact the earliest-event
+condition (`hEarliest`) needs: there is no other same-target same-tag occurrence
+left to take instead.
+-/
+
+/--
+Two `take` decompositions rooted at one configuration, one selected actor, and one
+bag select the same message and the same prefix/suffix. `hArrival` is what ties
+each decomposition to the selected tag; the uniqueness bound is what makes that
+tag host a single message.
+-/
+theorem take_decomposition_unique
+    {_model :
+      DTR.GeneralModel}
+    {config :
+      GeneralRuntimeConfiguration}
+    {actorName :
+      ActorName}
+    {actor :
+      GeneralActorRuntime}
+    {selected :
+      GlobalMultiStorePayloadActorPriority.ReadyActor}
+    {earlier₁ later₁ earlier₂ later₂ :
+      DTR.GeneralMessageBag}
+    {message₁ message₂ :
+      DTR.GeneralMessage}
+    (hName :
+      selected.actorName =
+        actorName)
+    (hActor :
+      Store.lookup
+        config.actors
+        actorName =
+      some actor)
+    (hDue₁ :
+      actor.state.bag =
+        earlier₁ ++
+          message₁ ::
+            later₁)
+    (hArrival₁ :
+      message₁.arrival =
+        selected.logicalTime)
+    (hDue₂ :
+      actor.state.bag =
+        earlier₂ ++
+          message₂ ::
+            later₂)
+    (hArrival₂ :
+      message₂.arrival =
+        selected.logicalTime)
+    (hUnique :
+      DTR.GeneralActorSelection.UniqueDueAtSelected
+        config.erase
+        selected) :
+    message₁ =
+      message₂ ∧
+        earlier₁ =
+          earlier₂ ∧
+            later₁ =
+              later₂ := by
+
+  have hErasedLookup :
+      Store.lookup
+        (config.erase).actors
+        selected.actorName =
+      some actor.state := by
+
+    rw [
+      DTR.GeneralRuntimeConfiguration.erase_actors,
+      eraseContinuations_lookup,
+      hName,
+      hActor
+    ]
+
+    rfl
+
+  exact
+    DTR.GeneralActorSelection.uniqueDue_take_unique
+      hErasedLookup
+      hUnique
+      hDue₁
+      hArrival₁
+      hDue₂
+      hArrival₂
 
 /-!
 ## Inversion
@@ -986,6 +1080,65 @@ theorem GeneralStep.server_of_consume
 
   | take _ _ _ _ _ _ hServer =>
       exact ⟨_, hServer⟩
+
+/--
+The TAKE rule's full result. A consumed message identifies its actor, the split of that actor's bag
+around the message, its idleness, and the message server that fires, and — the part no existing
+`*_of_consume` inversion exposes — pins the post-step configuration to the very record
+`Correctness.generalConsume_forward_weak_of_fireRepresentative` reconstructs.
+
+This is the DTR TAKE inversion the forward `.consume` spine must begin with. The bag split
+`earlier ++ message :: later` is not unique when a message name repeats, so the α-representative
+package cannot take `actor`/`earlier`/`later`/`server` as free premises: it must be fed the *step's*
+own split, and `next` must be pinned from the same split, or the transferred correspondence would be
+about a different configuration than the one the step produced.
+-/
+theorem GeneralStep.result_of_consume
+    {model : DTR.GeneralModel}
+    {config next : GeneralRuntimeConfiguration}
+    {receiver : ActorName}
+    {message : DTR.GeneralMessage}
+    (hStep :
+      GeneralStep
+        model
+        config
+        (DTR.GeneralLabel.consume receiver message)
+        next) :
+    ∃ actor earlier later server,
+      Store.lookup config.actors receiver = some actor ∧
+      actor.state.bag = earlier ++ message :: later ∧
+      actor.idle = true ∧
+      DTR.GeneralModel.messageServerFor?
+          model
+          receiver
+          message.messageName =
+        some server ∧
+      next =
+        {
+          now := config.now
+          actors :=
+            Store.update
+              config.actors
+              receiver
+              {
+                state :=
+                  {
+                    valuation :=
+                      bindParameters
+                        server.parameters
+                        message.payload
+                        actor.state.valuation
+                    bag := earlier ++ later
+                  }
+                activeBody := server.body
+                frames := []
+              }
+        } := by
+
+  cases hStep with
+
+  | take _ _ hActor hIdle hDue _ hServer =>
+      exact ⟨_, _, _, _, hActor, hDue, hIdle, hServer, rfl⟩
 
 /--
 A time advance reports the clock it left as its first label component.

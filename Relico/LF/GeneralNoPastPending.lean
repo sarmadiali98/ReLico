@@ -299,5 +299,151 @@ theorem GeneralStep.consume_event_time
 
       rw [hTag]
 
+/--
+The forward `.consume` queue normalization: a minimal event can be α-moved to the head of a
+representative that then selects it.
+
+Given a `state` whose pending queue splits as `front ++ event :: back`, where
+
+* `event` sits at the current tag (`hTag`), which `GeneralNoPastPending` makes the minimum of
+  every pending tag,
+* every event in `front` shares `event`'s full tag (`hFrontSameTag`) — the caller's
+  tie-blockers, the only events an adjacent same-tag swap may move past, and
+* `event` does not itself occur in `front` (`hEventNotInFront`),
+
+this builds an α-equivalent representative `before` whose queue is `event :: (front ++ back)`
+and whose `earliestPendingEvent?` is exactly `event`.
+
+The `front` block's distinct-target obligation — what `generalQueueSwapStep` needs at each
+exchange — is *derived*, not assumed: a `front` member at `event`'s tag whose target also equalled
+`event`'s would be `event` by `hUniqueSameTag`, contradicting `hEventNotInFront`. So every
+`front` event is a genuine tie-blocker, `generalQueueAlphaEquiv_moveToHead` walks `event` to the
+head, and `selectEarliestEvent_of_all_precedesOrEqual` — fed `event`'s minimality over the whole
+remaining queue via `hNoPast` — shows the head is selected. Larger-tag events (necessarily in
+`back`, never in `front`) cannot displace the minimum, which is exactly the shape that lemma
+consumes.
+
+This is the queue-normalization step behind the forward `.consume` representative package; the
+`hFrontSameTag`/`hEventNotInFront` split is the reachability content the caller discharges (the
+scheduler never seats a strictly-later-tag event between two events of the minimal tag), and it is
+kept a premise here rather than re-proved, matching the strength boundary of the surrounding
+transfer development.
+-/
+theorem generalQueueAlphaEquiv_moveToHead_of_minimal
+    {state : GeneralRuntimeState}
+    (hNoPast :
+      GeneralNoPastPending state)
+    (event : GeneralPendingEvent)
+    (front back : GeneralEventQueue)
+    (hQueue :
+      state.pending = front ++ event :: back)
+    (hTag :
+      event.tag = state.currentTag)
+    (hFrontSameTag :
+      ∀ x ∈ front, x.tag = event.tag)
+    (hEventNotInFront :
+      event ∉ front)
+    (hUniqueSameTag :
+      ∀ e ∈ state.pending,
+        e.tag = event.tag →
+        e.target = event.target →
+        e = event) :
+    ∃ before : GeneralRuntimeState,
+      generalStateAlphaEquiv before state ∧
+        before.pending = event :: (front ++ back) ∧
+          GeneralRuntimeState.earliestPendingEvent? before =
+            some event ∧
+            before.reactors = state.reactors := by
+  -- Every front event has a distinct target: a same-target one at event's tag would be event,
+  -- which hEventNotInFront forbids.
+  have hFrontDistinct :
+      ∀ x ∈ front, x.target ≠ event.target := by
+    intro x hx hxTarget
+
+    apply hEventNotInFront
+
+    have hxMem :
+        x ∈ state.pending := by
+      rw [hQueue]
+
+      exact
+        List.mem_append.mpr
+          (Or.inl hx)
+
+    have hxEvent :
+        x = event :=
+      hUniqueSameTag
+        x
+        hxMem
+        (hFrontSameTag x hx)
+        hxTarget
+
+    rw [hxEvent] at hx
+
+    exact hx
+
+  refine
+    ⟨{
+        currentTag := state.currentTag
+        reactors := state.reactors
+        pending := event :: (front ++ back)
+      },
+     ?_,
+     rfl,
+     ?_,
+     rfl⟩
+
+  · -- α-equivalence to state: tag and store are literally shared; the queues differ by the
+    -- head move.
+    refine
+      ⟨rfl,
+       fun _ _ => Iff.rfl,
+       fun _ => rfl,
+       ?_⟩
+
+    rw [hQueue]
+
+    exact
+      (generalQueueAlphaEquiv_moveToHead
+        event
+        front
+        back
+        hFrontSameTag
+        hFrontDistinct).symm
+
+  · -- The head is selected: event's tag is minimal over the whole remaining queue.
+    rw [
+      GeneralRuntimeState.earliestPendingEvent?_eq_of_cons
+    ]
+
+    refine congrArg some ?_
+
+    refine
+      selectEarliestEvent_of_all_precedesOrEqual
+        event
+        (front ++ back)
+        ?_
+
+    intro e he
+
+    rw [hTag]
+
+    refine hNoPast e ?_
+
+    rw [hQueue]
+
+    rcases List.mem_append.mp he with
+      hFront | hBack
+
+    · exact
+        List.mem_append.mpr
+          (Or.inl hFront)
+
+    · exact
+        List.mem_append.mpr
+          (Or.inr
+            (List.mem_cons.mpr
+              (Or.inr hBack)))
+
 end LF
 end Relico

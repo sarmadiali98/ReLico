@@ -1240,6 +1240,211 @@ theorem mem_externalSendsOfBody_constructor_of_mem_externalSendsOfClass
         · exact innerIH hThere
 
 /--
+A class's external send tagged with a message server's body key came from that server's body.
+-/
+theorem mem_externalSendsOfBody_messageServer_of_mem_externalSendsOfClass
+    {reactiveClass : DTR.GeneralReactiveClass}
+    {send : GeneralExternalSend}
+    (hMember :
+      send ∈
+        externalSendsOfClass
+          reactiveClass)
+    (server : DTR.GeneralMessageServer)
+    (hServer :
+      server ∈
+        reactiveClass.messageServers)
+    (hServerNames :
+      (reactiveClass.messageServers.map
+        (fun server =>
+          server.name)).Nodup)
+    (hBody :
+      send.site.body = .messageServer server.name) :
+    send ∈
+      externalSendsOfBody
+        (.messageServer server.name)
+        server.body := by
+  unfold externalSendsOfClass at hMember
+
+  rcases List.mem_append.mp hMember with
+    hConstructor | hStreams
+
+  · -- The constructor walk tags `.constructor`, contradicting `hBody`.
+    exfalso
+
+    have hSendBody :=
+      externalSendsFromIndex_site_body
+        .constructor
+        []
+        reactiveClass.constructor.body
+        0
+        send
+        hConstructor
+
+    rw [hSendBody] at hBody
+
+    cases hBody
+
+  · -- Walk the message servers looking for `server` itself.
+    revert hServer hServerNames hStreams
+
+    induction reactiveClass.messageServers with
+
+    | nil =>
+        intro hServer hServerNames hStreams
+
+        cases hServer
+
+    | cons srv remaining innerIH =>
+        intro hServer hServerNames hStreams
+
+        unfold externalSendsOfMessageServers at hStreams
+
+        rcases List.mem_append.mp hStreams with
+          hHere | hThere
+
+        · -- Send is in `srv`'s body walk.
+          have hSendBody :=
+            externalSendsFromIndex_site_body
+              (.messageServer srv.name)
+              []
+              srv.body
+              0
+              send
+              hHere
+
+          rw [hSendBody] at hBody
+
+          have hNameEq : srv.name = server.name := by
+            injection hBody
+
+          have hServerHeadOrTail :
+              server = srv ∨
+                server ∈ remaining := by
+            exact List.mem_cons.mp hServer
+
+          cases hServerHeadOrTail with
+
+          | inl hEq =>
+              subst hEq
+
+              exact hHere
+
+          | inr hInTail =>
+              have hCons :
+                  (srv :: remaining).map (fun s => s.name) =
+                    srv.name :: remaining.map (fun s => s.name) := by
+                simp
+
+              rw [hCons] at hServerNames
+
+              have hHeadFresh :
+                  srv.name ∉ remaining.map (fun s => s.name) :=
+                (List.nodup_cons.mp hServerNames).left
+
+              have hServerTailName :
+                  server.name ∈ remaining.map (fun s => s.name) :=
+                List.mem_map_of_mem hInTail
+
+              rw [← hNameEq] at hServerTailName
+
+              exact absurd hServerTailName hHeadFresh
+
+        · -- Send is in remaining's walks: recurse.
+          cases List.mem_cons.mp hServer with
+          | inl hServerHead =>
+
+              -- `server = srv`, but `send` is in `remaining`'s walks.
+              -- By `hBody`, `send.site.body = .messageServer srv.name`.
+              -- By `Nodup`, `srv.name` is not in `remaining.map (·.name)`,
+              -- so sends from `remaining` have a different body key.
+              exfalso
+
+              have hCons2 :
+                  (srv :: remaining).map (fun s => s.name) =
+                    srv.name :: remaining.map (fun s => s.name) := by
+                simp
+
+              rw [hCons2] at hServerNames
+
+              have hHeadFresh :
+                  srv.name ∉ remaining.map (fun s => s.name) :=
+                (List.nodup_cons.mp hServerNames).left
+
+              subst hServerHead
+
+              clear innerIH hServer hServerNames hStreams hCons2
+
+              revert hThere
+
+              induction remaining with
+
+              | nil =>
+                  intro hThere
+
+                  simp [
+                    externalSendsOfMessageServers
+                  ] at hThere
+
+              | cons otherServer further innerIH' =>
+                  intro hThere
+
+                  unfold externalSendsOfMessageServers at hThere
+
+                  rcases List.mem_append.mp hThere with
+                    otherHere | otherThere
+
+                  · have hSendBody :=
+                      externalSendsFromIndex_site_body
+                        (.messageServer otherServer.name)
+                        []
+                        otherServer.body
+                        0
+                        send
+                        otherHere
+
+                    rw [hSendBody] at hBody
+
+                    have hKeyEq :
+                        otherServer.name = server.name := by
+                      injection hBody
+
+                    have hOtherInTail :
+                        otherServer.name ∈
+                          (otherServer :: further).map (fun s => s.name) :=
+                      by simp
+
+                    rw [hKeyEq] at hOtherInTail
+
+                    exact absurd hOtherInTail hHeadFresh
+
+                  · exact innerIH'
+                      (fun hName =>
+                        hHeadFresh (List.mem_cons_of_mem _ hName))
+                      otherThere
+
+          | inr hInTail =>
+              -- `server ∈ remaining`: recurse.
+              have hServerNamesTail :
+                  (remaining.map
+                    (fun s =>
+                      s.name)).Nodup :=
+                by
+                  have hCons :
+                      (srv :: remaining).map (fun s => s.name) =
+                        srv.name :: remaining.map (fun s => s.name) :=
+                    by simp
+
+                  rw [hCons] at hServerNames
+
+                  exact (List.nodup_cons.mp hServerNames).right
+
+              exact
+                innerIH
+                  hInTail
+                  hServerNamesTail
+                  hThere
+
+/--
 **Site injectivity.** Within one walk, a site identifies its send.
 
 Not a claim about routes, ports, or connections — and in particular not a weakening of **F48**, which

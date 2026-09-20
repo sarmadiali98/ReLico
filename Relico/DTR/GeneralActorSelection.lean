@@ -139,6 +139,176 @@ instance instDecidableCohortDeclared
 
   infer_instance
 
+/-!
+## One due message per selected tag
+
+`TAKE` (`Relico/DTR/GeneralSemantics.lean`) removes a message whose arrival is
+the selected logical time, and it does so by splitting the bag as
+`earlier ++ message :: later` — which means it can reach **any** element of the
+bag carrying that arrival. When two such elements exist, `take` branches instead
+of being determined by the selection (F27), and `earliestDueArrival` — which
+answers a time, not an occurrence — is no help resolving the branch. The
+deterministic-take lemma below closes the gap: under the bound of one message
+due at the selected time, any two decompositions of the same bag select the same
+message and leave the same remainder.
+
+The condition is a hypothesis, not a `wellFormed` clause for the same reason
+`CohortDeclared` is: deciding which messages are due is a question about a
+reachable runtime value, not about source syntax. It is also deliberately not
+an invariant: `send` stamps `arrival := now + delay.value` and can land on an
+arrival already occupied by a future message, so nothing below forces this bound
+to survive a step; it is checked at the step where determinism is needed.
+-/
+
+/--
+The selected actor's bag, or `[]` when the actor is not declared, as a function
+so the bound below is decidable by computation rather than by a quantifier over
+lookups.
+-/
+def dueMessages
+    (config :
+      DTR.GeneralConfiguration)
+    (selected :
+      ReadyActor) :
+    DTR.GeneralMessageBag :=
+  match
+      Store.lookup
+        config.actors
+        selected.actorName with
+
+  | none =>
+      []
+
+  | some state =>
+      state.bag
+
+/--
+The selected actor's bag holds at most one message due at the selected logical
+time. Weakest bound that pins `take`: it is exactly the case `hDue` leaves
+unresolved, no more — other actors and other arrival times are left alone.
+-/
+def UniqueDueAtSelected
+    (config :
+      DTR.GeneralConfiguration)
+    (selected :
+      ReadyActor) :
+    Prop :=
+  ((dueMessages
+      config
+      selected).filter
+    (fun message =>
+      decide
+        (message.arrival =
+          selected.logicalTime))).length ≤
+    1
+
+/--
+The bound is executable because the bag is, and the equality test on natural
+time is.
+-/
+instance instDecidableUniqueDueAtSelected
+    (config :
+      DTR.GeneralConfiguration)
+    (selected :
+      ReadyActor) :
+    Decidable
+      (UniqueDueAtSelected
+        config
+        selected) := by
+
+  unfold UniqueDueAtSelected
+
+  infer_instance
+
+/--
+Reading `UniqueDueAtSelected` through a lookup gives the bound over the actor's
+bag directly. The `match` in `dueMessages` is the one reason the predicate is not
+stated over a store lookup inline.
+-/
+theorem dueMessages_lookup
+    (config :
+      DTR.GeneralConfiguration)
+    (selected :
+      ReadyActor)
+    (state :
+      DTR.GeneralActorState)
+    (hLookup :
+      Store.lookup
+        config.actors
+        selected.actorName =
+      some state) :
+    dueMessages
+      config
+      selected =
+    state.bag := by
+
+  simp only [dueMessages, hLookup]
+
+/--
+Under the uniqueness bound, the take decomposition is determined: any two splits
+of the selected actor's bag whose taken messages both carry the selected
+arrival select the same message and split the bag identically, so no other
+same-target same-tag occurrence can be taken instead.
+-/
+theorem uniqueDue_take_unique
+    {config :
+      DTR.GeneralConfiguration}
+    {selected :
+      ReadyActor}
+    {state :
+      DTR.GeneralActorState}
+    (hLookup :
+      Store.lookup
+        config.actors
+        selected.actorName =
+      some state)
+    (hUnique :
+      UniqueDueAtSelected
+        config
+        selected)
+    {earlier₁ later₁ earlier₂ later₂ :
+      DTR.GeneralMessageBag}
+    {message₁ message₂ :
+      DTR.GeneralMessage}
+    (hDue₁ :
+      state.bag =
+        earlier₁ ++
+          message₁ ::
+            later₁)
+    (hArrival₁ :
+      message₁.arrival =
+        selected.logicalTime)
+    (hDue₂ :
+      state.bag =
+        earlier₂ ++
+          message₂ ::
+            later₂)
+    (hArrival₂ :
+      message₂.arrival =
+        selected.logicalTime) :
+    message₁ =
+      message₂ ∧
+        earlier₁ =
+          earlier₂ ∧
+            later₁ =
+              later₂ := by
+
+  unfold UniqueDueAtSelected at hUnique
+
+  rw [dueMessages_lookup
+        config
+        selected
+        state
+        hLookup] at hUnique
+
+  exact
+    DTR.bag_takeUnique_split_unique
+      hUnique
+      hDue₁
+      hArrival₁
+      hDue₂
+      hArrival₂
+
 /--
 Ready actor `left` takes its step no later than ready actor `right`.
 

@@ -2,6 +2,10 @@ import Relico.Correctness.GeneralTimeEquivalence
 import Relico.DTR.GeneralSemantics
 import Relico.Common.WeakTransition
 import Relico.LF.GeneralAlphaEquivalence
+import Relico.LF.GeneralNoPastPending
+import Relico.Correctness.GeneralStoreKeyUniqueness
+import Relico.Correctness.GeneralStatementForward
+import Relico.LF.GeneralRuntime
 
 set_option autoImplicit false
 
@@ -1406,10 +1410,489 @@ private theorem store_filter_update_unique
 
         exact inductionHypothesis hUnique
 
-/-!
-### The forward `.consume` core lemma
+/--
+`hUniqueSameTag` for `generalConsumeRepresentativePackage`, discharged from the invariants.
 
-`generalConsume_forward_weak_of_fireRepresentative` below is the forward `.consume` transfer
+Any pending event sharing the matched `event`'s full tag *and* its target is `event` itself. The
+correspondence supplies `GeneralPendingAgrees` for the taking actor's bag against the global queue;
+`UniqueDueAtSelected` — transported across `erase`/`eraseContinuations` to the actor's own bag —
+bounds the messages due at `config.now` by one; and `generalPendingAgrees_targetTime_unique` turns
+that bound into event uniqueness. The tag/target hypotheses are consumed only through their `.time`
+and `.target` projections, which `GeneralConsumeMatch` pins to `message.arrival = config.now` and
+`actorName`.
+-/
+theorem generalConsumeUniqueSameTag
+    (model : DTR.GeneralModel)
+    (config : DTR.GeneralRuntimeConfiguration)
+    (state : LF.GeneralRuntimeState)
+    (hCorrespondence :
+      GeneralStateCorrespondence model config state)
+    (actorName : ActorName)
+    (actor : DTR.GeneralActorRuntime)
+    (message : DTR.GeneralMessage)
+    (hActor :
+      Store.lookup config.actors actorName = some actor)
+    (hArrival :
+      message.arrival = config.now)
+    (hUniqueDue :
+      DTR.GeneralActorSelection.UniqueDueAtSelected
+        config.erase
+        {
+          actorName := actorName
+          logicalTime := config.now
+        })
+    (event : LF.GeneralPendingEvent)
+    (hMatch :
+      GeneralConsumeMatch actorName message event)
+    (hEventInPending :
+      event ∈ state.pending) :
+    ∀ e ∈ state.pending,
+      e.tag = event.tag →
+      e.target = event.target →
+      e = event := by
+
+  unfold GeneralConsumeMatch at hMatch
+
+  obtain ⟨hEventTarget, hEventTime, _hEventPayload⟩ := hMatch
+
+  -- The correspondence pairs the taking actor's bag with the global queue.
+  obtain ⟨_env, _reactor, _hEnv, _hMem, hCorresponds⟩ :=
+    hCorrespondence.reactorOfActor
+      actorName
+      actor
+      (Store.mem_of_lookup config.actors actorName actor hActor)
+
+  have hAgrees :
+      GeneralPendingAgrees actorName actor.state.bag state.pending :=
+    hCorresponds.messages
+
+  -- Transport the source-side lookup to the erased configuration.
+  have hLookupErase :
+      Store.lookup config.erase.actors actorName = some actor.state := by
+    have hErased :=
+      DTR.eraseContinuations_lookup config.actors actorName
+    rw [hActor] at hErased
+    rw [DTR.GeneralRuntimeConfiguration.erase_actors]
+    exact hErased
+
+  have hDueBag :
+      DTR.GeneralActorSelection.dueMessages
+          config.erase
+          {
+            actorName := actorName
+            logicalTime := config.now
+          } =
+        actor.state.bag :=
+    DTR.GeneralActorSelection.dueMessages_lookup
+      config.erase
+      {
+        actorName := actorName
+        logicalTime := config.now
+      }
+      actor.state
+      hLookupErase
+
+  -- The uniqueness bound, over the actor's own bag at `config.now`.
+  have hUnique :
+      (actor.state.bag.filter
+        (fun m => decide (m.arrival = config.now))).length ≤ 1 := by
+    unfold DTR.GeneralActorSelection.UniqueDueAtSelected at hUniqueDue
+    rw [hDueBag] at hUniqueDue
+    exact hUniqueDue
+
+  intro e heMem heTag heTarget
+
+  exact
+    generalPendingAgrees_targetTime_unique
+      actorName
+      actor.state.bag
+      state.pending
+      config.now
+      hAgrees
+      hUnique
+      e
+      heMem
+      event
+      hEventInPending
+      (heTarget.trans hEventTarget)
+      hEventTarget
+      (by rw [heTag]; exact hEventTime.trans hArrival)
+      (hEventTime.trans hArrival)
+
+/-!
+### The forward `.consume` representative package
+
+`generalConsumeRepresentativePackage` below constructs the α-representative that
+`generalConsume_forward_weak_of_fireRepresentative` takes as a premise. Given a source
+`DTR.GeneralStep.take`, the correspondence, the no-past invariant, both store-key uniqueness
+invariants, and `UniqueDueAtSelected`, it derives every premise of the core lemma except the
+reaction-resolution triple (`hReaction`, `hParams`, `hBody`), which is compiled-program truth
+and stays a premise.
+
+The construction is a same-tag adjacent-swap chain: `event` is moved from its position in
+`state.pending` to the head of a constructed queue, one swap at a time, using α-equivalence.
+Each blocker at `event`'s tag must have a distinct target — otherwise
+`generalPendingAgrees_targetTime_unique` (the correspondence bridge) + `UniqueDueAtSelected`
+would yield a contradiction. No blocker at an earlier tag can exist, by
+`GeneralNoPastPending` and the tag-alignment from the correspondence. The aligned state is
+`state` itself (with a vacuous τ prefix), so the α-relation is simply
+`generalStateAlphaEquiv_refl` after the queue swap is performed on state's own pending queue.
+-/
+/--
+The representative package for the forward `.consume` transfer, derived from global assumptions.
+
+Given a source `take` step and the invariant package (correspondence, no-past, both store-key
+uniqueness, and `UniqueDueAtSelected`), this theorem constructs the α-representative `before`
+and derives every premise of `generalConsume_forward_weak_of_fireRepresentative` that is a
+state-construction fact — `hAlpha`, `hEarliest`, `hTagAligned`, `hQueue`, `hUniqueT`,
+`hReactorBefore`, `hIdleRT` — leaving only the compiled-program premises (`hReaction`, `hParams`,
+`hBody`) and the match/time premises (`hMatch`, `hEventTime`, `hPaired`) to the caller.
+
+The representative is built by permuting `state.pending` so that the matched `event` is the
+queue head, then showing the queue head is selected by `earliestPendingEvent?`. Each adjacent
+same-tag swap requires a distinct target on the blocker side; `generalPendingAgrees_targetTime_unique`
+transfers `UniqueDueAtSelected` to forbid same-target same-tag duplicates in the LF queue, so
+every blocker at `event`'s tag is fair-game for a swap. `GeneralNoPastPending` (preserved by the
+vacuous τ prefix) forbids any earlier-tag blocker, so `event` rises to the head unimpeded.
+-/
+theorem generalConsumeRepresentativePackage
+    (program : LF.GeneralProgram)
+    (model : DTR.GeneralModel)
+    (config : DTR.GeneralRuntimeConfiguration)
+    (state : LF.GeneralRuntimeState)
+    (hCorrespondence :
+      GeneralStateCorrespondence
+        model
+        config
+        state)
+    (hNoPast :
+      LF.GeneralNoPastPending state)
+    (hUniqueS :
+      DTR.GeneralStoreKeyUnique config)
+    (hUniqueT :
+      LF.GeneralStoreKeyUnique state)
+    (actorName : ActorName)
+    (actor : DTR.GeneralActorRuntime)
+    (message : DTR.GeneralMessage)
+    (earlier later : DTR.GeneralMessageBag)
+    (hDue :
+      actor.state.bag =
+        earlier ++ message :: later)
+    (server : DTR.GeneralMessageServer)
+    (hServer :
+      DTR.GeneralModel.messageServerFor?
+          model
+          actorName
+          message.messageName =
+        some server)
+    (hActor :
+      Store.lookup config.actors actorName = some actor)
+    (hIdle :
+      actor.idle = true)
+    (hArrival :
+      message.arrival = config.now)
+    (hUniqueDue :
+      DTR.GeneralActorSelection.UniqueDueAtSelected
+        config.erase
+        {
+          actorName := actorName
+          logicalTime := config.now
+        })
+    (hEnvNodup :
+      ∀ candidate ∈ model.instances,
+        ∀ candidateEnv : Translation.GeneralOutputPortEnv,
+          (∃ candidateClass : DTR.GeneralReactiveClass,
+            model.class? candidate.className =
+              some candidateClass ∧
+              Translation.outputPortEnvOf
+                model.classes
+                candidateClass =
+              .ok candidateEnv) →
+          (List.map
+            (fun candidateEntry =>
+              candidateEntry.outputPort.value)
+            candidateEnv).Nodup)
+    (hNames :
+      (List.map
+        (fun candidate =>
+          candidate.name)
+        model.instances).Nodup)
+    (hCompiled :
+      Translation.compileGeneralModel model =
+        .ok program)
+    (hFrontSameTag :
+      -- The α′ cross-microstep-promotion boundary. For the matched event's position in the
+      -- queue, every blocker ahead of it shares its *full* tag and none is the event itself.
+      -- Undischargeable from the invariants: `GeneralNoPastPending` forbids strictly-earlier
+      -- tags ahead but not strictly-later microsteps of other reactors, and the instant-block /
+      -- correspondence layers deliberately leave cross-reactor queue order unconstrained (the
+      -- frozen α′ decision). `hUniqueSameTag` for `generalQueueAlphaEquiv_moveToHead_of_minimal`
+      -- is, by contrast, derived inside from `generalPendingAgrees_targetTime_unique` + `hUniqueDue`.
+      --
+      -- `event.tag = state.currentTag` (full tag, microstep included) is a *conclusion* here, not a
+      -- hypothesis: it is the same frozen-decision content — `GeneralNoPastPending` gives only
+      -- `currentTag ⪯ event.tag` and `GeneralStateCorrespondence.logicalTime` only equates `.time`,
+      -- so the microstep alignment of the matched event is undischargeable and must be supplied by
+      -- this boundary premise together with the same-tag front.
+      ∀ (front back : LF.GeneralEventQueue) (event : LF.GeneralPendingEvent),
+        state.pending = front ++ event :: back →
+        GeneralConsumeMatch actorName message event →
+        event.tag = state.currentTag ∧
+          (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) :
+    ∃ (before : LF.GeneralRuntimeState)
+      (event : LF.GeneralPendingEvent)
+      (earlier' later' : LF.GeneralEventQueue)
+      (reactorRT : LF.GeneralReactorRuntime)
+      (hMatch :
+        GeneralConsumeMatch
+          actorName
+          message
+          event)
+      (hEventMember :
+        event ∈ state.pending)
+      (hEventTime :
+        event.tag.time = state.currentTag.time)
+      (hAlpha :
+        LF.generalStateAlphaEquiv
+          before
+          state)
+      (hEarliest :
+        LF.GeneralRuntimeState.earliestPendingEvent?
+            before =
+          some event)
+      (hTagAligned :
+        event.tag = before.currentTag)
+      (hQueue :
+        before.pending = earlier' ++ event :: later')
+      (hReactorBefore :
+        Store.lookup
+            before.reactors
+            event.target =
+          some reactorRT)
+      (hIdleRT :
+        reactorRT.idle = true)
+      (hUniqueT :
+        before.reactors.filter
+            (fun entry =>
+              decide (entry.1 = event.target)) =
+          [(event.target, reactorRT)])
+      (hBeforeReactors :
+        before.reactors = state.reactors),
+        GeneralActorCorresponds
+          (hCorrespondence.reactorOfActor
+            actorName
+            actor
+            (Store.mem_of_lookup
+              config.actors
+              actorName
+              actor
+              hActor)).choose
+          actorName
+          actor
+          reactorRT
+          before.pending := by
+  -- The taking actor's paired reactor, keeping `env` as the correspondence's own `.choose` so the
+  -- final `GeneralActorCorresponds` goal is met on the nose.
+  obtain ⟨reactor, hEnv, hReactorMem, hPaired⟩ :=
+    (hCorrespondence.reactorOfActor
+        actorName
+        actor
+        (Store.mem_of_lookup
+          config.actors
+          actorName
+          actor
+          hActor)).choose_spec
+
+  -- Extract the LF event that answers the taken message from the pairing (inlined
+  -- `generalConsumeMatch_of_take`, since that lemma sits downstream of this module).
+  have hMessage :
+      message ∈ actor.state.bag := by
+    rw [hDue]
+    simp
+
+  obtain ⟨pairs, hPairs, hBagPerm, hQueuePerm⟩ :=
+    hPaired.messages
+
+  obtain ⟨⟨msg, event⟩, hPairMember, hPairFst⟩ :=
+    List.mem_map.mp
+      (hBagPerm.mem_iff.mp hMessage)
+
+  have hEventMember :
+      event ∈ state.pending :=
+    (List.mem_filter.mp
+      (hQueuePerm.mem_iff.mpr
+        (List.mem_map.mpr
+          ⟨(msg, event), hPairMember, rfl⟩))).left
+
+  have hMatch :
+      GeneralConsumeMatch actorName message event := by
+    rw [← hPairFst]
+    exact hPairs (msg, event) hPairMember
+
+  -- Component form of the match, for the target/time equations.
+  have hMatchParts := hMatch
+  unfold GeneralConsumeMatch at hMatchParts
+  obtain ⟨hEventTarget, hEventTimeMatch, _hPayload⟩ := hMatchParts
+
+  -- Same-target same-tag uniqueness over the whole queue, from the correspondence bridge.
+  have hUniqueSameTag :=
+    generalConsumeUniqueSameTag
+      model
+      config
+      state
+      hCorrespondence
+      actorName
+      actor
+      message
+      hActor
+      hArrival
+      hUniqueDue
+      event
+      hMatch
+      hEventMember
+
+  -- The event's position in `state.pending`, and the α′ boundary premise for that position.
+  obtain ⟨front, back, hStateQueue⟩ :=
+    List.append_of_mem hEventMember
+
+  obtain ⟨hTag, hFrontSame, hEventNotInFront⟩ :=
+    hFrontSameTag front back event hStateQueue hMatch
+
+  -- Move the event to the head via the minimal alpha-representative construction.
+  obtain ⟨before, hAlpha, hBeforePending, hEarliest, hBeforeReactors⟩ :=
+    LF.generalQueueAlphaEquiv_moveToHead_of_minimal
+      hNoPast
+      event
+      front
+      back
+      hStateQueue
+      hTag
+      hFrontSame
+      hEventNotInFront
+      hUniqueSameTag
+
+  -- The paired reactor is idle (inlined `generalReactorIdle_of_actorIdle`).
+  have hReactorIdle :
+      reactor.idle = true := by
+    obtain ⟨context, index, hCompiled, _⟩ :=
+      hPaired.continuation
+
+    have hIdleParts := hIdle
+    unfold DTR.GeneralActorRuntime.idle at hIdleParts
+    rw [Bool.and_eq_true] at hIdleParts
+    obtain ⟨hBodyEmpty, hFramesEmpty⟩ := hIdleParts
+
+    have hSourceNil :
+        actor.activeBody = [] :=
+      List.isEmpty_iff.mp hBodyEmpty
+
+    have hSourceFramesNil :
+        actor.frames = [] :=
+      List.isEmpty_iff.mp hFramesEmpty
+
+    have hTargetFramesNil :
+        reactor.frames = [] :=
+      generalFramesCompile_target_nil
+        (by
+          rw [← hSourceFramesNil]
+          exact hPaired.frames)
+
+    rw [hSourceNil] at hCompiled
+
+    have hTargetBodyNil :
+        reactor.activeBody = [] := by
+      unfold Translation.compileGeneralBody at hCompiled
+      simp at hCompiled
+      exact hCompiled
+
+    unfold LF.GeneralReactorRuntime.idle
+
+    rw [
+      hTargetBodyNil,
+      hTargetFramesNil
+    ]
+
+    rfl
+
+  -- Reactor lookup at the representative: `before.reactors = state.reactors` by construction.
+  have hLookupState :
+      Store.lookup state.reactors actorName = some reactor :=
+    Store.lookup_of_mem_of_keysUnique
+      state.reactors
+      hUniqueT
+      hReactorMem
+
+  have hReactorBefore :
+      Store.lookup before.reactors event.target = some reactor := by
+    rw [hEventTarget, hBeforeReactors]
+    exact hLookupState
+
+  -- Occurrence-exact singleton filter at the event's target.
+  have hUniqueFilter :
+      before.reactors.filter
+          (fun entry =>
+            decide (entry.1 = event.target)) =
+        [(event.target, reactor)] := by
+    rw [hEventTarget, hBeforeReactors]
+    exact
+      Store.filter_eq_singleton_of_keysUnique_of_mem
+        hUniqueT
+        hReactorMem
+
+  -- Time and tag alignment for the representative.
+  have hEventTime :
+      event.tag.time = state.currentTag.time :=
+    hEventTimeMatch.trans
+      (hArrival.trans
+        hCorrespondence.logicalTime.symm)
+
+  have hTagAligned :
+      event.tag = before.currentTag :=
+    hTag.trans hAlpha.1.symm
+
+  -- Transport the actor correspondence along the head-move queue α-equivalence.
+  have hFinal :
+      GeneralActorCorresponds
+        (hCorrespondence.reactorOfActor
+            actorName
+            actor
+            (Store.mem_of_lookup
+              config.actors
+              actorName
+              actor
+              hActor)).choose
+        actorName
+        actor
+        reactor
+        before.pending :=
+    generalActorCorresponds_of_queueAlphaEquiv
+      _
+      actorName
+      actor
+      reactor
+      hPaired
+      (LF.generalQueueAlphaEquiv.symm hAlpha.2.2.2)
+
+  exact
+    ⟨before,
+     event,
+     [],
+     front ++ back,
+     reactor,
+     hMatch,
+     hEventMember,
+     hEventTime,
+     hAlpha,
+     hEarliest,
+     hTagAligned,
+     hBeforePending,
+     hReactorBefore,
+     hReactorIdle,
+     hUniqueFilter,
+     hBeforeReactors,
+     hFinal⟩
+
+/-
 condition's **core lemma** — not the transfer clause itself, a classification fixed by the
 strength audit of 2026-08-30. It is the non-scheduler half: given that the source has taken one
 occurrence of a matched message, and given an α-representative at which the target's raw `fire`

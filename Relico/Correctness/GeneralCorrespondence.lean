@@ -1,4 +1,5 @@
 import Relico.DTR.GeneralRuntime
+import Relico.DTR.GeneralState
 import Relico.DTR.GeneralWellFormed
 import Relico.LF.GeneralSemantics
 import Relico.LF.GeneralAlphaEquivalence
@@ -848,7 +849,136 @@ theorem generalPendingAgrees_of_queue_drop
   exact hQueuePerm
 
 /--
-The target continuation is a compilation of the source continuation, **under a named environment**.
+Two LF events in the global queue targeting the same actor at the same logical time are equal,
+  provided the corresponding DTR bag holds at most one message due at that time.
+
+This is the correspondence bridge that pushes the source-side `UniqueDueAtSelected` uniqueness
+through the pairing `GeneralPendingAgrees` to the target side: a second equal-time event for the
+same target would correspond to a second equal-arrival message in the bag, contradicting the
+bound on the bag's filtered length.
+
+The proof does not count directly. It filters the pairing list by message arrival, carries the
+length bound through the bag permutation, and then shows each of the two events comes from that
+filtered list — so the two events are the same.
+-/
+theorem generalPendingAgrees_targetTime_unique
+    (name : ActorName)
+    (bag : DTR.GeneralMessageBag)
+    (pending : LF.GeneralEventQueue)
+    (t : LogicalTime)
+    (hAgrees :
+      GeneralPendingAgrees
+        name
+        bag
+        pending)
+    (hUnique :
+      (bag.filter
+        (fun m => decide (m.arrival = t))).length ≤ 1)
+    (e₁ : LF.GeneralPendingEvent)
+    (hInPending₁ :
+      e₁ ∈ pending)
+    (e₂ : LF.GeneralPendingEvent)
+    (hInPending₂ :
+      e₂ ∈ pending)
+    (hTarget₁ :
+      e₁.target = name)
+    (hTarget₂ :
+      e₂.target = name)
+    (hTime₁ :
+      e₁.tag.time = t)
+    (hTime₂ :
+      e₂.tag.time = t) :
+    e₁ = e₂ := by
+
+  obtain ⟨pairs, hPairsMatch, hBagPerm, hQueuePerm⟩ :=
+    hAgrees
+
+  -- Step 1: Filter the bag to arrival = t. By the bag permutation, the paired messages
+  -- at time t are also bounded by length ≤ 1.
+  have hBagFilterPerm :
+      List.Perm
+        (bag.filter (fun m => decide (m.arrival = t)))
+        ((pairs.map Prod.fst).filter (fun m => decide (m.arrival = t))) := by
+    exact List.Perm.filter (fun m => decide (m.arrival = t)) hBagPerm
+
+  have hBagFilterLength :
+      ((pairs.map Prod.fst).filter (fun m => decide (m.arrival = t))).length ≤ 1 := by
+    rw [← List.Perm.length_eq hBagFilterPerm]
+    exact hUnique
+
+  -- Filtering the map is the same as mapping the filter: the predicate only reads
+  -- the first component, so `List.filter_map` applies directly.
+  have hMapFilterEq :
+      (pairs.map Prod.fst).filter (fun m => decide (m.arrival = t)) =
+        (pairs.filter (fun p => decide (p.1.arrival = t))).map Prod.fst := by
+    rw [List.filter_map]
+    rfl
+
+  have hFilteredPairsLength :
+      (pairs.filter (fun p => decide (p.1.arrival = t))).length ≤ 1 := by
+    rw [hMapFilterEq, List.length_map] at hBagFilterLength
+    exact hBagFilterLength
+
+  -- Step 2: e₁ and e₂ are in the filtered queue (target = name), so by the queue
+  -- permutation, each comes from a pair in the pairing list.
+  have hFiltered₁ :
+      e₁ ∈ pending.filter (fun e => decide (e.target = name)) := by
+    rw [List.mem_filter]
+    exact ⟨hInPending₁, show decide (e₁.target = name) = true from decide_eq_true hTarget₁⟩
+
+  have hFiltered₂ :
+      e₂ ∈ pending.filter (fun e => decide (e.target = name)) := by
+    rw [List.mem_filter]
+    exact ⟨hInPending₂, show decide (e₂.target = name) = true from decide_eq_true hTarget₂⟩
+
+  -- By the queue permutation, there exist pairs carrying e₁ and e₂.
+  obtain ⟨pair₁, hPair₁Mem, hPair₁Snd⟩ :=
+    List.mem_map.mp (hQueuePerm.mem_iff.mp hFiltered₁)
+
+  obtain ⟨pair₂, hPair₂Mem, hPair₂Snd⟩ :=
+    List.mem_map.mp (hQueuePerm.mem_iff.mp hFiltered₂)
+
+  -- Step 3: Both pairs satisfy GeneralConsumeMatch, so their messages have arrival = t.
+  -- Therefore both pairs are in the filtered (by arrival = t) pairing list.
+  obtain ⟨hTargetMatch₁, hArrival₁, hPayload₁⟩ :=
+    hPairsMatch pair₁ hPair₁Mem
+
+  obtain ⟨hTargetMatch₂, hArrival₂, hPayload₂⟩ :=
+    hPairsMatch pair₂ hPair₂Mem
+
+  have hTimeFromMatch₁ :
+      pair₁.1.arrival = t := by
+    rw [hTime₁.symm, hPair₁Snd.symm, hArrival₁]
+
+  have hTimeFromMatch₂ :
+      pair₂.1.arrival = t := by
+    rw [hTime₂.symm, hPair₂Snd.symm, hArrival₂]
+
+  -- Both pairs pass the arrival = t filter, so they are members of the filtered list.
+  have hFilteredPair₁ :
+      pair₁ ∈ pairs.filter (fun p => decide (p.1.arrival = t)) := by
+    rw [List.mem_filter]
+    exact ⟨hPair₁Mem, show decide (pair₁.1.arrival = t) = true from decide_eq_true hTimeFromMatch₁⟩
+
+  have hFilteredPair₂ :
+      pair₂ ∈ pairs.filter (fun p => decide (p.1.arrival = t)) := by
+    rw [List.mem_filter]
+    exact ⟨hPair₂Mem, show decide (pair₂.1.arrival = t) = true from decide_eq_true hTimeFromMatch₂⟩
+
+  -- Step 4: The filtered list has length ≤ 1, so both events must be equal.
+  have hPairEq :
+      pair₁ = pair₂ :=
+    DTR.eq_of_mem_of_length_le_one
+      hFilteredPairsLength
+      hFilteredPair₁
+      hFilteredPair₂
+
+  -- Step 5: Since the pairs are equal, their second components (the events) are equal.
+  rw [← hPair₁Snd, ← hPair₂Snd]
+  rw [hPairEq]
+
+/-
+### Transporting the agreement across queue equivalences
 
 The paper's `π_x ≡ μ_r`. The output-port environment is a *parameter*, not an existential: it belongs
 to the sending class, and which class a runtime reactor belongs to is a fact the correspondence must
@@ -953,6 +1083,105 @@ theorem generalContinuationCompiles_nil
          (fun hDerivation =>
            Translation.generalSendAtPath_nil
              hDerivation)⟩
+
+theorem generalContinuationCompiles_messageServerEntry
+    (reactiveClass : DTR.GeneralReactiveClass)
+    (server : DTR.GeneralMessageServer)
+    (env : Translation.GeneralOutputPortEnv)
+    (reaction : LF.GeneralReaction)
+    (classes : List DTR.GeneralReactiveClass)
+    (hServer :
+      server ∈ reactiveClass.messageServers)
+    (hServerNames :
+      (reactiveClass.messageServers.map
+        (fun server => server.name)).Nodup)
+    (hEnv :
+      Translation.outputPortEnvOf
+          classes
+          reactiveClass =
+        .ok env)
+    (hBody :
+      Translation.compileGeneralBody
+          env
+          { bodyKey := .messageServer server.name,
+            selfSends :=
+              Translation.selfSendsOfClass
+                reactiveClass }
+          0
+          server.body =
+        .ok reaction.body) :
+    GeneralContinuationCompiles
+      env
+      server.body
+      reaction.body := by
+
+  refine
+    ⟨{ bodyKey := .messageServer server.name,
+       selfSends := Translation.selfSendsOfClass reactiveClass },
+     0,
+     hBody,
+     ?_⟩
+
+  intro path rebec message delay hPath entry hEntry
+
+  obtain ⟨send, hSendMember, hSendRebec, hSendSite, hSendDelay⟩ :=
+    Translation.exists_send_of_mem_outputPortEnv
+      hEnv
+      (Translation.generalEntryAtSite?_mem
+        env
+        _
+        entry
+        hEntry)
+
+  have hSiteEq :
+      send.site =
+        { body := .messageServer server.name,
+          index := Translation.shiftHeadPath 0 path } := by
+    rw [← hSendSite]
+
+    exact
+      Translation.generalEntryAtSite?_site
+        env
+        _
+        entry
+        hEntry
+
+  have hBodyMember :
+      send ∈
+        Translation.externalSendsFromIndex
+          (.messageServer server.name)
+          []
+          0
+          server.body :=
+    Translation.mem_externalSendsOfBody_messageServer_of_mem_externalSendsOfClass
+      hSendMember
+      server
+      hServer
+      hServerNames
+      (by rw [hSiteEq])
+
+  have hSendIndex :
+      send.site.index =
+        [] ++ Translation.shiftHeadPath 0 path := by
+    rw [hSiteEq]
+    simp
+
+  obtain ⟨hRebec, hDelay⟩ :=
+    Translation.externalSendsFromIndex_knownRebec_of_path
+      (.messageServer server.name)
+      []
+      0
+      hPath
+      hBodyMember
+      hSendIndex
+
+  refine ⟨?_, ?_⟩
+
+  · rw [hSendRebec]
+    exact hRebec
+
+  · rw [hSendDelay]
+    exact hDelay
 
 /--
 Consuming a trace head preserves the compilation relation for the remaining continuations.
@@ -1220,6 +1449,51 @@ structure GeneralActorCorresponds
       env
       actor.frames
       reactor.frames
+
+/--
+Transport an actor correspondence across α-equivalent runtime states.
+
+Only the `messages` field mentions `pending`; the other three conjuncts are copied unchanged. The
+queue conjunct of `generalStateAlphaEquiv` yields a `List.Perm` of the two pending queues, which
+`generalPendingAgrees_of_queue_perm` uses to move `GeneralPendingAgrees` from `before.pending` to
+`state.pending`.
+-/
+theorem generalActorCorresponds_of_stateAlphaEquiv
+    {env : Translation.GeneralOutputPortEnv}
+    {name : ActorName}
+    {actor : DTR.GeneralActorRuntime}
+    {reactor : LF.GeneralReactorRuntime}
+    {before state : LF.GeneralRuntimeState}
+    (hAlpha :
+      LF.generalStateAlphaEquiv
+        before
+        state)
+    (hCorr :
+      GeneralActorCorresponds
+        env
+        name
+        actor
+        reactor
+        before.pending) :
+    GeneralActorCorresponds
+      env
+      name
+      actor
+      reactor
+      state.pending := by
+  refine
+    {
+      valuation := hCorr.valuation
+      messages := ?_
+      continuation := hCorr.continuation
+      frames := hCorr.frames
+    }
+  exact
+    generalPendingAgrees_of_queue_perm
+      name
+      actor.state.bag
+      hCorr.messages
+      (LF.generalQueueAlphaEquiv.perm hAlpha.2.2.2)
 
 /-- A paired trace head may be removed from an actor correspondence. -/
 theorem generalActorCorresponds_trace_tail
@@ -2310,6 +2584,95 @@ private theorem findClass?_of_mem_of_nodup :
               hTail
               (List.nodup_cons.mp hNodup).2
 
+private theorem mem_of_findInstance?_eq_some :
+    ∀ (instances : List LF.GeneralReactorInstance)
+      (instanceName : ActorName)
+      (reactorInstance : LF.GeneralReactorInstance),
+      LF.findInstance? instances instanceName = some reactorInstance →
+        reactorInstance ∈ instances := by
+
+  intro instances
+  induction instances with
+
+  | nil =>
+      intro instanceName reactorInstance hFound
+
+      simp [
+        LF.findInstance?
+      ] at hFound
+
+  | cons head remaining inductionHypothesis =>
+      intro instanceName reactorInstance hFound
+
+      by_cases hHead :
+          head.name = instanceName
+
+      · rw [
+          LF.findInstance?,
+          if_pos hHead
+        ] at hFound
+
+        injection hFound with hFound
+
+        subst hFound
+
+        exact
+          List.mem_cons.mpr
+            (Or.inl rfl)
+
+      · rw [
+          LF.findInstance?,
+          if_neg hHead
+        ] at hFound
+
+        exact
+          List.mem_cons.mpr
+            (Or.inr
+              (inductionHypothesis
+                instanceName
+                reactorInstance
+                hFound))
+
+/--
+A compiled instance returned by `program.instance?` comes from some source actor
+of the model: it is the compilation of an actor in `model.instances`.
+
+The bridge from a program-level instance lookup back to the model's actor list.
+It chains membership (`mem_of_findInstance?_eq_some`) through the compiled instance
+list equality (`compileGeneralModel_instances`) and inverts the map.
+-/
+private theorem exists_actor_of_instance?_eq_some
+    {model : DTR.GeneralModel}
+    {program : LF.GeneralProgram}
+    {target : ActorName}
+    {compiledInstance : LF.GeneralReactorInstance}
+    (hCompiled :
+      Translation.compileGeneralModel model = .ok program)
+    (hFound :
+      program.instance? target = some compiledInstance) :
+    ∃ actor ∈ model.instances,
+      Translation.compileGeneralActorInstance actor =
+        compiledInstance := by
+
+  have hMember :
+      compiledInstance ∈ program.instances :=
+    mem_of_findInstance?_eq_some
+      program.instances
+      target
+      compiledInstance
+      hFound
+
+  have hInstancesEq :
+      program.instances =
+        model.instances.map
+          Translation.compileGeneralActorInstance :=
+    Translation.compileGeneralModel_instances
+      hCompiled
+
+  rw [hInstancesEq] at hMember
+
+  exact List.mem_map.mp hMember
+
 private theorem mem_of_findReactor?_eq_some :
     ∀ (reactors : List LF.GeneralReactor)
       (reactorName : ReactorName)
@@ -2771,6 +3134,216 @@ private theorem initialResolution
     hActorFound,
     hClassFound
   ]
+
+/--
+`LF.findInstance?` answers with an instance carrying the queried name.
+
+The LF-side mirror of `findActor?_name_of_eq_some` and `findReactor?_name_of_eq_some`: the same
+first-match recursion, so the resolved instance's name is the name that was looked up.
+-/
+private theorem findInstance?_name_of_eq_some :
+    ∀ (instances : List LF.GeneralReactorInstance)
+      (instanceName : ActorName)
+      (reactorInstance : LF.GeneralReactorInstance),
+      LF.findInstance? instances instanceName = some reactorInstance →
+        reactorInstance.name = instanceName := by
+
+  intro instances
+  induction instances with
+
+  | nil =>
+      intro instanceName reactorInstance hFound
+
+      simp [
+        LF.findInstance?
+      ] at hFound
+
+  | cons head remaining inductionHypothesis =>
+      intro instanceName reactorInstance hFound
+
+      by_cases hHead :
+          head.name = instanceName
+
+      · rw [
+          LF.findInstance?,
+          if_pos hHead
+        ] at hFound
+
+        injection hFound with hFound
+
+        subst hFound
+
+        exact hHead
+
+      · rw [
+          LF.findInstance?,
+          if_neg hHead
+        ] at hFound
+
+        exact
+          inductionHypothesis
+            instanceName
+            reactorInstance
+            hFound
+
+/--
+The class-identity bridge from a resolved reactor back to the source class.
+
+Given a compiled program whose `reactorOfInstance?` resolves `target` to `reactor`, and a source
+`reactiveClass` whose compilation produced that same `reactor`, the model resolves `target`'s class to
+`reactiveClass`. This is the inverse of `reactorOfInstance?_of_mem_instances`: that lemma runs an actor
+forward to its reactor, this one runs a resolved reactor back to the source class the actor names.
+
+The bridge is name-driven: both `actor.className` and `reactiveClass.name` generate `reactor.name`
+through `reactorNameFor`, and `reactorNameFor_injective` collapses them, after which the model's
+duplicate-free instance and class names make both lookups deterministic.
+-/
+theorem classOfActor?_of_reactorOfInstance?
+    {model : DTR.GeneralModel}
+    {program : LF.GeneralProgram}
+    {target : ActorName}
+    {reactor : LF.GeneralReactor}
+    {reactiveClass : DTR.GeneralReactiveClass}
+    {routes : List Translation.GeneralRoute}
+    (hCompiled :
+      Translation.compileGeneralModel model =
+        .ok program)
+    (hReactor :
+      program.reactorOfInstance? target =
+        some reactor)
+    (hClassMember :
+      reactiveClass ∈ model.classes)
+    (hClassCompiled :
+      Translation.compileGeneralReactiveClass
+          model.classes
+          routes
+          reactiveClass =
+        .ok reactor) :
+    model.classOfActor? target =
+      some reactiveClass := by
+
+  unfold LF.GeneralProgram.reactorOfInstance? at hReactor
+
+  cases hInstance :
+      program.instance? target with
+
+  | none =>
+      simp [
+        hInstance
+      ] at hReactor
+
+  | some compiledInstance =>
+      simp only [
+        hInstance
+      ] at hReactor
+
+      unfold LF.GeneralProgram.reactor? at hReactor
+
+      -- Recover the source actor behind the compiled instance.
+      obtain ⟨actor, hActorMember, hActorCompiled⟩ :=
+        exists_actor_of_instance?_eq_some
+          hCompiled
+          hInstance
+
+      -- The compiled instance carries the queried name, hence so does the actor.
+      have hInstanceName :
+          compiledInstance.name =
+            target :=
+        findInstance?_name_of_eq_some
+          program.instances
+          target
+          compiledInstance
+          hInstance
+
+      have hActorName :
+          actor.name =
+            target := by
+        rw [
+          ← Translation.compileGeneralActorInstance_name
+              actor,
+          hActorCompiled,
+          hInstanceName
+        ]
+
+      -- The reactor's name is the name generated for the actor's class.
+      have hReactorViaActor :
+          reactor.name =
+            Translation.reactorNameFor
+              actor.className := by
+        have hViaInstance :
+            reactor.name =
+              compiledInstance.reactorName :=
+          findReactor?_name_of_eq_some
+            program.reactors
+            compiledInstance.reactorName
+            reactor
+            hReactor
+
+        rw [
+          hViaInstance,
+          ← hActorCompiled,
+          Translation.compileGeneralActorInstance_reactorName
+        ]
+
+      -- The reactor's name is also the name generated for reactiveClass.
+      have hReactorViaClass :
+          reactor.name =
+            Translation.reactorNameFor
+              reactiveClass.name :=
+        Translation.compileGeneralReactiveClass_name
+          hClassCompiled
+
+      -- Both class names generate the same reactor name, so they coincide.
+      have hClassEq :
+          actor.className =
+            reactiveClass.name := by
+        apply Translation.reactorNameFor_injective
+        rw [
+          ← hReactorViaActor
+        ]
+        exact hReactorViaClass
+
+      -- Resolve the actor by its queried name.
+      have hActorFound :
+          model.actor? target =
+            some actor := by
+        unfold DTR.GeneralModel.actor?
+
+        rw [
+          ← hActorName
+        ]
+
+        exact
+          findActor?_of_mem_of_nodup
+            model.instances
+            actor
+            hActorMember
+            (modelInstanceNames_nodup_of_compiled
+              hCompiled)
+
+      -- Resolve the class the actor names.
+      have hClassFound :
+          model.class? actor.className =
+            some reactiveClass := by
+        unfold DTR.GeneralModel.class?
+
+        rw [
+          hClassEq
+        ]
+
+        exact
+          findClass?_of_mem_of_nodup
+            model.classes
+            reactiveClass
+            hClassMember
+            (modelClassNames_nodup_of_compiled
+              hCompiled)
+
+      simp only [
+        DTR.GeneralModel.classOfActor?,
+        hActorFound,
+        hClassFound
+      ]
 
 /--
 The environment equation at a declared instance, from its class and that class's environment.

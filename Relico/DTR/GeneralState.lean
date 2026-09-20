@@ -221,6 +221,488 @@ private theorem optionCases
            rfl⟩
 
 /-!
+### Deterministic take under one due message per tag
+
+`take` (`Relico/DTR/GeneralSemantics.lean`) splits a bag as
+`earlier ++ message :: later` with the taken message's arrival pinned to the
+selection's logical time, and the rule admits **any** occurrence carrying that
+arrival. When two occurrences share it, the two decompositions disagree on what
+was taken and on the post-state bag, and `earliestDueArrival` — which answers a
+time, not an occurrence — cannot tell them apart (F27). The theorems below are
+the DTR-side fix: under a uniqueness bound of one message per arrival time, any
+two such decompositions select the same message and split the bag identically.
+
+The bound is deliberately stated as a length, not as a `Nodup`: two equal
+records are two *occurrences* of the same value, and a `Nodup` test would suppress
+the duplication instead of ruling it out.
+-/
+
+/--
+A length-of-membership helper: a member witnesses a non-trivial length. This is
+not used through library names beyond `List.length_pos_of_mem`, stated so the
+helper block stays self-contained.
+-/
+private theorem one_le_length_of_mem
+    {α : Type}
+    {list : List α}
+    {element : α}
+    (hMember :
+      element ∈
+        list) :
+    1 ≤
+      list.length := by
+
+  induction list with
+
+  | nil =>
+      cases hMember
+
+  | cons head remaining inductionHypothesis =>
+      rcases List.mem_cons.mp hMember with hEqual | hRemaining
+
+      · subst hEqual
+
+        simp
+
+      · simp only [List.length_cons]
+
+        omega
+
+/--
+A member of the earlier part witnesses a second due message in the bag, so under
+the uniqueness bound the bag carries at least two. This is the contradiction
+half for an earlier member.
+-/
+private theorem two_le_filter_of_member_earlier
+    {bag :
+      DTR.GeneralMessageBag}
+    {earlier later :
+      DTR.GeneralMessageBag}
+    {message other :
+      DTR.GeneralMessage}
+    {predicate :
+      DTR.GeneralMessage →
+        Bool}
+    (hSplit :
+      bag =
+        earlier ++
+          message ::
+            later)
+    (hMessage :
+      predicate
+        message =
+      true)
+    (hMember :
+      other ∈
+        earlier)
+    (hOther :
+      predicate
+        other =
+      true) :
+    2 ≤
+      (bag.filter
+        predicate).length := by
+
+  rw [hSplit, List.filter_append]
+
+  have hEarlier :
+      other ∈
+        earlier.filter
+          predicate :=
+    List.mem_filter.mpr
+      ⟨hMember,
+        hOther⟩
+
+  have hHead :
+      1 ≤
+        ((message ::
+              later).filter
+          predicate).length := by
+
+    rw [List.filter_cons_of_pos hMessage]
+
+    exact
+      List.length_pos_of_mem
+        List.mem_cons_self
+
+  have hEarlierLength :
+      1 ≤
+        (earlier.filter
+            predicate).length :=
+    List.length_pos_of_mem
+      hEarlier
+
+  simp only [List.length_append]
+
+  omega
+
+/--
+The late counterpart: a member of the later part witnesses a second due message
+in the bag, since the separator message is itself due.
+-/
+private theorem two_le_filter_of_member_later
+    {bag :
+      DTR.GeneralMessageBag}
+    {earlier later :
+      DTR.GeneralMessageBag}
+    {message other :
+      DTR.GeneralMessage}
+    {predicate :
+      DTR.GeneralMessage →
+        Bool}
+    (hSplit :
+      bag =
+        earlier ++
+          message ::
+            later)
+    (hMessage :
+      predicate
+        message =
+      true)
+    (hMember :
+      other ∈
+        later)
+    (hOther :
+      predicate
+        other =
+      true) :
+    2 ≤
+      (bag.filter
+        predicate).length := by
+
+  rw [hSplit, List.filter_append]
+
+  have hCons :
+      (message ::
+          later).filter
+        predicate =
+          message ::
+            later.filter
+              predicate :=
+    List.filter_cons_of_pos hMessage
+
+  rw [hCons, List.length_append, List.length_cons]
+
+  have hTail :
+      other ∈
+        later.filter
+          predicate :=
+    List.mem_filter.mpr
+      ⟨hMember,
+        hOther⟩
+
+  have hTailLength :
+      1 ≤
+        (later.filter
+            predicate).length :=
+    List.length_pos_of_mem
+      hTail
+
+  omega
+
+/--
+Two members of a list whose length is at most one are equal. The `length ≤ 1`
+bound is the same shape `UniqueDueAtSelected` yields, so this is the form the
+equality step consumes.
+-/
+theorem eq_of_mem_of_length_le_one
+    {α : Type}
+    {list : List α}
+    (hLength :
+      list.length ≤
+        1)
+    {left right : α}
+    (hLeft :
+      left ∈
+        list)
+    (hRight :
+      right ∈
+        list) :
+    left =
+      right := by
+
+  cases list with
+
+  | nil =>
+      cases hLeft
+
+  | cons head remaining =>
+      have hTailEmpty :
+          remaining =
+            [] := by
+
+        rw [List.length_cons] at hLength
+
+        have hLe :
+            remaining.length ≤
+              0 := by
+          omega
+
+        exact
+          List.length_eq_zero_iff.mp
+            (Nat.le_zero.mp hLe)
+
+      subst hTailEmpty
+
+      simp at hLeft hRight
+
+      exact
+        hLeft.trans hRight.symm
+
+/--
+Two decompositions of the same bag whose taken messages both satisfy the
+predicate are the same decomposition, provided the bag holds at most one such
+message. This is the pure-list core the selection layer instantiates.
+-/
+theorem bag_takeUnique_split_unique
+    {bag :
+      DTR.GeneralMessageBag}
+    {tag :
+      LogicalTime}
+    (hUnique :
+      (bag.filter
+          (fun occurrence =>
+            decide
+              (occurrence.arrival =
+                tag))).length ≤
+        1)
+    {earlier₁ later₁ earlier₂ later₂ :
+      DTR.GeneralMessageBag}
+    {message₁ message₂ :
+      DTR.GeneralMessage}
+    (hSplit₁ :
+      bag =
+        earlier₁ ++
+          message₁ ::
+            later₁)
+    (hArrival₁ :
+      message₁.arrival =
+        tag)
+    (hSplit₂ :
+      bag =
+        earlier₂ ++
+          message₂ ::
+            later₂)
+    (hArrival₂ :
+      message₂.arrival =
+        tag) :
+    message₁ =
+      message₂ ∧
+        earlier₁ =
+          earlier₂ ∧
+            later₁ =
+              later₂ := by
+
+  let predicate :
+      DTR.GeneralMessage →
+        Bool :=
+    fun occurrence =>
+      decide
+        (occurrence.arrival =
+          tag)
+
+  have hBound :
+      (bag.filter
+        predicate).length ≤
+        1 :=
+    hUnique
+
+  have hPredicate₁ :
+      predicate
+        message₁ =
+      true :=
+    decide_eq_true hArrival₁
+
+  have hPredicate₂ :
+      predicate
+        message₂ =
+      true :=
+    decide_eq_true hArrival₂
+
+  have hMember₁ :
+      message₁ ∈
+        bag.filter
+          predicate := by
+
+    rw [hSplit₁, List.filter_append]
+
+    exact
+      List.mem_append.mpr
+        (Or.inr
+          (List.mem_filter.mpr
+            ⟨List.mem_cons_self,
+              hPredicate₁⟩))
+
+  have hMember₂ :
+      message₂ ∈
+        bag.filter
+          predicate := by
+
+    rw [hSplit₂, List.filter_append]
+
+    exact
+      List.mem_append.mpr
+        (Or.inr
+          (List.mem_filter.mpr
+            ⟨List.mem_cons_self,
+              hPredicate₂⟩))
+
+  have hMessageEq :
+      message₁ =
+        message₂ :=
+    eq_of_mem_of_length_le_one
+      hUnique
+      hMember₁
+      hMember₂
+
+  rw [hMessageEq.symm] at hSplit₂ hArrival₂
+
+  have hPrefix :
+      ∀ (left right :
+          DTR.GeneralMessageBag),
+        left ++
+          message₁ ::
+            later₁ =
+          right ++
+            message₁ ::
+              later₂ →
+        left =
+          right := by
+
+    intro left
+
+    induction left with
+
+    | nil =>
+        intro right hAppend
+
+        simp only [
+          List.nil_append
+        ] at hAppend
+
+        cases right with
+
+        | nil =>
+            rfl
+
+        | cons head remaining =>
+            injection hAppend with _ hTail
+
+            have hMember :
+                message₁ ∈
+                  later₁ := by
+
+              rw [hTail]
+
+              exact
+                List.mem_append.mpr
+                  (Or.inr
+                    (List.mem_cons_self))
+
+            exfalso
+
+            have hTwo :
+                2 ≤
+                  (bag.filter
+                    predicate).length :=
+              two_le_filter_of_member_later
+                hSplit₁
+                hPredicate₁
+                hMember
+                hPredicate₁
+
+            exact
+              absurd hTwo
+                (by omega)
+
+    | cons head remaining inductionHypothesis =>
+        intro right hAppend
+
+        simp only [
+          List.cons_append
+        ] at hAppend
+
+        cases right with
+
+        | nil =>
+            injection hAppend with _ hTail
+
+            have hMember :
+                message₁ ∈
+                  later₂ := by
+
+              rw [hTail.symm]
+
+              exact
+                List.mem_append.mpr
+                  (Or.inr
+                    (List.mem_cons_self))
+
+            exfalso
+
+            have hTwo :
+                2 ≤
+                  (bag.filter
+                    predicate).length :=
+              two_le_filter_of_member_later
+                hSplit₂
+                hPredicate₁
+                hMember
+                hPredicate₁
+
+            exact
+              absurd hTwo
+                (by omega)
+
+        | cons head' remaining' =>
+            injection hAppend with hHead hTail
+
+            subst hHead
+
+            rw [
+              inductionHypothesis
+                remaining'
+                hTail
+            ]
+
+  have hAppendEq :
+      earlier₁ ++
+        message₁ ::
+          later₁ =
+        earlier₂ ++
+          message₁ ::
+            later₂ :=
+    hSplit₁.symm.trans hSplit₂
+
+  have hEarlierEq :
+      earlier₁ =
+        earlier₂ :=
+    hPrefix
+      earlier₁
+      earlier₂
+      hAppendEq
+
+  refine
+    ⟨hMessageEq, hEarlierEq, ?_⟩
+
+  rw [hEarlierEq] at hAppendEq
+
+  have hConsEq :
+      message₁ ::
+        later₁ =
+        message₁ ::
+          later₂ :=
+    List.append_cancel_left
+      hAppendEq
+
+  simp only [
+    List.cons.injEq
+  ] at hConsEq
+
+  exact
+    hConsEq.right
+
+/-!
 ### What `earliestDueArrival` computes
 
 Four equations first, one per branch the definition can take, so that the two

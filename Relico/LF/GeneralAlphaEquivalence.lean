@@ -345,6 +345,167 @@ theorem generalQueueAlphaEquiv.filter_target
           inductionRight
 
 /-!
+## Prepending a common head, and moving a minimal event to the head
+-/
+
+/--
+Prepending a common head to an admissible swap is again an admissible swap.
+
+The swap's split `earlier ++ first :: second :: rest` extends to `(head :: earlier) ++ …` on
+both sides; `List.cons_append` makes the two queue equations hold definitionally, and the tag
+and target conjuncts are untouched. This is the generator-level ingredient of the closure-level
+congruence below.
+-/
+theorem generalQueueSwapStep.cons
+    (head : GeneralPendingEvent)
+    {pending pending' : GeneralEventQueue}
+    (hSwap :
+      generalQueueSwapStep
+        pending
+        pending') :
+    generalQueueSwapStep
+      (head :: pending)
+      (head :: pending') := by
+  obtain
+      ⟨earlier, first, second, rest, hLeft, hRight, hTag, hDistinct⟩ :=
+    hSwap
+
+  refine
+    ⟨head :: earlier,
+     first,
+     second,
+     rest,
+     ?_,
+     ?_,
+     hTag,
+     hDistinct⟩
+
+  · rw [hLeft, List.cons_append]
+
+  · rw [hRight, List.cons_append]
+
+/--
+α-equivalence is a congruence for prepending a common head.
+
+Each swap in the derivation lifts through `head ::` by `generalQueueSwapStep.cons`, and the
+reflexivity, symmetry and transitivity constructors carry over directly. This is what lets the
+`moveToHead` induction below work under the queue's leading segment one element at a time.
+-/
+theorem generalQueueAlphaEquiv.cons
+    (head : GeneralPendingEvent)
+    {pending pending' : GeneralEventQueue}
+    (hEquiv :
+      generalQueueAlphaEquiv
+        pending
+        pending') :
+    generalQueueAlphaEquiv
+      (head :: pending)
+      (head :: pending') := by
+  induction hEquiv with
+
+  | refl queue =>
+      exact
+        generalQueueAlphaEquiv.refl
+          (head :: queue)
+
+  | rel hSwap =>
+      exact
+        generalQueueAlphaEquiv.rel
+          (generalQueueSwapStep.cons head hSwap)
+
+  | symm _ inductionHypothesis =>
+      exact inductionHypothesis.symm
+
+  | trans _ _ inductionLeft inductionRight =>
+      exact inductionLeft.trans inductionRight
+
+/--
+A minimal event separated from the head by a block of same-tag, distinct-target events can be
+α-swapped to the head.
+
+`front` is the segment preceding `event`; every one of its members shares `event`'s full tag
+(so each adjacent exchange is at one logical tag, decision 0042's clause) and targets a reactor
+other than `event`'s (so each exchange has the distinct targets `generalQueueSwapStep` requires).
+Under those two facts the whole `front` block is a wall of admissible tie-blockers, and `event`
+rises through it one swap at a time: the induction lifts the tail move through the leading
+element with `generalQueueAlphaEquiv.cons`, then exchanges that element with `event` directly.
+
+This is the queue half of the forward `.consume` representative construction. It deliberately
+says nothing about events at *other* tags: those never appear in `front` here — the caller
+supplies a `front` of tie-blockers only — and the fact that a larger-tag event cannot displace
+the risen `event` from selection is left to `selectEarliestEvent`'s own minimality, not to this
+reordering.
+-/
+theorem generalQueueAlphaEquiv_moveToHead
+    (event : GeneralPendingEvent)
+    (front back : GeneralEventQueue)
+    (hSameTag :
+      ∀ x ∈ front, x.tag = event.tag)
+    (hDistinct :
+      ∀ x ∈ front, x.target ≠ event.target) :
+    generalQueueAlphaEquiv
+      (front ++ event :: back)
+      (event :: (front ++ back)) := by
+  induction front with
+
+  | nil =>
+      exact
+        generalQueueAlphaEquiv.refl
+          (event :: back)
+
+  | cons head tail inductionHypothesis =>
+      have hTailSameTag :
+          ∀ x ∈ tail, x.tag = event.tag :=
+        fun x hx =>
+          hSameTag x (List.mem_cons.mpr (Or.inr hx))
+
+      have hTailDistinct :
+          ∀ x ∈ tail, x.target ≠ event.target :=
+        fun x hx =>
+          hDistinct x (List.mem_cons.mpr (Or.inr hx))
+
+      have hTailMove :
+          generalQueueAlphaEquiv
+            (tail ++ event :: back)
+            (event :: (tail ++ back)) :=
+        inductionHypothesis hTailSameTag hTailDistinct
+
+      have hLifted :
+          generalQueueAlphaEquiv
+            (head :: (tail ++ event :: back))
+            (head :: event :: (tail ++ back)) :=
+        generalQueueAlphaEquiv.cons head hTailMove
+
+      have hHeadTag :
+          head.tag = event.tag :=
+        hSameTag head (List.mem_cons.mpr (Or.inl rfl))
+
+      have hHeadDistinct :
+          head.target ≠ event.target :=
+        hDistinct head (List.mem_cons.mpr (Or.inl rfl))
+
+      have hSwap :
+          generalQueueAlphaEquiv
+            (head :: event :: (tail ++ back))
+            (event :: head :: (tail ++ back)) :=
+        generalQueueAlphaEquiv.rel
+          ⟨[],
+           head,
+           event,
+           tail ++ back,
+           rfl,
+           rfl,
+           hHeadTag,
+           hHeadDistinct⟩
+
+      show
+        generalQueueAlphaEquiv
+          (head :: (tail ++ event :: back))
+          (event :: head :: (tail ++ back))
+
+      exact hLifted.trans hSwap
+
+/-!
 ## α-equivalence of runtime states
 -/
 
