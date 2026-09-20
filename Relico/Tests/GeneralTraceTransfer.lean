@@ -26,7 +26,7 @@ real compilation satisfies, or a relation nothing inhabits. That class of defect
 
 ## What is deliberately *not* pinned
 
-The residue premises are **not** discharged with real content. `hConsumeAnswer`, `hTauAnswer` and
+The residue premises are **not** discharged with real content. `hConsumeResidue`, `hTauAnswer` and
 `hTimeAnswer` are supplied at the empty execution, where `Common.WeakSteps.refl` means the induction never
 consumes them — so these pins check *applicability*, not the residues. Faking a residue to make a pin look
 stronger would be exactly the dishonesty the residues exist to avoid: each is the α′ question, and a test
@@ -77,6 +77,14 @@ theorem pinNames :
       (fun candidate =>
         candidate.name)
       pinModel.instances).Nodup := by
+  decide
+
+/- The source model is well-formed. Needed because the forward `.consume` answer
+   (`generalConsumeAnswer`, reached through both forward rows) reads source structure from
+   `model.wellFormed`, which a successful compilation does not by itself supply. `pinModel` is
+   concrete, so `decide` settles it. -/
+theorem pinModelWellFormed :
+    pinModel.wellFormed = true := by
   decide
 
 /- Test 4: the per-instance output-port `Nodup` premise, in exactly the shape both transfer theorems read.
@@ -279,6 +287,7 @@ example :
     pinRoutes
     pinEnvNodup
     pinNames
+    pinModelWellFormed
     (fun _ _ _ receiver message _ hTake =>
       absurd
         hTake
@@ -333,6 +342,7 @@ example :
     pinRoutes
     pinEnvNodup
     pinNames
+    pinModelWellFormed
     (fun _ _ _ receiver message _ hTake =>
       absurd
         hTake
@@ -393,23 +403,22 @@ example
               pinModel
               stepConfig'
               stepState')
-    (hConsumeAnswer :
+    (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
+        (before after : LF.GeneralRuntimeState)
         (target : ActorName)
         (kind : LF.GeneralEventKind),
         Correctness.GeneralTraceRelated
           pinModel
           stepConfig
-          stepState →
-        Common.WeakStep
-          (LF.GeneralStepModulo pinProgram)
-          LF.GeneralLabel.isTau
-          stepState
+          before →
+        LF.GeneralStepModulo
+          pinProgram
+          before
           (LF.GeneralLabel.consume
             target
             kind)
-          stepState' →
+          after →
         ∃ (message : DTR.GeneralMessage)
           (stepConfig' : DTR.GeneralRuntimeConfiguration),
           Common.WeakStep
@@ -423,7 +432,7 @@ example
             Correctness.GeneralTraceRelated
               pinModel
               stepConfig'
-              stepState')
+              after)
     (hTimeAnswer :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (stepState stepState' : LF.GeneralRuntimeState)
@@ -474,7 +483,7 @@ example
             sourceLabel :=
   Correctness.generalTraceTransfer_backward
     hTauAnswer
-    hConsumeAnswer
+    hConsumeResidue
     hTimeAnswer
     (DTR.GeneralModel.initialState
       pinModel)
@@ -519,23 +528,22 @@ example
               pinModel
               stepConfig'
               stepState')
-    (hConsumeAnswer :
+    (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
+        (before after : LF.GeneralRuntimeState)
         (target : ActorName)
         (kind : LF.GeneralEventKind),
         Correctness.GeneralTraceRelated
           pinModel
           stepConfig
-          stepState →
-        Common.WeakStep
-          (LF.GeneralStepModulo pinProgram)
-          LF.GeneralLabel.isTau
-          stepState
+          before →
+        LF.GeneralStepModulo
+          pinProgram
+          before
           (LF.GeneralLabel.consume
             target
             kind)
-          stepState' →
+          after →
         ∃ (message : DTR.GeneralMessage)
           (stepConfig' : DTR.GeneralRuntimeConfiguration),
           Common.WeakStep
@@ -549,7 +557,7 @@ example
             Correctness.GeneralTraceRelated
               pinModel
               stepConfig'
-              stepState')
+              after)
     (hTimeAnswer :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (stepState stepState' : LF.GeneralRuntimeState)
@@ -602,7 +610,7 @@ example
             sourceLabels :=
   Correctness.generalTraceAgreement_backward_of_answers
     hTauAnswer
-    hConsumeAnswer
+    hConsumeResidue
     hTimeAnswer
     pinRelated
     (Common.WeakSteps.refl _)
