@@ -42,6 +42,7 @@ private helpers below are local twins of `private` lemmas in
 de-privatising one.
 -/
 import Relico.Correctness.GeneralObservable
+import Relico.Correctness.GeneralConsumeAnswer
 
 set_option autoImplicit false
 
@@ -260,7 +261,9 @@ theorem generalTraceTransfer_forward
         (fun candidate =>
           candidate.name)
         model.instances).Nodup)
-    (hConsumeAnswer :
+    (hModelWellFormed :
+      model.wellFormed = true)
+    (hConsumeResidue :
       ∀ (stepConfig stepConfig' : DTR.GeneralRuntimeConfiguration)
         (stepState : LF.GeneralRuntimeState)
         (receiver : ActorName)
@@ -276,21 +279,41 @@ theorem generalTraceTransfer_forward
             receiver
             message)
           stepConfig' →
-        ∃ (stepState' : LF.GeneralRuntimeState)
-          (event : LF.GeneralPendingEvent),
-          Common.WeakStep
-              (LF.GeneralStepModulo program)
-              LF.GeneralLabel.isTau
-              stepState
-              (LF.GeneralLabel.consume
+        LF.GeneralNoPastPending stepState ∧
+          LF.GeneralKindOrigin
+            model
+            program
+            routes
+            stepState ∧
+          message.arrival = stepConfig.now ∧
+          DTR.GeneralActorSelection.UniqueDueAtSelected
+            stepConfig.erase
+            {
+              actorName := receiver
+              logicalTime := stepConfig.now
+            } ∧
+          (∀ (front back : LF.GeneralEventQueue)
+            (event : LF.GeneralPendingEvent),
+            stepState.pending = front ++ event :: back →
+            GeneralConsumeMatch receiver message event →
+            event.tag = stepState.currentTag ∧
+              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+          (∀ (event : LF.GeneralPendingEvent)
+            (reaction : LF.GeneralReaction)
+            (reactiveClass : DTR.GeneralReactiveClass)
+            (serverK : DTR.GeneralMessageServer),
+            event ∈ stepState.pending →
+            GeneralConsumeMatch receiver message event →
+            program.reactionFor?
                 event.target
-                event.kind)
-              stepState' ∧
-            event.target = receiver ∧
-            GeneralTraceRelated
-              model
-              stepConfig'
-              stepState')
+                event.kind =
+              some reaction →
+            reactiveClass ∈ model.classes →
+            serverK ∈ reactiveClass.messageServers →
+            reaction.parameters =
+              serverK.parameters.map
+                (fun parameter => parameter.name) →
+            serverK.name = message.messageName))
     (config : DTR.GeneralRuntimeConfiguration)
     (state : LF.GeneralRuntimeState)
     (label : DTR.GeneralLabel)
@@ -442,9 +465,26 @@ theorem generalTraceTransfer_forward
 
       | take hSelected hName hActor hIdle hDue hArrival hServer =>
 
-          -- The consume case: delegated to the premise, which is the α′ residue.
-          obtain ⟨stateAfter, event, hAnswerStep, hAnswerTarget, hAnswerRelated⟩ :=
-            hConsumeAnswer
+          -- The source consume step, reused for the residue and for the answer.
+          have hTakeStep :=
+            DTR.GeneralStep.take
+              hSelected
+              hName
+              hActor
+              hIdle
+              hDue
+              hArrival
+              hServer
+
+          -- The genuine α′ residue for this step, supplied by the caller.
+          obtain
+              ⟨hResNoPast,
+               hResOrigin,
+               hResArrival,
+               hResUniqueDue,
+               hResFrontSameTag,
+               hResServerName⟩ :=
+            hConsumeResidue
               _
               _
               stateBefore
@@ -453,17 +493,42 @@ theorem generalTraceTransfer_forward
               ⟨hCorrespondenceBefore,
                hUniqueSBefore,
                hUniqueTBefore⟩
-              (DTR.GeneralStep.take
-                hSelected
-                hName
-                hActor
-                hIdle
-                hDue
-                hArrival
-                hServer)
+              hTakeStep
 
-          obtain ⟨hAfterCorrespondence, hAfterUniqueS, hAfterUniqueT⟩ :=
-            hAnswerRelated
+          -- The consume case: built from the residue by `generalConsumeAnswer`.
+          obtain
+              ⟨stateAfter,
+               event,
+               hAnswerStep,
+               hAnswerMatch,
+               hAfterCorrespondence,
+               hAfterUniqueT⟩ :=
+            generalConsumeAnswer
+              hModelWellFormed
+              hCompiled
+              hEnvNodup
+              hNames
+              hCorrespondenceBefore
+              hUniqueSBefore
+              hUniqueTBefore
+              hTakeStep
+              hResNoPast
+              hResOrigin
+              hResArrival
+              hResUniqueDue
+              hResFrontSameTag
+              hResServerName
+
+          -- The receiver identity, read off the match.
+          have hAnswerTarget :=
+            hAnswerMatch.1
+
+          -- The source invariant after the step; key uniqueness never crosses α.
+          have hAfterUniqueS :
+              DTR.GeneralStoreKeyUnique _ :=
+            DTR.generalStoreKeyUnique_of_step
+              hUniqueSBefore
+              hTakeStep
 
           -- The τ suffix, again raw.
           obtain ⟨stateFinal, hRawSuffix, hFinalCorrespondence⟩ :=
@@ -637,7 +702,9 @@ theorem generalTraceAgreement_of_consumeAnswer
         (fun candidate =>
           candidate.name)
         model.instances).Nodup)
-    (hConsumeAnswer :
+    (hModelWellFormed :
+      model.wellFormed = true)
+    (hConsumeResidue :
       ∀ (stepConfig stepConfig' : DTR.GeneralRuntimeConfiguration)
         (stepState : LF.GeneralRuntimeState)
         (receiver : ActorName)
@@ -653,21 +720,41 @@ theorem generalTraceAgreement_of_consumeAnswer
             receiver
             message)
           stepConfig' →
-        ∃ (stepState' : LF.GeneralRuntimeState)
-          (event : LF.GeneralPendingEvent),
-          Common.WeakStep
-              (LF.GeneralStepModulo program)
-              LF.GeneralLabel.isTau
-              stepState
-              (LF.GeneralLabel.consume
+        LF.GeneralNoPastPending stepState ∧
+          LF.GeneralKindOrigin
+            model
+            program
+            routes
+            stepState ∧
+          message.arrival = stepConfig.now ∧
+          DTR.GeneralActorSelection.UniqueDueAtSelected
+            stepConfig.erase
+            {
+              actorName := receiver
+              logicalTime := stepConfig.now
+            } ∧
+          (∀ (front back : LF.GeneralEventQueue)
+            (event : LF.GeneralPendingEvent),
+            stepState.pending = front ++ event :: back →
+            GeneralConsumeMatch receiver message event →
+            event.tag = stepState.currentTag ∧
+              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+          (∀ (event : LF.GeneralPendingEvent)
+            (reaction : LF.GeneralReaction)
+            (reactiveClass : DTR.GeneralReactiveClass)
+            (serverK : DTR.GeneralMessageServer),
+            event ∈ stepState.pending →
+            GeneralConsumeMatch receiver message event →
+            program.reactionFor?
                 event.target
-                event.kind)
-              stepState' ∧
-            event.target = receiver ∧
-            GeneralTraceRelated
-              model
-              stepConfig'
-              stepState')
+                event.kind =
+              some reaction →
+            reactiveClass ∈ model.classes →
+            serverK ∈ reactiveClass.messageServers →
+            reaction.parameters =
+              serverK.parameters.map
+                (fun parameter => parameter.name) →
+            serverK.name = message.messageName))
     {config config' : DTR.GeneralRuntimeConfiguration}
     {state : LF.GeneralRuntimeState}
     {labels : List DTR.GeneralLabel}
@@ -708,7 +795,8 @@ theorem generalTraceAgreement_of_consumeAnswer
       hRoutes
       hEnvNodup
       hNames
-      hConsumeAnswer)
+      hModelWellFormed
+      hConsumeResidue)
     hRelated
     hSteps
 
