@@ -3493,6 +3493,151 @@ theorem mem_bodies_messageServer
       (List.mem_map_of_mem
         hServer)
 
+/--
+A self-send of a message-server list resolves to a message server named after it.
+
+The message-server half of `exists_messageServer_of_mem_selfSendsOfClass`. `selfSendsOfMessageServers`
+appends each server's `selfSendsOfBody` in declaration order, so a self-send in the list is a self-send
+of exactly one server's body, and `exists_messageServer_of_mem_selfSendsFromIndex` names its message
+server from that body's resolution. The `servers ⊆ reactiveClass.messageServers` hypothesis is what
+lets `statementResolves_of_wellFormed` fire at each body through `mem_bodies_messageServer`, and it is
+preserved down the induction because a tail of a subset is a subset.
+-/
+theorem exists_messageServer_of_mem_selfSendsOfMessageServers
+    {model : DTR.GeneralModel}
+    (hModelWellFormed :
+      model.wellFormed =
+        true)
+    {reactiveClass : DTR.GeneralReactiveClass}
+    (hClass :
+      reactiveClass ∈ model.classes) :
+    ∀ (servers : List DTR.GeneralMessageServer),
+      (∀ server ∈ servers,
+        server ∈ reactiveClass.messageServers) →
+      ∀ selfSend ∈
+          Translation.selfSendsOfMessageServers
+            servers,
+        ∃ server ∈ reactiveClass.messageServers,
+          server.name = selfSend.message := by
+
+  intro servers
+  induction servers with
+
+  | nil =>
+      intro _ selfSend hMember
+
+      simp [
+        Translation.selfSendsOfMessageServers
+      ] at hMember
+
+  | cons head remaining inductionHypothesis =>
+      intro hAllMem selfSend hMember
+
+      have hMember' :
+          selfSend ∈
+            Translation.selfSendsOfBody
+                (.messageServer head.name)
+                head.body ++
+              Translation.selfSendsOfMessageServers
+                remaining :=
+        hMember
+
+      rcases List.mem_append.mp hMember' with
+        hHead | hTail
+
+      · exact
+          exists_messageServer_of_mem_selfSendsFromIndex
+            model
+            reactiveClass
+            (.messageServer head.name)
+            head.body
+            []
+            0
+            (statementResolves_of_wellFormed
+              hModelWellFormed
+              hClass
+              (mem_bodies_messageServer
+                (hAllMem
+                  head
+                  List.mem_cons_self)))
+            selfSend
+            hHead
+
+      · exact
+          inductionHypothesis
+            (fun server hServer =>
+              hAllMem
+                server
+                (List.mem_cons_of_mem
+                  head
+                  hServer))
+            selfSend
+            hTail
+
+/--
+Every self-send of a class resolves to a message server of that class, named after it.
+
+The class-level form of `exists_messageServer_of_mem_selfSendsFromIndex`, and the self-send analogue
+of the route-provenance ladder: where a route's server is named by `routeProvenance_of_routesOf`, a
+self-send's server is named by the model's `sendsResolveToMessageServers` clause read at the sending
+class — which for a self-send *is* the receiving class. `selfSendsOfClass` is the constructor body's
+self-sends appended to the message servers', so the proof is the append split, the constructor arm
+citing the body lemma directly and the message-server arm citing
+`exists_messageServer_of_mem_selfSendsOfMessageServers`.
+-/
+theorem exists_messageServer_of_mem_selfSendsOfClass
+    {model : DTR.GeneralModel}
+    (hModelWellFormed :
+      model.wellFormed =
+        true)
+    {reactiveClass : DTR.GeneralReactiveClass}
+    (hClass :
+      reactiveClass ∈ model.classes)
+    {selfSend : Translation.GeneralSelfSend}
+    (hMember :
+      selfSend ∈
+        Translation.selfSendsOfClass
+          reactiveClass) :
+    ∃ server ∈ reactiveClass.messageServers,
+      server.name = selfSend.message := by
+
+  have hMember' :
+      selfSend ∈
+        Translation.selfSendsOfBody
+            .constructor
+            reactiveClass.constructor.body ++
+          Translation.selfSendsOfMessageServers
+            reactiveClass.messageServers :=
+    hMember
+
+  rcases List.mem_append.mp hMember' with
+    hConstructor | hServers
+
+  · exact
+      exists_messageServer_of_mem_selfSendsFromIndex
+        model
+        reactiveClass
+        .constructor
+        reactiveClass.constructor.body
+        []
+        0
+        (statementResolves_of_wellFormed
+          hModelWellFormed
+          hClass
+          (mem_bodies_constructor
+            reactiveClass))
+        selfSend
+        hConstructor
+
+  · exact
+      exists_messageServer_of_mem_selfSendsOfMessageServers
+        hModelWellFormed
+        hClass
+        reactiveClass.messageServers
+        (fun _ hServer => hServer)
+        selfSend
+        hServers
+
 end GeneralModel
 end DTR
 
@@ -4967,6 +5112,209 @@ theorem generalRouteOrigin_of_compile
         ])
       hReactorMember
       hClassCompiled
+
+/--
+**The enqueue-side coherence atom of the pending server-name bridge.** A route emitted from a send
+site's own entry carries a full kind-origin package whose message server is named after the message
+that send statement sent.
+
+This is the fact `Correctness.generalConsumeServerBridge` consumes as `hServerName`
+(`serverK.name = message.messageName`) — read here at the enqueue end, where it is provable, instead
+of at the consume end, where the queue has long since lost the statement that produced the event.
+The chain is three already-proved links composed: `generalRouteOrigin_of_compile` names the
+receiving class, its message server, and the compiled reactor at the route's receiver instance;
+`Translation.generalRouteFor_message` ties the server's name to `entry.message`; and the caller's
+site conjunct ties `entry.message` to the executed send statement's message name. The filter
+membership is `Translation.mem_generalRoutesIntoMessageServer_self` rewritten along the two name
+equalities — the shape `generalReactionFor?_eq_some_of_portRoute` consumes.
+
+Stated on the *site's own* route rather than on the runtime connection, because F48 permits two
+routes to share one source endpoint: `Translation.exists_route_of_connectionFrom?` can only exhibit
+*some* route behind a connection, and only the site-faithful one
+(`Translation.generalConnectionFrom?_siteFaithful`) is guaranteed to carry the statement's own
+message. The caller holds both facts — the site-faithful theorem returns the lookup equation and the
+`generalRouteFor` resolution together — and rewrites the setPort rule's enqueued event onto
+`route.receiverInstance` and `generalInputPortOfRoute route` through its returned field equations.
+-/
+theorem generalKindOriginAt_inputPort_serverName
+    {model : DTR.GeneralModel}
+    {program : LF.GeneralProgram}
+    {routes : List Translation.GeneralRoute}
+    {actor : DTR.GeneralActorInstance}
+    {entry : Translation.GeneralOutputPortEntry}
+    {route : Translation.GeneralRoute}
+    {messageName : MsgName}
+    (hCompiled :
+      Translation.compileGeneralModel model =
+        .ok program)
+    (hRoutes :
+      Translation.routesOf model =
+        .ok routes)
+    (hRoute :
+      route ∈ routes)
+    (hResolved :
+      Translation.generalRouteFor
+          model
+          actor
+          entry =
+        .ok route)
+    (hEntryMessage :
+      entry.message = messageName) :
+    ∃ (reactiveClass : DTR.GeneralReactiveClass)
+      (server : DTR.GeneralMessageServer)
+      (reactor : LF.GeneralReactor),
+      reactiveClass ∈ model.classes ∧
+        server ∈ reactiveClass.messageServers ∧
+        server.name = messageName ∧
+        program.reactorOfInstance? route.receiverInstance =
+          some reactor ∧
+        Translation.compileGeneralReactiveClass
+            model.classes
+            routes
+            reactiveClass =
+          .ok reactor ∧
+        route ∈
+          Translation.generalRoutesIntoMessageServer
+            reactiveClass.name
+            server.name
+            routes := by
+
+  obtain
+      ⟨receivingClass,
+       server,
+       reactor,
+       hClassMember,
+       hClassName,
+       hServerMember,
+       hServerName,
+       hReactor,
+       hClassCompiled⟩ :=
+    generalRouteOrigin_of_compile
+      hCompiled
+      hRoutes
+      route
+      hRoute
+
+  obtain hRouteMessage :=
+    Translation.generalRouteFor_message
+      hResolved
+
+  refine
+    ⟨receivingClass,
+     server,
+     reactor,
+     hClassMember,
+     hServerMember,
+     hServerName.trans
+       (hRouteMessage.trans hEntryMessage),
+     hReactor,
+     hClassCompiled,
+     ?_⟩
+
+  rw [
+    hClassName,
+    hServerName
+  ]
+
+  exact
+    Translation.mem_generalRoutesIntoMessageServer_self
+      route
+      routes
+      hRoute
+
+/--
+**The enqueue-side coherence atom of the pending server-name bridge, schedule counterpart.** A
+self-send site of the executing reactor's own class carries a full kind-origin package whose message
+server is named after the message that self-send scheduled.
+
+The schedule analogue of `generalKindOriginAt_inputPort_serverName`, and the other event-creation
+path of the same `hServerName` residue (`serverK.name = message.messageName`). Read here at the
+enqueue end: `LF.GeneralStep.schedule` enqueues a `.logicalAction` event at the **executing** reactor
+with the action name the site numbering generated, so the receiver, its class, and its compiled
+reactor are the executing instance's own — supplied by the caller as `hReactor`/`hClassCompiled`,
+not recovered from a routing table. The one thing the runtime cannot see is the message server the
+scheduled message names, and `exists_messageServer_of_mem_selfSendsOfClass` supplies it from the
+model's `sendsResolveToMessageServers` clause: a self-send of a declared class resolves to a message
+server of that same class, named after the self-send's message.
+
+**The asymmetry with the port atom is the same one the origin theorems already carry.** The port
+side derives its server name from route provenance (`generalRouteOrigin_of_compile`), because a
+`setPort`'s kind is fixed by the connection table; the schedule side derives it from the *statement's*
+own self-send resolving, because a `.schedule`'s kind is fixed by the statement. Neither maps a
+message to a kind: the kind is the `.logicalAction` the site generated, and the server is named after
+the message that generated it, which is weaker and is all the bridge needs.
+
+This does **not** discharge `hServerName` at the consume site. It closes the schedule half of
+event *creation*; the pending-event abstraction still does not carry the originating message identity
+through `GeneralConsumeMatch` to the consume end, so the consumer's `hServerName` remains a premise.
+-/
+theorem generalKindOriginAt_logicalAction_serverName
+    {model : DTR.GeneralModel}
+    {program : LF.GeneralProgram}
+    {routes : List Translation.GeneralRoute}
+    {reactiveClass : DTR.GeneralReactiveClass}
+    {reactor : LF.GeneralReactor}
+    {instanceName : ActorName}
+    {selfSend : Translation.GeneralSelfSend}
+    {messageName : MsgName}
+    (hModelWellFormed :
+      model.wellFormed =
+        true)
+    (hClass :
+      reactiveClass ∈ model.classes)
+    (hClassCompiled :
+      Translation.compileGeneralReactiveClass
+          model.classes
+          routes
+          reactiveClass =
+        .ok reactor)
+    (hReactor :
+      program.reactorOfInstance? instanceName =
+        some reactor)
+    (hSelfSend :
+      selfSend ∈
+        Translation.selfSendsOfClass
+          reactiveClass)
+    (hSelfSendMessage :
+      selfSend.message = messageName) :
+    ∃ (server : DTR.GeneralMessageServer),
+      server ∈ reactiveClass.messageServers ∧
+        server.name = messageName ∧
+        program.reactorOfInstance? instanceName =
+          some reactor ∧
+        Translation.compileGeneralReactiveClass
+            model.classes
+            routes
+            reactiveClass =
+          .ok reactor ∧
+        selfSend ∈
+          Translation.generalSelfSendSitesOf
+            server.name
+            (Translation.selfSendsOfClass
+              reactiveClass) := by
+
+  obtain ⟨server, hServerMember, hServerName⟩ :=
+    DTR.GeneralModel.exists_messageServer_of_mem_selfSendsOfClass
+      hModelWellFormed
+      hClass
+      hSelfSend
+
+  refine
+    ⟨server,
+     hServerMember,
+     hServerName.trans hSelfSendMessage,
+     hReactor,
+     hClassCompiled,
+     ?_⟩
+
+  exact
+    Translation.mem_generalSelfSendSitesOf_of_mem
+      server.name
+      selfSend
+      (Translation.selfSendsOfClass
+        reactiveClass)
+      hSelfSend
+      hServerName.symm
 
 /--
 The three F81 distinctness facts, at a class of an accepted translation whose compiled reactor was

@@ -3161,7 +3161,8 @@ theorem generalContinuationCompiles_routedSend_head
       -- reason the routed half was blocked before it carried it.
       have hFields :
           entry.knownRebec = rebec ∧
-            entry.delay = delay := by
+            entry.delay = delay ∧
+              entry.message = message := by
         refine
           hSites
             [0]
@@ -3201,7 +3202,7 @@ theorem generalContinuationCompiles_routedSend_head
            entry
            hEntry,
          hFields.1,
-         hFields.2,
+         hFields.2.1,
          hShape,
          ⟨context,
       index + 1,

@@ -853,12 +853,10 @@ theorem generalInstantBlock_forward
               actorName := receiver
               logicalTime := stepConfig.now
             } ∧
-          (∀ (front back : LF.GeneralEventQueue)
-            (event : LF.GeneralPendingEvent),
-            stepState.pending = front ++ event :: back →
+          GeneralConsumeFrontSameTag stepState ∧
+          (∀ event ∈ stepState.pending,
             GeneralConsumeMatch receiver message event →
-            event.tag = stepState.currentTag ∧
-              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+            event.tag = stepState.currentTag) ∧
           (∀ (event : LF.GeneralPendingEvent)
             (reaction : LF.GeneralReaction)
             (reactiveClass : DTR.GeneralReactiveClass)
@@ -978,6 +976,7 @@ theorem generalInstantBlock_forward
                hResArrival,
                hResUniqueDue,
                hResFrontSameTag,
+               hResTagBoundary,
                hResServerName⟩ :=
             hConsumeResidue
               _
@@ -1012,6 +1011,7 @@ theorem generalInstantBlock_forward
               hResArrival
               hResUniqueDue
               hResFrontSameTag
+              hResTagBoundary
               hResServerName
 
           have hUniqueSAfter :
@@ -1106,6 +1106,14 @@ transition exists and records neither which event fired nor at which representat
 `GeneralInstantBlockSpine.weakSteps` runs spine to execution and has no converse for exactly that reason.
 Closing the gap means **strengthening the answer premise to return the spine entry**, not proving another
 transport lemma; that is separate work, and the transports it would have needed are now in hand.
+
+**F76 (`hTagBoundary`), the sole remaining consume scheduling-compatibility premise.** The `hConsumeResidue`
+input carries, alongside the other α′ facts, the full-tag boundary
+`∀ event ∈ pending, GeneralConsumeMatch _ _ event → event.tag = currentTag`. This is explicit and *not*
+derivable here: the correspondence equates only `.time`, `GeneralNoPastPending` permits strictly-later
+microsteps, and zero-delay sends legitimately create `(t, μ+1)` pending events, so full-tag equality is not a
+global invariant. It is the intentional semantic boundary of the consume fragment, replacing the older hidden
+`hName` coupling between the DTR selected actor and the LF fired actor with a single LF-internal tag equality.
 -/
 theorem generalInstantBlock_forward_of_source
     {model : DTR.GeneralModel}
@@ -1173,12 +1181,10 @@ theorem generalInstantBlock_forward_of_source
               actorName := receiver
               logicalTime := stepConfig.now
             } ∧
-          (∀ (front back : LF.GeneralEventQueue)
-            (event : LF.GeneralPendingEvent),
-            stepState.pending = front ++ event :: back →
+          GeneralConsumeFrontSameTag stepState ∧
+          (∀ event ∈ stepState.pending,
             GeneralConsumeMatch receiver message event →
-            event.tag = stepState.currentTag ∧
-              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+            event.tag = stepState.currentTag) ∧
           (∀ (event : LF.GeneralPendingEvent)
             (reaction : LF.GeneralReaction)
             (reactiveClass : DTR.GeneralReactiveClass)

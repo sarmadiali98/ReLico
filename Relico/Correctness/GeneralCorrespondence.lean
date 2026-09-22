@@ -124,6 +124,292 @@ def GeneralConsumeMatch
           Translation.compileGeneralValue
 
 /--
+The front-same-tag invariant, factored out of `generalConsume_forward_weak_of_fireRepresentative`
+as a reusable state predicate.
+
+For every queue split `front ++ event :: back` whose `event` matches a taken message under
+`GeneralConsumeMatch`, the matched event sits at the current tag, every blocker ahead of it shares
+its full tag, and it does not occur among those blockers. This is the α′ cross-microstep-promotion
+boundary the caller previously carried as a bare `hFrontSameTag` premise; naming it lets the same
+content be established once as an invariant rather than threaded per call site.
+-/
+def GeneralConsumeFrontSameTag
+    (state : LF.GeneralRuntimeState) : Prop :=
+  ∀ actorName message front back event,
+    state.pending = front ++ event :: back →
+    GeneralConsumeMatch actorName message event →
+    message.arrival = state.currentTag.time →
+    (∀ x ∈ front, x.tag = event.tag) ∧
+      event ∉ front
+
+/--
+Every initial state satisfies the front-same-tag invariant: the initial queue is empty, so no
+split `front ++ event :: back` exists and the invariant is vacuous.
+-/
+theorem generalConsumeFrontSameTag_initial
+    (program : LF.GeneralProgram) :
+    GeneralConsumeFrontSameTag
+      (LF.GeneralProgram.initialState program) := by
+  intro actorName message front back event hSplit _ _
+
+  rw [
+    LF.GeneralProgram.initialState_pending
+      program
+  ] at hSplit
+
+  exact
+    absurd
+      hSplit.symm
+      (List.append_ne_nil_of_right_ne_nil
+        front
+        (List.cons_ne_nil event back))
+
+/--
+The front-same-tag invariant depends on a state only through its pending queue and current tag,
+so it transfers verbatim to any state that agrees on both.
+
+`GeneralConsumeFrontSameTag` quantifies over queue splits of `state.pending`, reads
+`state.currentTag.time` in its arrival premise, and concludes at `state.currentTag`; nothing else
+about the state is consulted. This is the reusable trivial preservation step for every rule that
+leaves queue and tag untouched — `assign`, `trace`, `localDecl`, `branchTrue`, `branchFalse`,
+`resume` — none of which need the invariant re-derived from scratch. The queue-changing rules
+(`schedule`, `setPort`, `fire`, the two advances, `consume`) fall outside its reach by design and
+are handled separately.
+-/
+theorem generalConsumeFrontSameTag_of_queue_tag_eq
+    {state state' : LF.GeneralRuntimeState}
+    (hInv : GeneralConsumeFrontSameTag state)
+    (hPending : state.pending = state'.pending)
+    (hTag : state.currentTag = state'.currentTag) :
+    GeneralConsumeFrontSameTag state' := by
+  intro actorName message front back event hSplit hMatch hArrival
+
+  rw [← hPending] at hSplit
+  rw [← hTag] at hArrival
+
+  exact hInv actorName message front back event hSplit hMatch hArrival
+
+/--
+`assign` preserves the front-same-tag invariant.
+
+The rule updates one reactor's valuation and continuation and copies `currentTag` and `pending`
+verbatim, so `generalConsumeFrontSameTag_of_queue_tag_eq` closes it with two `rfl`s — the
+confirmation that the extracted helper applies to a trivial queue/tag-unchanged rule before the
+queue-changing rules are attempted.
+-/
+theorem generalConsumeFrontSameTag_assign
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {target : VarName}
+    {value : LF.GeneralValue}
+    {remaining : LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation :=
+                Store.update
+                  reactor.valuation
+                  target
+                  value
+              activeBody := remaining
+              frames := reactor.frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
+`trace` preserves the front-same-tag invariant.
+
+The rule advances one reactor's continuation past the trace statement and leaves `currentTag`
+and `pending` verbatim — the same queue/tag-unchanged shape as `assign`, differing only in that
+the valuation is copied rather than updated. `state'.pending = state.pending` and
+`state'.currentTag = state.currentTag` both hold by `rfl`, so
+`generalConsumeFrontSameTag_of_queue_tag_eq` discharges it, confirming the second trivial rule
+reuses the one proof pattern.
+-/
+theorem generalConsumeFrontSameTag_trace
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {remaining : LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation := reactor.valuation
+              activeBody := remaining
+              frames := reactor.frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
+`localDecl` preserves the front-same-tag invariant.
+
+Stage I's local declaration binds one fresh local in one reactor's valuation and advances that
+reactor's continuation past the declaration, copying `currentTag` and `pending` verbatim — the same
+queue/tag-unchanged shape as `assign`, differing only in that the store position updated is a local
+name. `state'.pending = state.pending` and `state'.currentTag = state.currentTag` both hold by
+`rfl`, so `generalConsumeFrontSameTag_of_queue_tag_eq` discharges it, finishing the
+queue/tag-preserving class before the queue-changing rules are attempted.
+-/
+theorem generalConsumeFrontSameTag_localDecl
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {name : VarName}
+    {value : LF.GeneralValue}
+    {remaining : LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation :=
+                Store.update
+                  reactor.valuation
+                  name
+                  value
+              activeBody := remaining
+              frames := reactor.frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
+`resume` preserves the front-same-tag invariant.
+
+Stage H's branch-exit rule pops the head frame to the active body of one reactor and copies
+`currentTag` and `pending` verbatim — the same queue/tag-unchanged shape as `assign`, differing
+only in that the field promoted is a frame rather than a valuation binding.
+`state'.pending = state.pending` and `state'.currentTag = state.currentTag` both hold by `rfl`, so
+`generalConsumeFrontSameTag_of_queue_tag_eq` discharges it, finishing the trivial
+step-preservation family for the queue/tag-preserving rules.
+-/
+theorem generalConsumeFrontSameTag_resume
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {frame : LF.GeneralBody}
+    {frames : List LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation := reactor.valuation
+              activeBody := frame
+              frames := frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
+`branchTrue` preserves the front-same-tag invariant.
+
+Stage H's then-branch entry makes the compiled then-body one reactor's active body and pushes the
+remainder as a frame, copying `currentTag` and `pending` verbatim — the same queue/tag-unchanged
+shape as `assign`, differing only in which continuation fields move. `state'.pending =
+state.pending` and `state'.currentTag = state.currentTag` both hold by `rfl`, so
+`generalConsumeFrontSameTag_of_queue_tag_eq` discharges it.
+-/
+theorem generalConsumeFrontSameTag_branchTrue
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {thenBody remaining : LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation := reactor.valuation
+              activeBody := thenBody
+              frames := remaining :: reactor.frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
+`branchFalse` preserves the front-same-tag invariant.
+
+Stage H's else-branch entry makes the compiled else-body one reactor's active body and pushes the
+remainder as a frame, copying `currentTag` and `pending` verbatim — the mirror of `branchTrue`,
+differing only in which branch's body is entered. `state'.pending = state.pending` and
+`state'.currentTag = state.currentTag` both hold by `rfl`, so
+`generalConsumeFrontSameTag_of_queue_tag_eq` discharges it, completing the trivial
+preservation family and isolating the queue-changing rules as the remaining semantic cases.
+-/
+theorem generalConsumeFrontSameTag_branchFalse
+    {state : LF.GeneralRuntimeState}
+    {instanceName : ActorName}
+    {reactor : LF.GeneralReactorRuntime}
+    {elseBody remaining : LF.GeneralBody}
+    (hInv : GeneralConsumeFrontSameTag state) :
+    GeneralConsumeFrontSameTag
+      {
+        currentTag := state.currentTag
+        reactors :=
+          Store.update
+            state.reactors
+            instanceName
+            {
+              valuation := reactor.valuation
+              activeBody := elseBody
+              frames := remaining :: reactor.frames
+            }
+        pending := state.pending
+      } :=
+  generalConsumeFrontSameTag_of_queue_tag_eq
+    hInv
+    rfl
+    rfl
+
+/--
 One actor's messages, against the events of the global queue that target it.
 
 An existential pairing of matched occurrences: every pair satisfies `GeneralConsumeMatch`, the
@@ -1052,7 +1338,8 @@ def GeneralContinuationCompiles
                 } =
               some entry →
             entry.knownRebec = rebec ∧
-              entry.delay = delay
+              entry.delay = delay ∧
+                entry.message = message
 
 /--
 The empty continuation compiles to the empty continuation.
@@ -1124,7 +1411,7 @@ theorem generalContinuationCompiles_messageServerEntry
 
   intro path rebec message delay hPath entry hEntry
 
-  obtain ⟨send, hSendMember, hSendRebec, hSendSite, hSendDelay⟩ :=
+  obtain ⟨send, hSendMember, hSendRebec, hSendSite, hSendDelay, hSendMessage⟩ :=
     Translation.exists_send_of_mem_outputPortEnv
       hEnv
       (Translation.generalEntryAtSite?_mem
@@ -1166,7 +1453,7 @@ theorem generalContinuationCompiles_messageServerEntry
     rw [hSiteEq]
     simp
 
-  obtain ⟨hRebec, hDelay⟩ :=
+  obtain ⟨hRebec, hDelay, hMessage⟩ :=
     Translation.externalSendsFromIndex_knownRebec_of_path
       (.messageServer server.name)
       []
@@ -1175,13 +1462,16 @@ theorem generalContinuationCompiles_messageServerEntry
       hBodyMember
       hSendIndex
 
-  refine ⟨?_, ?_⟩
+  refine ⟨?_, ?_, ?_⟩
 
   · rw [hSendRebec]
     exact hRebec
 
   · rw [hSendDelay]
     exact hDelay
+
+  · rw [hSendMessage]
+    exact hMessage
 
 /--
 Consuming a trace head preserves the compilation relation for the remaining continuations.
@@ -3546,7 +3836,7 @@ theorem generalActorCorresponds_constructorEntry
     -- for "the constructor body has no conditional", which `generalCorrespondence_initial` cannot
     -- supply — `compileGeneralModel` never checks `DTR.GeneralModel.wellFormed` — and which this
     -- theorem does not need.
-    obtain ⟨send, hSendMember, hSendRebec, hSendSite, hSendDelay⟩ :=
+    obtain ⟨send, hSendMember, hSendRebec, hSendSite, hSendDelay, hSendMessage⟩ :=
       Translation.exists_send_of_mem_outputPortEnv
         hEnv
         (Translation.generalEntryAtSite?_mem
@@ -3599,7 +3889,7 @@ theorem generalActorCorresponds_constructorEntry
 
       simp
 
-    obtain ⟨hRebec, hDelay⟩ :=
+    obtain ⟨hRebec, hDelay, hMessage⟩ :=
       Translation.externalSendsFromIndex_knownRebec_of_path
         .constructor
         []
@@ -3608,7 +3898,7 @@ theorem generalActorCorresponds_constructorEntry
         hBodyMember
         hSendIndex
 
-    refine ⟨?_, ?_⟩
+    refine ⟨?_, ?_, ?_⟩
 
     · rw [
         hSendRebec
@@ -3621,6 +3911,12 @@ theorem generalActorCorresponds_constructorEntry
       ]
 
       exact hDelay
+
+    · rw [
+        hSendMessage
+      ]
+
+      exact hMessage
 
   · -- Both initializers start at the top level, so both stacks are empty and the fourth
     -- conjunct is `True`. It is stated rather than skipped for the reason the other trivial

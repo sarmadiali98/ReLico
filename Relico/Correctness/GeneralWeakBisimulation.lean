@@ -1620,9 +1620,10 @@ theorem generalConsumeRepresentativePackage
     (hCompiled :
       Translation.compileGeneralModel model =
         .ok program)
-    (hFrontSameTag :
-      -- The α′ cross-microstep-promotion boundary. For the matched event's position in the
-      -- queue, every blocker ahead of it shares its *full* tag and none is the event itself.
+    (hFrontSameTagInv :
+      -- The α′ cross-microstep-promotion boundary, now carried as the reusable state predicate
+      -- `GeneralConsumeFrontSameTag`. For the matched event's position in the queue, every blocker
+      -- ahead of it shares its *full* tag and none is the event itself.
       -- Undischargeable from the invariants: `GeneralNoPastPending` forbids strictly-earlier
       -- tags ahead but not strictly-later microsteps of other reactors, and the instant-block /
       -- correspondence layers deliberately leave cross-reactor queue order unconstrained (the
@@ -1634,11 +1635,16 @@ theorem generalConsumeRepresentativePackage
       -- `currentTag ⪯ event.tag` and `GeneralStateCorrespondence.logicalTime` only equates `.time`,
       -- so the microstep alignment of the matched event is undischargeable and must be supplied by
       -- this boundary premise together with the same-tag front.
-      ∀ (front back : LF.GeneralEventQueue) (event : LF.GeneralPendingEvent),
-        state.pending = front ++ event :: back →
+      GeneralConsumeFrontSameTag state)
+    (hTagBoundary :
+      -- The full-tag consume boundary. `GeneralConsumeFrontSameTag` was weakened to drop
+      -- `event.tag = state.currentTag` because zero-delay scheduling makes a later-microstep event
+      -- `(t, μ+1)` reachable while the tag is `(t, μ)`, so full-tag equality cannot be a global
+      -- invariant. The microstep alignment of the *matched* event is therefore carried here, local
+      -- to the consume representative boundary, rather than in the reusable state invariant.
+      ∀ event ∈ state.pending,
         GeneralConsumeMatch actorName message event →
-        event.tag = state.currentTag ∧
-          (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) :
+        event.tag = state.currentTag) :
     ∃ (before : LF.GeneralRuntimeState)
       (event : LF.GeneralPendingEvent)
       (earlier' later' : LF.GeneralEventQueue)
@@ -1755,8 +1761,21 @@ theorem generalConsumeRepresentativePackage
   obtain ⟨front, back, hStateQueue⟩ :=
     List.append_of_mem hEventMember
 
-  obtain ⟨hTag, hFrontSame, hEventNotInFront⟩ :=
-    hFrontSameTag front back event hStateQueue hMatch
+  have hFrontSameTag :=
+    hFrontSameTagInv
+      actorName message front back event
+      hStateQueue
+      hMatch
+      (hArrival.trans hCorrespondence.logicalTime.symm)
+
+  obtain ⟨hFrontSame, hEventNotInFront⟩ :=
+    hFrontSameTag
+
+  -- The full-tag equality of the matched event, now carried by the explicit consume boundary
+  -- premise rather than the weakened front-same-tag invariant.
+  have hTag :
+      event.tag = state.currentTag :=
+    hTagBoundary event hEventMember hMatch
 
   -- Move the event to the head via the minimal alpha-representative construction.
   obtain ⟨before, hAlpha, hBeforePending, hEarliest, hBeforeReactors⟩ :=

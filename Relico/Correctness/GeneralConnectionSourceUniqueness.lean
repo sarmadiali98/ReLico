@@ -479,6 +479,82 @@ theorem generalRouteFor_delay
             ] at hRoute
 
 /--
+A route's message is its entry's message.
+
+The missing middle link of the send-site provenance chain for the pending-coherence invariant:
+`generalRouteFor` copies `entry.message` verbatim into `route.message`, so a route emitted from an
+entry carries exactly the message name the entry was built from. The companion lemmas already
+proved `receiverInstance` (identity, against the binding), `sourceEndpoint` (both endpoints) and
+`delay`; this is the fourth field, and the one the consume-side server bridge needs — the route's
+server is named after the route's message, so tying `route.message` to a send statement's
+`messageName` ties the kind-origin server to the message the statement sent.
+
+Definitional in the one success branch, and the three refusals close exactly as the companions
+close them: an unbound known rebec, an unresolvable receiver instance, or a receiver whose class
+disagrees with the entry's.
+-/
+theorem generalRouteFor_message
+    {model : DTR.GeneralModel}
+    {actor : DTR.GeneralActorInstance}
+    {entry : GeneralOutputPortEntry}
+    {route : GeneralRoute}
+    (hRoute :
+      generalRouteFor
+          model
+          actor
+          entry =
+        .ok route) :
+    route.message = entry.message := by
+
+  cases hBinding :
+      Store.lookup
+        actor.bindings
+        entry.knownRebec with
+
+  | none =>
+      simp [
+        generalRouteFor,
+        hBinding
+      ] at hRoute
+
+  | some receiverInstance =>
+
+      cases hActor :
+          model.actor? receiverInstance with
+
+      | none =>
+          simp [
+            generalRouteFor,
+            hBinding,
+            hActor
+          ] at hRoute
+
+      | some receiver =>
+
+          by_cases hClassMatch :
+              receiver.className = entry.receiverClass
+
+          · simp only [
+              generalRouteFor,
+              hBinding,
+              hActor,
+              hClassMatch,
+              if_pos,
+              Except.ok.injEq
+            ] at hRoute
+
+            subst hRoute
+
+            rfl
+
+          · simp [
+              generalRouteFor,
+              hBinding,
+              hActor,
+              hClassMatch
+            ] at hRoute
+
+/--
 One instance's emitted routes carry its own name and their entries' ports.
 
 The pointwise content of `routesOfEntries`, extracted as two list equations so the endpoint
@@ -2473,7 +2549,8 @@ theorem exists_mem_externalSendsFromIndex_of_path
                 index
                 path ∧
           send.knownRebec = rebec ∧
-            send.delay = delay := by
+            send.delay = delay ∧
+              send.message = message := by
 
   induction hPath with
 
@@ -2504,6 +2581,7 @@ theorem exists_mem_externalSendsFromIndex_of_path
          ?_,
          rfl,
          rfl,
+         rfl,
          rfl⟩
 
       refine
@@ -2526,7 +2604,7 @@ theorem exists_mem_externalSendsFromIndex_of_path
   | @thenBranch body position condition thenBody elseBody rest path rebec message delay hDrop _ inductionHypothesis =>
       intro levelPath index
 
-      obtain ⟨send, hMember, hSite, hRebec, hDelay⟩ :=
+      obtain ⟨send, hMember, hSite, hRebec, hDelay, hMessage⟩ :=
         inductionHypothesis
           (levelPath ++
             [index + position, 0])
@@ -2537,7 +2615,8 @@ theorem exists_mem_externalSendsFromIndex_of_path
          ?_,
          ?_,
          hRebec,
-         hDelay⟩
+         hDelay,
+         hMessage⟩
 
       · refine
           mem_externalSendsFromIndex_of_mem_externalSendsFromStmt
@@ -2573,7 +2652,7 @@ theorem exists_mem_externalSendsFromIndex_of_path
   | @elseBranch body position condition thenBody elseBody rest path rebec message delay hDrop _ inductionHypothesis =>
       intro levelPath index
 
-      obtain ⟨send, hMember, hSite, hRebec, hDelay⟩ :=
+      obtain ⟨send, hMember, hSite, hRebec, hDelay, hMessage⟩ :=
         inductionHypothesis
           (levelPath ++
             [index + position, 1])
@@ -2584,7 +2663,8 @@ theorem exists_mem_externalSendsFromIndex_of_path
          ?_,
          ?_,
          hRebec,
-         hDelay⟩
+         hDelay,
+         hMessage⟩
 
       · refine
           mem_externalSendsFromIndex_of_mem_externalSendsFromStmt
@@ -2664,9 +2744,10 @@ theorem externalSendsFromIndex_knownRebec_of_path
             index
             path) :
     send.knownRebec = rebec ∧
-      send.delay = delay := by
+      send.delay = delay ∧
+        send.message = message := by
 
-  obtain ⟨witness, hWitnessMember, hWitnessSite, hWitnessRebec, hWitnessDelay⟩ :=
+  obtain ⟨witness, hWitnessMember, hWitnessSite, hWitnessRebec, hWitnessDelay, hWitnessMessage⟩ :=
     exists_mem_externalSendsFromIndex_of_path
       bodyKey
       hPath
@@ -2739,7 +2820,8 @@ theorem externalSendsFromIndex_knownRebec_of_path
 
   exact
     ⟨hWitnessRebec,
-     hWitnessDelay⟩
+     hWitnessDelay,
+     hWitnessMessage⟩
 
 /--
 The send a walk emits at a statement's own position carries that statement's delay.
@@ -3474,7 +3556,8 @@ theorem exists_send_of_mem_outputPortEnv
           sendingClass,
       entry.knownRebec = send.knownRebec ∧
         entry.site = send.site ∧
-          entry.delay = send.delay := by
+          entry.delay = send.delay ∧
+            entry.message = send.message := by
 
   unfold outputPortEnvOf at hResolved
 
@@ -3499,6 +3582,8 @@ theorem exists_send_of_mem_outputPortEnv
      generalOutputPortEntryFor_site
        hPair,
      generalOutputPortEntryFor_delay
+       hPair,
+     generalOutputPortEntryFor_message
        hPair⟩
 
   -- The numbering is a `map`-preserving relabelling, so a numbered pair's send is one of the class's.

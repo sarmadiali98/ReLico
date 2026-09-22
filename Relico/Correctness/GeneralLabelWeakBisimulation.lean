@@ -211,34 +211,7 @@ structure GeneralLabelWeakBisimulation
   be answered by a *visible* source label, which would break the observable agreement this structure exists to
   support.
   -/
-  backwardTauMatch :
-    ∀ (config : DTR.GeneralRuntimeConfiguration)
-      (state state' : LF.GeneralRuntimeState)
-      (label : LF.GeneralLabel),
-      GeneralTraceRelated
-        model
-        config
-        state →
-      LF.GeneralLabel.isTau label →
-      Common.WeakStep
-        (LF.GeneralStepModulo program)
-        LF.GeneralLabel.isTau
-        state
-        label
-        state' →
-      ∃ (sourceLabel : DTR.GeneralLabel)
-        (config' : DTR.GeneralRuntimeConfiguration),
-        DTR.GeneralLabel.isTau sourceLabel ∧
-          Common.WeakStep
-            (DTR.GeneralStep model)
-            DTR.GeneralLabel.isTau
-            config
-            sourceLabel
-            config' ∧
-          GeneralTraceRelated
-            model
-            config'
-            state'
+  backwardTauMatch : GeneralBackwardTauAnswer model program
 
   /--
   A target consume is answered by a source consume at the same receiver.

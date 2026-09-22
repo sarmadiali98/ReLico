@@ -334,6 +334,46 @@ def GeneralTraceRelated
     DTR.GeneralStoreKeyUnique config ∧
       LF.GeneralStoreKeyUnique state
 
+/--
+The backward τ-answer obligation for the general family.
+
+Given a target internal step, provide the corresponding source weak internal answer with the relation
+re-established. This is the shared name for the one semantic boundary that both `generalTraceTransfer_backward`
+(as its `hTauAnswer` premise) and `GeneralLabelWeakBisimulation.backwardTauMatch` (as a field) require; they
+are the same proposition, so naming it once prevents drift. It is neither simplified nor strengthened relative
+to the two prior inline copies.
+-/
+abbrev GeneralBackwardTauAnswer
+    (model : DTR.GeneralModel)
+    (program : LF.GeneralProgram) : Prop :=
+  ∀ (config : DTR.GeneralRuntimeConfiguration)
+    (state state' : LF.GeneralRuntimeState)
+    (label : LF.GeneralLabel),
+    GeneralTraceRelated
+      model
+      config
+      state →
+    LF.GeneralLabel.isTau label →
+    Common.WeakStep
+      (LF.GeneralStepModulo program)
+      LF.GeneralLabel.isTau
+      state
+      label
+      state' →
+    ∃ (sourceLabel : DTR.GeneralLabel)
+      (config' : DTR.GeneralRuntimeConfiguration),
+      DTR.GeneralLabel.isTau sourceLabel ∧
+        Common.WeakStep
+          (DTR.GeneralStep model)
+          DTR.GeneralLabel.isTau
+          config
+          sourceLabel
+          config' ∧
+        GeneralTraceRelated
+          model
+          config'
+          state'
+
 /-!
 ## The assembled transfer condition
 
@@ -436,12 +476,10 @@ theorem generalTraceTransfer_forward
               actorName := receiver
               logicalTime := stepConfig.now
             } ∧
-          (∀ (front back : LF.GeneralEventQueue)
-            (event : LF.GeneralPendingEvent),
-            stepState.pending = front ++ event :: back →
+          GeneralConsumeFrontSameTag stepState ∧
+          (∀ event ∈ stepState.pending,
             GeneralConsumeMatch receiver message event →
-            event.tag = stepState.currentTag ∧
-              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+            event.tag = stepState.currentTag) ∧
           (∀ (event : LF.GeneralPendingEvent)
             (reaction : LF.GeneralReaction)
             (reactiveClass : DTR.GeneralReactiveClass)
@@ -627,6 +665,7 @@ theorem generalTraceTransfer_forward
                hResArrival,
                hResUniqueDue,
                hResFrontSameTag,
+               hResTagBoundary,
                hResServerName⟩ :=
             hConsumeResidue
               _
@@ -661,6 +700,7 @@ theorem generalTraceTransfer_forward
               hResArrival
               hResUniqueDue
               hResFrontSameTag
+              hResTagBoundary
               hResServerName
 
           -- The receiver identity, read off the match.
@@ -816,6 +856,14 @@ they are proved inside it, from `generalTauSteps_forward` and `generalTimeAdvanc
 `Correctness.GeneralTraceRelated` is the relation, so the conclusion also re-establishes both store-key
 invariants at the end state — which is what makes the result composable with another execution segment
 rather than terminal.
+
+**F76 (`hTagBoundary`), the sole remaining consume scheduling-compatibility premise.** The `hConsumeResidue`
+input carries, alongside the other α′ facts, the full-tag boundary
+`∀ event ∈ pending, GeneralConsumeMatch _ _ event → event.tag = currentTag`. This is explicit and *not*
+derivable here: the correspondence equates only `.time`, `GeneralNoPastPending` permits strictly-later
+microsteps, and zero-delay sends legitimately create `(t, μ+1)` pending events, so full-tag equality is not a
+global invariant. It is the intentional semantic boundary of the consume fragment, replacing the older hidden
+`hName` coupling between the DTR selected actor and the LF fired actor with a single LF-internal tag equality.
 -/
 theorem generalTraceAgreement_of_consumeAnswer
     {model : DTR.GeneralModel}
@@ -877,12 +925,10 @@ theorem generalTraceAgreement_of_consumeAnswer
               actorName := receiver
               logicalTime := stepConfig.now
             } ∧
-          (∀ (front back : LF.GeneralEventQueue)
-            (event : LF.GeneralPendingEvent),
-            stepState.pending = front ++ event :: back →
+          GeneralConsumeFrontSameTag stepState ∧
+          (∀ event ∈ stepState.pending,
             GeneralConsumeMatch receiver message event →
-            event.tag = stepState.currentTag ∧
-              (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front) ∧
+            event.tag = stepState.currentTag) ∧
           (∀ (event : LF.GeneralPendingEvent)
             (reaction : LF.GeneralReaction)
             (reactiveClass : DTR.GeneralReactiveClass)
@@ -1011,34 +1057,7 @@ runtime field, no F27 change.
 theorem generalTraceTransfer_backward
     {model : DTR.GeneralModel}
     {program : LF.GeneralProgram}
-    (hTauAnswer :
-      ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
-        (label : LF.GeneralLabel),
-        GeneralTraceRelated
-          model
-          stepConfig
-          stepState →
-        LF.GeneralLabel.isTau label →
-        Common.WeakStep
-          (LF.GeneralStepModulo program)
-          LF.GeneralLabel.isTau
-          stepState
-          label
-          stepState' →
-        ∃ (sourceLabel : DTR.GeneralLabel)
-          (stepConfig' : DTR.GeneralRuntimeConfiguration),
-          DTR.GeneralLabel.isTau sourceLabel ∧
-            Common.WeakStep
-              (DTR.GeneralStep model)
-              DTR.GeneralLabel.isTau
-              stepConfig
-              sourceLabel
-              stepConfig' ∧
-            GeneralTraceRelated
-              model
-              stepConfig'
-              stepState')
+    (hTauAnswer : GeneralBackwardTauAnswer model program)
     (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (before after : LF.GeneralRuntimeState)
@@ -1540,34 +1559,7 @@ holding raw target steps discharges them directly.
 theorem generalTraceAgreement_backward_of_answers
     {model : DTR.GeneralModel}
     {program : LF.GeneralProgram}
-    (hTauAnswer :
-      ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
-        (stepState stepState' : LF.GeneralRuntimeState)
-        (label : LF.GeneralLabel),
-        GeneralTraceRelated
-          model
-          stepConfig
-          stepState →
-        LF.GeneralLabel.isTau label →
-        Common.WeakStep
-          (LF.GeneralStepModulo program)
-          LF.GeneralLabel.isTau
-          stepState
-          label
-          stepState' →
-        ∃ (sourceLabel : DTR.GeneralLabel)
-          (stepConfig' : DTR.GeneralRuntimeConfiguration),
-          DTR.GeneralLabel.isTau sourceLabel ∧
-            Common.WeakStep
-              (DTR.GeneralStep model)
-              DTR.GeneralLabel.isTau
-              stepConfig
-              sourceLabel
-              stepConfig' ∧
-            GeneralTraceRelated
-              model
-              stepConfig'
-              stepState')
+    (hTauAnswer : GeneralBackwardTauAnswer model program)
     (hConsumeResidue :
       ∀ (stepConfig : DTR.GeneralRuntimeConfiguration)
         (before after : LF.GeneralRuntimeState)
