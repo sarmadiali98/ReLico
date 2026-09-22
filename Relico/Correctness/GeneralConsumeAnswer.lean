@@ -361,12 +361,15 @@ theorem generalConsumeAnswer
           logicalTime := stepConfig.now
         })
     (hFrontSameTag :
-      ∀ (front back : LF.GeneralEventQueue)
-        (event : LF.GeneralPendingEvent),
-        stepState.pending = front ++ event :: back →
+      GeneralConsumeFrontSameTag stepState)
+    (hTagBoundary :
+      -- The full-tag consume boundary (F76). Carried explicitly here rather than derived: the
+      -- correspondence equates only logical time, `GeneralNoPastPending` allows strictly-later
+      -- microsteps, and zero-delay sends make global full-tag equality false, so the matched
+      -- event's microstep alignment is the remaining scheduler-compatibility assumption.
+      ∀ event ∈ stepState.pending,
         GeneralConsumeMatch receiver message event →
-        event.tag = stepState.currentTag ∧
-          (∀ x ∈ front, x.tag = event.tag) ∧ event ∉ front)
+        event.tag = stepState.currentTag)
     (hServerName :
       ∀ (event : LF.GeneralPendingEvent)
         (reaction : LF.GeneralReaction)
@@ -441,6 +444,7 @@ theorem generalConsumeAnswer
       hNames
       hCompiled
       hFrontSameTag
+      hTagBoundary
 
   -- The correspondence's own chosen environment for the taking actor.
   obtain ⟨reactorChoose, hEnvChoose, _, _⟩ :=

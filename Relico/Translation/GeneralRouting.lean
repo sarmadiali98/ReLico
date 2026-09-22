@@ -2990,6 +2990,110 @@ theorem generalOutputPortEntryFor_site
 
                   rfl
 
+/--
+A resolved entry carries the message of the send it was resolved from.
+
+The message analog of `generalOutputPortEntryFor_site`, proved by the same case split and for the
+same reason: `message` is copied verbatim out of the send in the one success arm, so any entry the
+function returns names the send's own message. This is the enqueue-side atom the setPort coherence
+lemma consumes as `entry.message = messageName` once the executed send is identified with the send
+at the looked-up site.
+-/
+theorem generalOutputPortEntryFor_message
+    {classes : List DTR.GeneralReactiveClass}
+    {sendingClass : DTR.GeneralReactiveClass}
+    {allSends : List GeneralExternalSend}
+    {send : GeneralExternalSend}
+    {ordinal : Nat}
+    {entry : GeneralOutputPortEntry}
+    (hResolved :
+      generalOutputPortEntryFor
+          classes
+          sendingClass
+          allSends
+          send
+          ordinal =
+        .ok entry) :
+    entry.message = send.message := by
+
+  cases hKnown :
+      sendingClass.knownRebec?
+        send.knownRebec with
+
+  | none =>
+      exact
+        absurd
+          hResolved
+          (generalOutputPortEntryFor_ne_ok_of_knownRebec_none
+            hKnown
+            entry)
+
+  | some declaration =>
+
+      cases hClass :
+          DTR.findClass?
+            classes
+            declaration.className with
+
+      | none =>
+          exact
+            absurd
+              hResolved
+              (generalOutputPortEntryFor_ne_ok_of_class_none
+                hKnown
+                hClass
+                entry)
+
+      | some receivingClass =>
+
+          cases hServer :
+              receivingClass.messageServer?
+                send.message with
+
+          | none =>
+              exact
+                absurd
+                  hResolved
+                  (generalOutputPortEntryFor_ne_ok_of_messageServer_none
+                    hKnown
+                    hClass
+                    hServer
+                    entry)
+
+          | some receivingServer =>
+
+              cases hPayload :
+                  generalPortPayloadFor
+                    receivingClass.name
+                    send.message
+                    receivingServer.parameters with
+
+              | error diagnostic =>
+                  exact
+                    absurd
+                      hResolved
+                      (generalOutputPortEntryFor_ne_ok_of_payload_error
+                        hKnown
+                        hClass
+                        hServer
+                        hPayload
+                        entry)
+
+              | ok portPayload =>
+                  rw [
+                    generalOutputPortEntryFor_ok
+                      hKnown
+                      hClass
+                      hServer
+                      hPayload
+                  ] at hResolved
+
+                  injection hResolved with hEntry
+
+                  subst hEntry
+
+                  rfl
+
 /-!
 ### Inverting the whole environment
 
