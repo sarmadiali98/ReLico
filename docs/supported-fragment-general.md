@@ -399,6 +399,97 @@ theorem quantifies over stdout, and the G5 witness's observed output order is ta
 evidence owned by the gate, not by the semantics. A model is no more or less eligible for carrying a
 `trace` than for carrying an `assign`.
 
+## The assumption ledger: four categories of what a theorem rests on
+
+Every hypothesis the general-family correctness result still carries falls into one of four
+categories. The distinction the reader must take from this section is that **none of them is a
+failed or missing proof**. Three describe things already proved, once each in the place they are
+provable; the fourth is a stated restriction on admissible source programs. The residues named
+below are design boundaries, not open goals.
+
+The precedence rule of this document applies here too: where this section and a Lean declaration
+disagree, the declaration wins. Each row names its declaration.
+
+### 1. Compiler guarantees (proved)
+
+Facts the translation establishes **by construction**, discharged at the site where the compiled
+artifact is produced. These are theorems, not premises.
+
+* Route / message provenance: `LF.generalRouteOrigin_of_compile`
+  (`Relico/LF/GeneralKindOrigin.lean`) names, from successful compilation alone, the class, message
+  server and reactor a routed event descends from.
+* `inputPort` event creation identity: `LF.generalKindOriginAt_inputPort_serverName` — a routed
+  `.inputPort` event's origin server is named after the message the send carried
+  (`server.name = messageName`), read at the enqueue end where the route is still in scope.
+* `logicalAction` event creation identity: `LF.generalKindOriginAt_logicalAction_serverName` — the
+  self-send schedule analogue, the origin server named after the message that scheduled the action.
+* Message-server resolution: the class-level lookup and name-uniqueness facts
+  (`DTR.GeneralModel.findMessageServer?_mem_and_name`, `messageServer_eq_of_name_of_nodup`,
+  `LF.generalTriggerDistinctnessAt`) that let a server be identified by its name within a class.
+
+### 2. Proved invariants (preserved)
+
+Cross-step properties proved once and shown to survive every semantic step. They are not premises of
+the transfer theorems; they are carried by the state and re-established at each step.
+
+* `LF.GeneralKindOrigin` (`Relico/LF/GeneralKindOrigin.lean`): every pending event carries an origin
+  witness for its originating message server. Preserved by `generalKindOrigin_initial`,
+  `_of_step`, `_of_tauSteps` and `_of_generalStateAlphaEquiv` — across schedule, setPort,
+  fire/consume removal, microstepAdvance, timeAdvance, assign, trace, localDecl, branches, resume,
+  and α-equivalence queue permutations — and read at consume by `generalKindOrigin_resolution`.
+* `LF.GeneralNoPastPending` (`Relico/LF/GeneralNoPastPending.lean`): no pending event sits before the
+  current tag, preserved across the same steps.
+* Store-key uniqueness (`Relico/Common/Store.lean`): the disjoint-update commutation the within-tag
+  quotient rests on.
+
+### 3. Intentional semantic interface premises (kept explicitly)
+
+The seams where the proof deliberately stops observing something, because observing it would change
+the abstraction. Each is **true and independently established at its endpoints**; it is kept as a
+premise so that the observation alphabet stays a property of the two semantics alone rather than of
+the compiler. Three stand:
+
+* `Correctness.GeneralBackwardTauAnswer` (`Relico/Correctness/GeneralTraceTransfer.lean:346`,
+  interface field `backwardTauMatch`): the backward τ answer. Five target τ constructors face three
+  source ones and `microstepAdvance` has no source counterpart, so the raw-step converse is
+  deliberately absent and supplied as `hTauAnswer`.
+* `hTagBoundary` (F76) (`Relico/Correctness/GeneralConsumeAnswer.lean`, discussed at
+  `GeneralTraceTransfer.lean:860`): the full-tag consume boundary. The correspondence equates only
+  `.time`, `GeneralNoPastPending` permits strictly-later microsteps, and zero-delay sends legitimately
+  create `(t, μ+1)` events, so full-tag equality is not derivable here and is stated.
+* `hServerName` (`Relico/Correctness/GeneralConsumeAnswer.lean:373`): the consume-site atom
+  `serverK.name = message.messageName`, consumed by `generalConsumeServerBridge`.
+
+  **`hServerName` is not a missing invariant.** `Correctness.GeneralConsumeMatch`
+  (`Relico/Correctness/GeneralCorrespondence.lean:115`) relates a taken message and a fired event on
+  target, logical time and compiled payload only, and intentionally carries neither message name,
+  message-server identity, nor origin witness (F78); `GeneralPendingAgrees` inherits exactly this.
+  The correspondence is the sole link between the take-selected message and the fired event, and it
+  is precisely there that message identity is dropped. So `hServerName` is the abstraction boundary
+  where `GeneralConsumeMatch` stops observing message identity — provable at both event-creation ends
+  (category 1) but not threaded through the label correspondence to the consume end. Internalizing it
+  would require putting message identity into `GeneralConsumeMatch`, which would make the observation
+  alphabet translation-dependent — the same reason the payload is erased in
+  `Correctness.GeneralObservable`.
+
+  The one sentence for the paper: *`hServerName` is not an unproven gap; it is the seam where the
+  proof stops observing message identity, and both sides of that seam are independently verified.*
+
+### 4. Source fragment restrictions (stated, not owed)
+
+Constraints on which source programs are admissible, not claims about the translation and not results
+that could be "finished."
+
+* `DTR.GeneralActorSelection.UniqueDueAtSelected` (`Relico/DTR/GeneralSemantics.lean:826`): the
+  uniqueness bound on the due-at-selected event. It restricts the source fragment; it is not a
+  derivable fact about a compiled program.
+
+---
+
+Read together: categories 1 and 2 are discharged; category 3 marks the observable-equivalence
+boundary and is verified on both sides of each seam; category 4 scopes the input. What remains
+"open" in none of them.
+
 ## Relation to the earlier families
 
 The singleton (v0), finite-store, multi-store, multi-store-payload and global-multi-store-payload

@@ -47,10 +47,20 @@ its appended discharge note record why.
 |---|---|---|---|---|
 | 5 | The state relation pairing source configurations with target states | `Relico.Correctness.GeneralStateCorrespondence` · `a7b42c9` | decl · sha | n/a |
 | 6 | Every source internal (τ) segment is answered by a target internal segment | `Relico.Correctness.generalTauSteps_forward` · `f4f1255` | decl · sha | none beyond accepted-program facts |
-| 7 | A source instant block is answered by a target execution of the quotient system, with a per-reactor match | `Relico.Correctness.generalInstantBlock_forward` · `047a5ef` | decl · sha | per-consume α-representative package |
+| 7 | A source instant block is answered by a target execution of the quotient system, with a per-reactor match | `Relico.Correctness.generalInstantBlock_forward` · `047a5ef` | decl · sha | per-consume α-representative package, incl. F76 consume tag-boundary |
 | 8 | The same, against the source block predicate | `Relico.Correctness.generalInstantBlock_forward_of_source` · `047a5ef` | decl · sha | as row 7; endpoint conditions not carried into the conclusion |
 | 9 | Source quiescence and idleness transport to the target | `Relico.Correctness.generalPendingFuture_of_quiescent`, `Relico.Correctness.generalReactorIdle_of_actorIdle` · `0226689` | decl · sha | none |
 | 10 | Forward observable-trace agreement | `Relico.Correctness.GeneralLabelWeakBisimulation.traceAgreement_forward` · `728cc21` | decl · sha | inherited from the interface (row 15) |
+
+The forward `.consume` residue of rows 7 and 8 carries one named premise, **F76 — consume
+tag-boundary compatibility**. Its instruments are `Relico.Correctness.generalConsumeAnswer` and
+`Relico.Correctness.generalConsumeRepresentativePackage` (`hTagBoundary`): a consume-matched LF event
+is required to have `event.tag = state.currentTag`. It is not derivable from
+`Relico.Correctness.GeneralStateCorrespondence`, which preserves logical `.time` only and not the
+microstep, so with `GeneralNoPastPending` permitting later microsteps and zero-delay sends creating
+`(t, μ+1)` pending events, full-tag equality is not a global invariant. It is the explicit consume
+scheduling-compatibility premise that replaces the previous implicit `hName` scheduler coupling (rows
+11–12) on the forward consume path. A measured non-derivability, not an unfinished proof.
 
 ## Aim 9: every target execution corresponds to a permitted source execution
 
