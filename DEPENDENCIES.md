@@ -23,11 +23,16 @@ exact binary.
 - Version: 0.11.0
 - Source: https://github.com/lf-lang/lingua-franca/releases/tag/v0.11.0
 - Artifacts: per-platform `lf-cli-0.11.0-<OS>-<arch>.tar.gz` (see `artifact/checksums.tsv`)
-- Verified binary: extracted `bin/lfc` on macOS-aarch64 hashes to
-  `a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a`
-  (enforced at runtime by `tools/relico_bench_stage.py` `lfc_stage`).
-  Binary-level SHA for other platforms is recorded at acquisition time; tarball
-  digests are upstream-published and listed in `artifact/checksums.tsv`.
+- Verified binary: the extracted `bin/lfc` is the Gradle-generated POSIX shell
+  JVM launcher and is byte-identical across all four published release archives
+  (macOS-aarch64, macOS-x86_64, Linux-x86_64, Linux-aarch64), each downloaded and
+  hashed, to
+  `a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a`.
+  `tools/relico_bench_stage.py` `lfc_stage` enforces this at runtime with a
+  platform-keyed map (`LFC_BIN_SHA256_BY_PLATFORM`), and
+  `scripts/install-dependencies.sh --with-lfc` verifies the extracted binary
+  against the same per-platform value. Tarball digests are upstream-published and
+  listed per platform in `artifact/checksums.tsv`.
 - Acquisition: `scripts/install-dependencies.sh --with-lfc` downloads the
   release asset into `~/.cache/relico/lf/0.11.0/<platform>/` and prints the
   extracted binary path; add that `bin/` directory to `PATH` before running
