@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# ReLico user-facing workflow launcher.
+#
+# A thin, location-independent shim so a reviewer can run:
+#
+#   ./scripts/relico analyze path/to/model.rebeca
+#   ./scripts/relico run     path/to/model.rebeca
+#
+# It contains no workflow logic; it only locates the repository and forwards to
+# tools/relico_workflow.py, which wraps the verified pipeline stages. Tool
+# discovery (java, maven, lake, lfc, the RMC jar and parser archive) and the
+# usual RELICO_* overrides are handled there, exactly as for the benchmarks.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON="${RELICO_PYTHON:-python3}"
+
+exec "$PYTHON" "$REPO_ROOT/tools/relico_workflow.py" "$@"
