@@ -1,0 +1,45 @@
+// Minimal deterministic ReLico smoke-test model.
+//
+// A single actor re-arms itself once per time unit, carrying a constant
+// payload:
+//
+//   constructor --after(1)--> tick --after(1)--> tick --after(1)--> ...
+//
+// Two properties make it the right shape for the artifact smoke test:
+//
+//   * It is deadlock-free. There is always exactly one future event (the next
+//     tick), so the DTR model checker's deadlock-freedom / no-deadline-missed
+//     property is satisfied rather than reporting a terminal deadlock state.
+//   * Its state space is finite. The payload is a constant (1) and the single
+//     state variable only ever stores that constant, so the model checker does
+//     not diverge and no message queue overflows.
+//
+// Because each tick is scheduled `after(1)` (one logical millisecond), logical
+// time advances by one unit per tick. The generated Lingua Franca program is
+// run under a 5 msec logical-time bound, so it terminates on its own after a
+// handful of ticks -- exactly what the runtime / example-execution gate needs.
+//
+// It sits well inside the supported (general) fragment: one reactive class,
+// integer-valued message server, asynchronous self-send, constant delay, no
+// priorities, no dynamic creation, no unbounded recurrence, no unbounded state.
+//
+// This model is intentionally tiny and is NOT part of the benchmark corpus or
+// the translator fixture set; it exists solely so a reviewer's first command,
+// ./smoke-test.sh, can exercise the whole verified pipeline end to end in a
+// few seconds.
+reactiveclass Ticker(10) {
+    statevars {
+        int last;
+    }
+    Ticker() {
+        last = 0;
+        self.tick(1) after(1);
+    }
+    msgsrv tick(int n) {
+        last = n;
+        self.tick(n) after(1);
+    }
+}
+main {
+    Ticker ticker():();
+}
