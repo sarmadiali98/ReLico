@@ -37,8 +37,11 @@ Start with [`ARTIFACT.md`](ARTIFACT.md) for the full reviewer walkthrough. The
 shortest path is:
 
 ```bash
-# 1. Install the external toolchain (Java, Maven, lfc 0.11.0, a C++ compiler)
-scripts/install-dependencies.sh   # or install manually; see ARTIFACT.md
+# 1. Verify the external toolchain (Java, Maven, lfc 0.11.0, a C++ compiler)
+#    Install Java, Maven, and a C++ compiler yourself (system-wide).
+#    scripts/install-dependencies.sh downloads and SHA-checks lfc, the RMC jar,
+#    and the pinned parser archive into ~/.cache/relico (add --with-lfc for lfc).
+scripts/install-dependencies.sh   # download lfc/RMC/parser archives
 scripts/verify-environment.sh     # confirm all tools are visible
 
 # 2. Fast end-to-end check: builds Lean, then analyzes, translates,

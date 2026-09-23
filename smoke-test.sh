@@ -24,9 +24,9 @@
 # time (so the generated program terminates on its own). It is intentionally
 # tiny and is not part of the benchmark corpus.
 #
-# Logs land under /tmp/relico-artifact-smoke.<pid>/ only; nothing is written
-# into the repository. Tool versions are captured there and, with --verbose,
-# printed inline.
+# Logs land under /tmp/relico-artifact-smoke.<pid>/ (a process-id stamp, not a
+# wall-clock timestamp); nothing is written into the repository. Tool versions
+# are captured there and, with --verbose, printed inline.
 #
 # Exit codes: 0 = READY (all gates pass), 1 = a gate failed, 2 = usage error.
 set -uo pipefail
