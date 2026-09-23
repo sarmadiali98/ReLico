@@ -22,7 +22,7 @@ The initial fragment is intentionally small. We will complete an executable tran
 > v0 both understates what the tool accepts and misdescribes what is verified; in particular
 > `trusted-boundary.md`'s aim 7, *"designer-specified priorities are preserved"*, is claimed for a
 > fragment whose own exclusion list names actor priorities and message-server priorities. Recorded as
-> **F63** in [`STAGE_G_FINDINGS.md`](STAGE_G_FINDINGS.md).
+> **F63** in the internal stage-G findings log (a development record not included in the artifact).
 >
 > The repair — a tracked declaration of the general family's accepted fragment, together with the
 > theorem-eligibility boundary inside it — is specified in `docs/STAGE_G_DESIGN.md`. Its first half

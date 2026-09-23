@@ -27,7 +27,7 @@ Local declarations were therefore justified as a prerequisite the corpus needs i
 as a delivery, and the stage was sequenced after the work that did move coverage — stage I0's
 acceptance of conditionals, which took the fragment from 8 to 27 of 49 models. That second figure
 read 31 when this record was written, taken from the I0 census; stage K re-measured it against the
-real frontend at **27** and the correction is recorded as [F94](../STAGE_K_FINDINGS.md). The decision
+real frontend at **27** and the correction is recorded as F94 in the internal stage-K findings log. The decision
 below is unaffected, since locals moved coverage by zero on either figure.
 
 The design constraint was set by the existing architecture: `DTR.GeneralActorRuntime`'s valuation
