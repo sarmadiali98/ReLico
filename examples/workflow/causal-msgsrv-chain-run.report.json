@@ -1,0 +1,158 @@
+{
+  "command": "run",
+  "finished_at": "<timestamp>",
+  "lf_compilation": {
+    "data": {
+      "binary": "TranslatedLFProgram",
+      "compiler": "lfc 0.11.0",
+      "schema_version": 1,
+      "status": "pass"
+    },
+    "detail": "lfc 0.11.0",
+    "duration_ms": 0,
+    "status": "PASS"
+  },
+  "model": {
+    "name": "model.rebeca",
+    "path": "<REPO>/benchmarks/general--causal-msgsrv-chain--positive/source/model.rebeca",
+    "sha256": "e181a624ac3ab531a80fb54a70ed5de8913382e612a81d8b4e92f5a947893a26",
+    "size_bytes": 380
+  },
+  "model_checking": {
+    "data": {
+      "checked_property": "Deadlock-Freedom and No Deadline Missed",
+      "result": "satisfied",
+      "rmc_version": "2.14",
+      "schema_version": 1
+    },
+    "detail": "Deadlock-Freedom and No Deadline Missed = satisfied",
+    "duration_ms": 0,
+    "status": "PASS"
+  },
+  "output_directory": "<OUT>",
+  "priorities": {
+    "actor_routing_order": [
+      {
+        "class": "Node",
+        "declaration_index": 0,
+        "instance": "node0",
+        "priority": null
+      }
+    ],
+    "issues": [],
+    "message_server_order": [
+      {
+        "class": "Node",
+        "declaration_index": 0,
+        "message_server": "sendMsg1",
+        "priority": null
+      },
+      {
+        "class": "Node",
+        "declaration_index": 1,
+        "message_server": "sendMsg2",
+        "priority": null
+      }
+    ],
+    "status": "PASS"
+  },
+  "relico_version": "0.1.0",
+  "runtime": {
+    "status": "SKIPPED"
+  },
+  "schema_version": 1,
+  "stages": [
+    {
+      "detail": "sha256=e181a624ac3ab531\u2026",
+      "duration_ms": 0,
+      "log": null,
+      "name": "accept",
+      "status": "pass"
+    },
+    {
+      "detail": "",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/parse.log",
+      "name": "parse",
+      "status": "pass"
+    },
+    {
+      "detail": "",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/decode.log",
+      "name": "decode",
+      "status": "pass"
+    },
+    {
+      "detail": "Deadlock-Freedom and No Deadline Missed = satisfied",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/model-check.log",
+      "name": "model-check",
+      "status": "pass"
+    },
+    {
+      "detail": "",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/translate-lf.log",
+      "name": "translate",
+      "status": "pass"
+    },
+    {
+      "detail": "lfc 0.11.0",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/compile.log",
+      "name": "compile",
+      "status": "pass"
+    }
+  ],
+  "started_at": "<timestamp>",
+  "supported_fragment": {
+    "detected": [
+      {
+        "construct": "actors (reactive classes)",
+        "present": true
+      },
+      {
+        "construct": "message servers",
+        "present": true
+      },
+      {
+        "construct": "primitive state (int / boolean)",
+        "present": false
+      },
+      {
+        "construct": "asynchronous message passing",
+        "present": true
+      },
+      {
+        "construct": "deterministic (constant) delays",
+        "present": false
+      },
+      {
+        "construct": "priority annotations",
+        "present": false
+      }
+    ],
+    "fragment_boundaries": [
+      "dynamic actor creation",
+      "unbounded / unspecified message-queue growth",
+      "non-constant (data-dependent) time delays",
+      "external / environment actions outside the model",
+      "non-integer, non-boolean state (records, arrays, references)"
+    ],
+    "status": "PASS",
+    "unsupported_present": []
+  },
+  "tool": "relico-workflow",
+  "translation": {
+    "data": {
+      "lf_source": "<OUT>/work/lf-source/TranslatedLFProgram.lf",
+      "published_lf": "<OUT>/model.lf",
+      "translated_ast": "<OUT>/work/translated-lf-ast/program.txt"
+    },
+    "detail": "",
+    "duration_ms": 0,
+    "status": "PASS"
+  },
+  "verdict": "A"
+}

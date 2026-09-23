@@ -1,0 +1,270 @@
+{
+  "command": "analyze",
+  "finished_at": "<timestamp>",
+  "lf_compilation": {
+    "status": "SKIPPED"
+  },
+  "model": {
+    "name": "model.rebeca",
+    "path": "<REPO>/benchmarks/general--smarthome-case-study--positive/source/model.rebeca",
+    "sha256": "8913c2b92557ff025729c4aa92ba61b687d7349535c159da206b94dc5fa93566",
+    "size_bytes": 8112
+  },
+  "model_checking": {
+    "status": "SKIPPED"
+  },
+  "output_directory": "<OUT>",
+  "priorities": {
+    "actor_routing_order": [
+      {
+        "class": "RoomController",
+        "declaration_index": 0,
+        "instance": "rc1",
+        "priority": 1
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 1,
+        "instance": "central",
+        "priority": 2
+      },
+      {
+        "class": "Door",
+        "declaration_index": 2,
+        "instance": "mainDoor",
+        "priority": 3
+      },
+      {
+        "class": "Heater",
+        "declaration_index": 3,
+        "instance": "heater1",
+        "priority": 4
+      },
+      {
+        "class": "Light",
+        "declaration_index": 4,
+        "instance": "light1",
+        "priority": 5
+      },
+      {
+        "class": "TempSensor",
+        "declaration_index": 5,
+        "instance": "ts1",
+        "priority": 6
+      },
+      {
+        "class": "MotionSensor",
+        "declaration_index": 6,
+        "instance": "ms1",
+        "priority": 7
+      },
+      {
+        "class": "LightSensor",
+        "declaration_index": 7,
+        "instance": "ls1",
+        "priority": 8
+      }
+    ],
+    "issues": [],
+    "message_server_order": [
+      {
+        "class": "Heater",
+        "declaration_index": 1,
+        "message_server": "setOff",
+        "priority": 1
+      },
+      {
+        "class": "Heater",
+        "declaration_index": 0,
+        "message_server": "setOn",
+        "priority": 2
+      },
+      {
+        "class": "Light",
+        "declaration_index": 1,
+        "message_server": "setOff",
+        "priority": 1
+      },
+      {
+        "class": "Light",
+        "declaration_index": 0,
+        "message_server": "setOn",
+        "priority": 2
+      },
+      {
+        "class": "Door",
+        "declaration_index": 1,
+        "message_server": "openDoor",
+        "priority": 1
+      },
+      {
+        "class": "Door",
+        "declaration_index": 0,
+        "message_server": "closeDoor",
+        "priority": 2
+      },
+      {
+        "class": "TempSensor",
+        "declaration_index": 0,
+        "message_server": "measure",
+        "priority": 1
+      },
+      {
+        "class": "LightSensor",
+        "declaration_index": 0,
+        "message_server": "measure",
+        "priority": 1
+      },
+      {
+        "class": "MotionSensor",
+        "declaration_index": 0,
+        "message_server": "measure",
+        "priority": 1
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 0,
+        "message_server": "tempUpdate",
+        "priority": 1
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 2,
+        "message_server": "motionDetected",
+        "priority": 2
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 5,
+        "message_server": "activateLightOverride",
+        "priority": 3
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 6,
+        "message_server": "deactivateLightOverride",
+        "priority": 4
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 1,
+        "message_server": "lightUpdate",
+        "priority": 5
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 4,
+        "message_server": "notifyHeater",
+        "priority": 6
+      },
+      {
+        "class": "RoomController",
+        "declaration_index": 3,
+        "message_server": "notifyLight",
+        "priority": 7
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 0,
+        "message_server": "fireAlert",
+        "priority": 1
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 1,
+        "message_server": "unwantedPersonAlert",
+        "priority": 2
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 2,
+        "message_server": "requestCloseDoor",
+        "priority": 3
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 3,
+        "message_server": "clearIntrusionAlarm",
+        "priority": 4
+      },
+      {
+        "class": "CentralController",
+        "declaration_index": 4,
+        "message_server": "report",
+        "priority": 5
+      }
+    ],
+    "status": "PASS"
+  },
+  "relico_version": "0.1.0",
+  "runtime": {
+    "status": "SKIPPED"
+  },
+  "schema_version": 1,
+  "stages": [
+    {
+      "detail": "sha256=8913c2b92557ff02\u2026",
+      "duration_ms": 0,
+      "log": null,
+      "name": "accept",
+      "status": "pass"
+    },
+    {
+      "detail": "",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/parse.log",
+      "name": "parse",
+      "status": "pass"
+    },
+    {
+      "detail": "",
+      "duration_ms": 0,
+      "log": "<OUT>/logs/decode.log",
+      "name": "decode",
+      "status": "pass"
+    }
+  ],
+  "started_at": "<timestamp>",
+  "supported_fragment": {
+    "detected": [
+      {
+        "construct": "actors (reactive classes)",
+        "present": true
+      },
+      {
+        "construct": "message servers",
+        "present": true
+      },
+      {
+        "construct": "primitive state (int / boolean)",
+        "present": true
+      },
+      {
+        "construct": "asynchronous message passing",
+        "present": true
+      },
+      {
+        "construct": "deterministic (constant) delays",
+        "present": true
+      },
+      {
+        "construct": "priority annotations",
+        "present": true
+      }
+    ],
+    "fragment_boundaries": [
+      "dynamic actor creation",
+      "unbounded / unspecified message-queue growth",
+      "non-constant (data-dependent) time delays",
+      "external / environment actions outside the model",
+      "non-integer, non-boolean state (records, arrays, references)"
+    ],
+    "status": "PASS",
+    "unsupported_present": []
+  },
+  "tool": "relico-workflow",
+  "translation": {
+    "status": "SKIPPED"
+  },
+  "verdict": "A"
+}
