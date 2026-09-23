@@ -31,6 +31,31 @@ Timed Rebeca source
 
 The legacy Java LF generator is not part of this path. See [Verification and trusted boundary](docs/trusted-boundary.md) for the exact boundary.
 
+## Quick Start (Artifact Reviewers)
+
+Start with [`ARTIFACT.md`](ARTIFACT.md) for the full reviewer walkthrough. The
+shortest path is:
+
+```bash
+# 1. Install the external toolchain (Java, Maven, lfc 0.11.0, a C++ compiler)
+scripts/install-dependencies.sh   # or install manually; see ARTIFACT.md
+scripts/verify-environment.sh     # confirm all tools are visible
+
+# 2. Fast end-to-end check: builds Lean, then analyzes, translates,
+#    compiles, and runs a tiny bundled model. Prints "Artifact status: READY".
+./smoke-test.sh
+
+# 3. Analyze and run one of your own Timed Rebeca models
+scripts/relico analyze path/to/model.rebeca
+scripts/relico run     path/to/model.rebeca
+
+# 4. Reproduce the reported evaluation (quick profile by default)
+scripts/reproduce.sh
+```
+
+Every reviewer-facing script writes only under a temporary output directory and
+changes nothing in the repository.
+
 ## Formal Verification
 
 For each semantic family, Lean results apply to that family's declared syntax, semantics, translation, and hypotheses; a theorem from one family is not automatically a theorem about another.
@@ -59,7 +84,29 @@ The Lean General AST also contains an internal `trace` witness statement. It has
 
 ## Usage
 
-The Lean toolchain is pinned in `lean-toolchain`. Stable current entry points include:
+### Reviewer workflow entry points
+
+A reviewer who does not want to learn the internal repository layout can use the
+location-independent wrappers. They discover the external tools the same way the
+benchmarks do and honour the usual `RELICO_*` overrides.
+
+```bash
+./smoke-test.sh                       # fast six-gate end-to-end check
+scripts/relico analyze model.rebeca   # accept model, report fragment + priorities
+scripts/relico run     model.rebeca   # analyze + model-check + translate + compile + run
+scripts/reproduce.sh                  # reproduce the evaluation (quick profile)
+scripts/reproduce.sh --profile full   # complete evaluation
+```
+
+`scripts/relico analyze` parses and decodes only; `scripts/relico run` drives
+the full verified pipeline and writes a machine-readable `report.json`. See the
+[user workflow guide](examples/workflow/README.md) for example outputs, and
+[`ARTIFACT.md`](ARTIFACT.md) for the complete reproduction walkthrough.
+
+### Direct developer entry points
+
+The Lean toolchain is pinned in `lean-toolchain`. Stable direct entry points
+include:
 
 ```bash
 lake build
@@ -92,6 +139,8 @@ The registry-backed evaluation catalog reports five non-additive evidence popula
 
 ## Documentation
 
+- [Artifact quick start](ARTIFACT.md)
+- [User workflow guide](examples/workflow/README.md)
 - [Documentation index](docs/README.md)
 - [Supported General fragment](docs/supported-fragment-general.md)
 - [Verification and trusted boundary](docs/trusted-boundary.md)
