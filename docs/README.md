@@ -52,5 +52,3 @@ The evaluation catalog describes the artifact evaluation scope.
 ## Historical Development Notes
 
 - [`decisions/`](decisions/) contains dated design decisions.
-- [`actor-priority/`](actor-priority/) records the phased actor-priority investigation and integration work.
-- [Paper-fragment transcription](dtr-fragment/PAPER_FRAGMENT_RESTRICTIONS.md) analyzes the paper fragment; it is not the active accepted-fragment definition.
