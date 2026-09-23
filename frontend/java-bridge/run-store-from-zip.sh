@@ -19,12 +19,23 @@ EXPORTER_SOURCE="$REPOSITORY_ROOT/frontend/java-bridge/RebecaStoreJsonExporter.j
 test -f "$ARTIFACT_ZIP"
 test -f "$INPUT_FILE"
 test -f "$EXPORTER_SOURCE"
+# Resolve Apache Maven. Order: explicit RELICO_MAVEN override, then PATH (so a
+# Linux/Docker install with mvn on PATH works with no configuration), then a
+# platform-specific fallback list. A bare `mvn` may be an unrelated tool, so
+# every accepted candidate must report "Apache Maven".
 MAVEN_BIN="${RELICO_MAVEN:-}"
+
+if [ -z "$MAVEN_BIN" ] && command -v mvn >/dev/null 2>&1 && \
+   mvn -version 2>&1 | grep -q "Apache Maven"
+then
+  MAVEN_BIN="$(command -v mvn)"
+fi
 
 if [ -z "$MAVEN_BIN" ]; then
   for candidate in \
     /opt/homebrew/opt/maven/bin/mvn \
     /opt/homebrew/bin/mvn \
+    /usr/local/opt/maven/bin/mvn \
     /usr/local/bin/mvn \
     "$HOME/.sdkman/candidates/maven/current/bin/mvn"
   do
@@ -35,10 +46,6 @@ if [ -z "$MAVEN_BIN" ]; then
       break
     fi
   done
-fi
-
-if [ -z "$MAVEN_BIN" ]; then
-  MAVEN_BIN="$(command -v mvn || true)"
 fi
 
 if [ -z "$MAVEN_BIN" ] || \
