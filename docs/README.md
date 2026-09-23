@@ -5,6 +5,8 @@ This index provides the documentation entry points for the ReLico artifact.
 ## Current Documentation
 
 - [Project overview](../README.md)
+- [Artifact quick start](../ARTIFACT.md)
+- [User workflow guide](../examples/workflow/README.md)
 - [Accepted General-family fragment](supported-fragment-general.md)
 - [Verification and trusted boundary](trusted-boundary.md)
 - [General-family correctness claims](claims/general-family-correctness.md)
