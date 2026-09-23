@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,26 @@ from relico_bench_properties import validate_properties
 
 RMC_SHA256 = "a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5"
 PARSER_ZIP_SHA256 = "bd10366acf8d1ed7f392cdd424bfaea5be162cb291f9521ad3d3cfd32be8dcaf"
-LFC_SHA256 = "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a"
+
+# Expected SHA-256 of the extracted `bin/lfc` launcher, keyed by
+# (platform.system(), platform.machine()) so verification is platform-aware and
+# a container on Linux is checked against a value recorded for Linux rather than
+# for the author's macOS-aarch64 machine.
+#
+# The lf-cli 0.11.0 `bin/lfc` is the Gradle-generated POSIX shell JVM launcher
+# (`lib/` holds the platform-independent Java). It is byte-identical across every
+# published release archive: the macOS-aarch64, macOS-x86_64, Linux-x86_64, and
+# Linux-aarch64 tarballs (whose own digests are pinned in artifact/checksums.tsv)
+# were each downloaded and their extracted `bin/lfc` hashed, and all four produce
+# the same digest below. The map is still keyed per platform so the set of
+# verified platforms is explicit and auditable, and so a future release that ever
+# diverges per platform fails loudly instead of silently trusting one value.
+LFC_BIN_SHA256_BY_PLATFORM: dict[tuple[str, str], str] = {
+    ("Darwin", "arm64"): "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a",
+    ("Darwin", "x86_64"): "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a",
+    ("Linux", "x86_64"): "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a",
+    ("Linux", "aarch64"): "a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a",
+}
 
 # The canonical identity of a translated program across the whole pipeline:
 # the generated LF source artifact, the file the lfc stage stages and compiles,
@@ -46,6 +66,25 @@ def require_hash(path: Path, expected: str, label: str) -> None:
     if actual != expected:
         raise StageError(
             f"{label} SHA-256 differs: expected {expected}, observed {actual}"
+        )
+
+
+def lfc_expected_sha256(
+    system: str | None = None,
+    machine: str | None = None,
+) -> str:
+    system = system or platform.system()
+    machine = machine or platform.machine()
+    try:
+        return LFC_BIN_SHA256_BY_PLATFORM[(system, machine)]
+    except KeyError:
+        recorded = ", ".join(
+            f"{sys_name}-{mach}"
+            for sys_name, mach in sorted(LFC_BIN_SHA256_BY_PLATFORM)
+        )
+        raise StageError(
+            f"no pinned lfc binary SHA-256 for platform {system}-{machine}; "
+            f"recorded platforms: {recorded}"
         )
 
 
@@ -708,7 +747,7 @@ def lfc_stage(options: argparse.Namespace) -> None:
     output = Path(options.output).resolve()
 
     require_file(lf_source, "LF source")
-    require_hash(lfc, LFC_SHA256, "lfc executable")
+    require_hash(lfc, lfc_expected_sha256(), "lfc executable")
     if work.exists():
         shutil.rmtree(work)
     source_directory = work / "src"

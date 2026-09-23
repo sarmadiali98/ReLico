@@ -23,22 +23,29 @@ PARSER_URL="https://github.com/rebeca-lang/org.rebecalang.compiler/archive/${PAR
 PARSER_NAME="org.rebecalang.compiler-${PARSER_COMMIT}.zip"
 
 LFC_VERSION="0.11.0"
-# Verified binary SHA (macOS-aarch64). Other platforms: the script records the
-# observed binary SHA after extraction; no placeholder checksum is assumed.
-LFC_BIN_SHA_MACOS_ARM="a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a"
+# Expected SHA-256 of the extracted bin/lfc launcher. lf-cli 0.11.0 ships bin/lfc
+# as a Gradle-generated POSIX shell JVM launcher (lib/ holds platform-independent
+# Java), so it is byte-identical across all four published release archives. Each
+# platform archive was downloaded and its extracted bin/lfc hashed to this value;
+# see artifact/checksums.tsv. Kept per-platform so a future divergent release is
+# caught rather than silently trusted.
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64)
     LFC_ASSET="lf-cli-${LFC_VERSION}-MacOS-aarch64.tar.gz"
-    LFC_TAR_SHA="284c37c7d73d717156efabc8ed18ed415e8bd19e80d26a3817a19f7eb2980d28" ;;
+    LFC_TAR_SHA="284c37c7d73d717156efabc8ed18ed415e8bd19e80d26a3817a19f7eb2980d28"
+    LFC_BIN_SHA="a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a" ;;
   Darwin-x86_64)
     LFC_ASSET="lf-cli-${LFC_VERSION}-MacOS-x86_64.tar.gz"
-    LFC_TAR_SHA="5d474a694c3e5472841c3c65010655c43b8df854e888483a3800810a5edf1e0e" ;;
+    LFC_TAR_SHA="5d474a694c3e5472841c3c65010655c43b8df854e888483a3800810a5edf1e0e"
+    LFC_BIN_SHA="a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a" ;;
   Linux-x86_64)
     LFC_ASSET="lf-cli-${LFC_VERSION}-Linux-x86_64.tar.gz"
-    LFC_TAR_SHA="abb818f7995994340be9733b82c61074f1447385ecf5102eca023a04312343f0" ;;
+    LFC_TAR_SHA="abb818f7995994340be9733b82c61074f1447385ecf5102eca023a04312343f0"
+    LFC_BIN_SHA="a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a" ;;
   Linux-aarch64)
     LFC_ASSET="lf-cli-${LFC_VERSION}-Linux-aarch64.tar.gz"
-    LFC_TAR_SHA="6abfc6c0a40ca6496483093d290426ed3e29b98396c179008922d66f7e59d3d9" ;;
+    LFC_TAR_SHA="6abfc6c0a40ca6496483093d290426ed3e29b98396c179008922d66f7e59d3d9"
+    LFC_BIN_SHA="a8e277076ef578a677fdf7731d95d3ee745e47266ea68d37a673f44bf069cf8a" ;;
   *)
     echo "unsupported platform for lfc download: $(uname -s)-$(uname -m)" >&2
     exit 1 ;;
@@ -85,11 +92,11 @@ if [ "$WITH_LFC" -eq 1 ]; then
   observed="$(sha256_of "$lfc_bin")"
   echo "lfc binary: $lfc_bin"
   echo "lfc binary SHA-256: $observed"
-  if [ "$observed" = "$LFC_BIN_SHA_MACOS_ARM" ]; then
-    echo "lfc binary SHA-256 verified against pinned value"
-  else
-    echo "NOTE: record this binary-level SHA in artifact/checksums.tsv for this platform before use" >&2
+  if [ "$observed" != "$LFC_BIN_SHA" ]; then
+    echo "lfc binary SHA-256 mismatch for $(uname -s)-$(uname -m): expected $LFC_BIN_SHA observed $observed" >&2
+    exit 67
   fi
+  echo "lfc binary SHA-256 verified against pinned value"
   lfc_bin_dir="$(dirname "$lfc_bin")"
   echo "To use this lfc, add its bin directory to PATH:"
   echo "  export PATH=\"$lfc_bin_dir:\$PATH\""
