@@ -481,19 +481,43 @@ def resolve_tool_variables():
                 return found
         return ""
 
+    def is_apache_maven(path: str) -> bool:
+        # A bare `mvn` on PATH may be an unrelated tool (some environments ship
+        # a different `mvn`), so only accept a binary that reports "Apache
+        # Maven" from `mvn -version`.
+        if not path:
+            return False
+        try:
+            probe = subprocess.run(
+                [path, "-version"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return False
+        return "Apache Maven" in (probe.stdout + probe.stderr)
+
     maven_candidates = [
         "/opt/homebrew/opt/maven/bin/mvn",
         "/opt/homebrew/bin/mvn",
+        "/usr/local/opt/maven/bin/mvn",
         "/usr/local/bin/mvn",
     ]
+    # Explicit RELICO_MAVEN override wins (the parser stage verifies it too).
     maven = os.environ.get("RELICO_MAVEN", "")
+    # Then PATH, so a Linux/Docker install with mvn on PATH needs no
+    # configuration — but only if it is really Apache Maven.
+    if not maven:
+        path_maven = shutil.which("mvn") or ""
+        if is_apache_maven(path_maven):
+            maven = path_maven
+    # Finally, platform-specific fallback locations.
     if not maven:
         for candidate in maven_candidates:
-            if Path(candidate).is_file():
+            if Path(candidate).is_file() and is_apache_maven(candidate):
                 maven = candidate
                 break
-    if not maven:
-        maven = shutil.which("mvn") or ""
 
     lfc = os.environ.get("RELICO_LFC", "")
     if not lfc:

@@ -99,15 +99,21 @@ PY
 echo "ReLico Artifact Smoke Test"
 echo ""
 
-# Resolve the real Apache Maven the same way verify-environment.sh does: a
-# bare `mvn` on PATH may be an unrelated tool, so honor RELICO_MAVEN, then the
-# known candidate paths, and only accept a binary that reports "Apache Maven".
+# Resolve the real Apache Maven the same way verify-environment.sh does: honor
+# an explicit RELICO_MAVEN override, then PATH (so Linux/Docker with mvn on PATH
+# needs no configuration), then the known platform-specific candidate paths, and
+# only accept a binary that reports "Apache Maven" (a bare `mvn` may be an
+# unrelated tool).
 resolve_maven() {
   local candidate
   if [ -n "${RELICO_MAVEN:-}" ]; then echo "$RELICO_MAVEN"; return; fi
+  if command -v mvn >/dev/null 2>&1 && mvn -version 2>&1 | grep -q "Apache Maven"; then
+    command -v mvn; return
+  fi
   for candidate in \
     /opt/homebrew/opt/maven/bin/mvn \
     /opt/homebrew/bin/mvn \
+    /usr/local/opt/maven/bin/mvn \
     /usr/local/bin/mvn \
     "$HOME/.sdkman/candidates/maven/current/bin/mvn"; do
     if [ -x "$candidate" ] && "$candidate" -version 2>&1 | grep -q "Apache Maven"; then

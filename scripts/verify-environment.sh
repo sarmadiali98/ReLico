@@ -53,14 +53,20 @@ else
 fi
 
 check "java>=17" yes java -version
-# Maven: honor RELICO_MAVEN, then the same candidate paths the java-bridge
-# runners search, and require "Apache Maven" in the output — a bare `mvn` on
-# PATH may be an unrelated tool.
+# Maven: honor an explicit RELICO_MAVEN override, then PATH (so Linux/Docker
+# with mvn on PATH needs no configuration), then a platform-specific fallback
+# list. Require "Apache Maven" in the output — a bare `mvn` on PATH may be an
+# unrelated tool.
 MAVEN_BIN="${RELICO_MAVEN:-}"
+if [ -z "$MAVEN_BIN" ] && command -v mvn >/dev/null 2>&1 && \
+   mvn -version 2>&1 | grep -q "Apache Maven"; then
+  MAVEN_BIN="$(command -v mvn)"
+fi
 if [ -z "$MAVEN_BIN" ]; then
   for maven_candidate in \
     /opt/homebrew/opt/maven/bin/mvn \
     /opt/homebrew/bin/mvn \
+    /usr/local/opt/maven/bin/mvn \
     /usr/local/bin/mvn \
     "$HOME/.sdkman/candidates/maven/current/bin/mvn"
   do
@@ -69,9 +75,6 @@ if [ -z "$MAVEN_BIN" ]; then
       break
     fi
   done
-fi
-if [ -z "$MAVEN_BIN" ]; then
-  MAVEN_BIN="$(command -v mvn 2>/dev/null || true)"
 fi
 if [ -n "$MAVEN_BIN" ] && "$MAVEN_BIN" -version 2>&1 | grep -q "Apache Maven"; then
   echo "PASS maven($MAVEN_BIN)"
