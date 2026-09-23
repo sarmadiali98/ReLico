@@ -1,0 +1,72 @@
+# Keep the Docker build context small, reproducible, and free of host-local
+# state. The image builds the artifact from a clean checkout; anything derived,
+# cached, or host-specific must not leak in.
+
+# Version control
+.git/
+.gitignore
+
+# Lean build output (rebuilt inside the image)
+.lake/
+
+# Root lfc build outputs (regenerated inside the image)
+bin/
+build/
+include/
+lib/
+share/
+src-gen/
+
+# Test / benchmark execution evidence (regenerated inside the image)
+.test-results/
+tests/translator/*/actual/
+tests/translator/*/.expected-regeneration/
+benchmarks/*/actual/
+benchmarks/*/.expected-regeneration/
+
+# Logs and scratch
+*.log
+*.out
+tmp/
+.temp/
+.tmp/
+
+# Editor / OS cruft
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python bytecode / caches
+__pycache__/
+.pytest_cache/
+
+# Agent/session state and local scratch
+.qwen/
+.qwen-exports/
+.rtk/
+.kilo/
+opencode.json*
+
+# Paper sources (kept outside the artifact)
+main.tex
+refs.bib
+leanreport.*
+leanpresentation.*
+lf_diagram.png
+
+# Developer handoff documents
+AGENTS.md
+CLAUDE.md
+QWEN_CONTEXT.md
+CURRENT_CHAT_HANDOFF.md
+RELICO_AGENT_HANDOFF.md
+RELICO_FORWARD_ROADMAP_AUDIT.md
+ESP32_DESIGN_DOCUMENT.md
+ESP32_MIGRATION_REPORT.md
+docs/archive/
+esp32-old/
+
+# Docker artifacts themselves
+Dockerfile
+.dockerignore
