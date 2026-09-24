@@ -33,8 +33,35 @@ The legacy Java LF generator is not part of this path. See [Verification and tru
 
 ## Quick Start (Artifact Reviewers)
 
-Start with [`ARTIFACT.md`](ARTIFACT.md) for the full reviewer walkthrough. The
-shortest path is:
+The recommended path is the **Docker image**: it already contains every tool,
+each pinned to the exact version used to produce the reported results, so you do
+not install or configure anything by hand. [`ARTIFACT.md`](ARTIFACT.md) has the
+full walkthrough for both paths.
+
+### Option A — Docker (recommended)
+
+Docker runs the artifact inside a self-contained image, so you do **not** need to
+install Lean, Java, Maven, `lfc`, or a C++ compiler on your own machine. Install
+Docker once (see [Get Docker](https://docs.docker.com/get-docker/)), then run
+four commands:
+
+```bash
+docker build -t relico .               # build the image (downloads + SHA-checks every tool)
+docker run --rm -it relico             # open a shell inside the artifact
+./smoke-test.sh                        # fast end-to-end check  -> "Artifact status: READY"
+scripts/reproduce.sh --profile quick   # reproduce the evaluation -> "REPRODUCE_TEST=pass"
+```
+
+Every dependency is downloaded and verified **while the image is built**, so the
+reviewer commands above run with no further downloads — and even work fully
+offline (`docker run --network none ...`). The complete Docker walkthrough,
+including offline execution and troubleshooting, is in
+[`ARTIFACT.md`](ARTIFACT.md).
+
+### Option B — native checkout
+
+If you prefer to run directly on your machine, install the external toolchain
+yourself and use the same reviewer scripts:
 
 ```bash
 # 1. Verify the external toolchain (Java, Maven, lfc 0.11.0, a C++ compiler)

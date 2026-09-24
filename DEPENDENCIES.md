@@ -9,6 +9,45 @@ SHA-256-checked; **upstream** = digest published by the upstream release (GitHub
 release API); binary-level SHA values are recorded only after acquisition of the
 exact binary.
 
+## Docker dependency model
+
+The recommended reviewer path is the Docker image (see
+[`ARTIFACT.md`](ARTIFACT.md)). The image does **not** commit any third-party
+binaries into the repository. Instead, every external dependency is fetched from
+its official upstream release **while `docker build` runs**, using the same
+pinned versions and SHA-256 checks documented in this file, and then baked into
+the image so that `docker run` needs no network access.
+
+What is acquired during the image build, and how:
+
+| Dependency | Version | Acquired during build by | Integrity check |
+|---|---|---|---|
+| Lean toolchain | 4.32.1 | `elan` from `lean-toolchain` pin | upstream tag-pinned |
+| Apache Maven | 3.9.16 | pinned tarball from `archive.apache.org` | SHA-256 in `Dockerfile` (cross-checked against Apache SHA-512) |
+| Rebeca Model Checker (RMC) | 2.14 | `scripts/install-dependencies.sh` | SHA-256 (see below) |
+| Rebeca parser/compiler | 2.25 | `scripts/install-dependencies.sh` | SHA-256 (see below) |
+| Lingua Franca compiler (`lfc`) | 0.11.0 | `scripts/install-dependencies.sh --with-lfc` | per-platform SHA-256 (see below) |
+| Maven Central transitive deps | (unpinned class) | parser-bridge warmup (`mvn`) | upstream artifacts; cached into `~/.m2` |
+
+Principles this model follows:
+
+- **Nothing proprietary is hidden in the image.** Every tool above is a publicly
+  released, openly licensed artifact fetched from its documented upstream source
+  (listed per dependency in the sections below). The image contains only what
+  those public downloads produce, plus build/warmup caches derived from them.
+- **The image is reproducible from source.** The `Dockerfile` and
+  `scripts/install-dependencies.sh` are the complete recipe; anyone can rebuild
+  the same image and observe the same downloads and checksums.
+- **Downloads happen at build time, not runtime.** After `docker build`, the RMC
+  jar, parser archive, `lfc`, the Maven local repository, and the Lean build
+  cache are all present in the image, which is why `docker run --network none`
+  succeeds.
+
+The `.dockerignore` file keeps host-local and derived state (the `.git`
+directory, `.lake/` build outputs, test evidence, editor and OS cruft, and the
+paper sources) out of the build context, so the image is built from a clean
+checkout rather than from a developer's working tree.
+
 ## Required for reproduction
 
 ### Lean toolchain
@@ -71,9 +110,11 @@ exact binary.
 - Purpose: builds the parser bridge and runs the JSON exporters (`exec-maven-plugin` 3.1.0 is pinned in the runner scripts)
 - License: Apache-2.0
 - Note: `mvn package` fetches the compiler project's transitive dependencies
-  from Maven Central at build time; these are documented as a class
-  (unpinned upstream artifacts) here and are baked into the Docker image build
-  in a later phase.
+  from Maven Central; these are documented as a class (unpinned upstream
+  artifacts) here. In the Docker image these dependencies are resolved into the
+  Maven local repository **during the image build** (the warmup step runs the
+  parser bridge once), so `docker run` needs no Maven Central access. See the
+  [Docker dependency model](#docker-dependency-model) below.
 
 ### Java JDK
 - Version: 17 or later (recorded runs used Oracle JDK 21.0.1)
