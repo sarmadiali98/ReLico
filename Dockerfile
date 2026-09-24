@@ -155,6 +155,56 @@ RUN bash scripts/verify-environment.sh \
     && which mvn \
     && mvn --version
 
+# ---------------------------------------------------------------------------
+# 7.4.3: build-time warmup — prepare the container so `docker run` needs no net
+# ---------------------------------------------------------------------------
+# Copy the full artifact source last (after the expensive, rarely-changing
+# dependency layers above) so ordinary source edits do not invalidate the elan,
+# Maven, or install-dependencies layers. .dockerignore keeps derived state
+# (.lake, build outputs, .git, test evidence) out of the context.
+COPY --chown=relico:relico . .
+
+# The parser-bridge runners (frontend/java-bridge/*.sh) resolve the repository
+# root with `git rev-parse --show-toplevel`, and .dockerignore excludes .git
+# from the build context. Initialize a minimal repository at the workdir so that
+# resolution succeeds; only the working-tree root is needed (no history/commits,
+# no remotes), so this adds no network dependency and no repo state to trust.
+RUN git init -q . \
+    && git config user.email relico@artifact.local \
+    && git config user.name relico
+
+# Build-time warmup, split into two layers so the expensive, rarely-changing
+# Lean build is cached independently of the (cheaper) translation warmup.
+#
+# Layer 1 — Lean build. Warm the complete Lean build cache (.lake/) in place.
+# `lake build Relico` builds the default library target, which globs every
+# module the reviewer workflow relies on — in particular the Relico.Frontend.*
+# decoders and Relico.Benchmark.* artifact exporters that the analyze/translate
+# stages load with `lake env lean --run`. That runner loads imports from their
+# .olean files and does NOT compile them on demand, so those oleans must already
+# exist; a clean container has no pre-populated .lake, unlike a dev host.
+# RelicoTests is the proof-verification aggregate that smoke-test.sh [2/6] and
+# reproduce.sh stage 1 build; warming it here too makes those gates cache hits
+# offline. Building both leaves .lake/ fully populated, so the offline
+# `docker run` never needs to compile Lean. This is a build warmup (no pipeline
+# logic); the reviewer scripts still run verbatim below and offline.
+RUN lake build Relico RelicoTests
+
+# Layer 2 — translation/runtime warmup. The smoke test is the reviewer's fast
+# end-to-end path and drives every remaining stage that pulls in a cacheable
+# dependency:
+#   - parser bridge (mvn)  -> resolves the compiler project's full dependency
+#                             closure into the Maven local repo (~/.m2)
+#   - DTR model checking   -> exercises the cached RMC 2.14 jar (java, g++)
+#   - LF compilation (lfc) -> exercises the pinned lfc 0.11.0 + C/C++ toolchain
+#   - example execution    -> runs the generated native binary
+# Its [2/6] Lean build re-uses the cache warmed above (incremental, fast).
+# Running it here (docker build has network) bakes these caches into the image
+# layer, so `docker run --network none` finds everything already present. This
+# reuses the existing script verbatim; it adds no pipeline logic and writes only
+# to /tmp (nothing into the repository), keeping the image layer clean.
+RUN bash smoke-test.sh
+
 # Default to an interactive shell so `docker run --rm -it relico` drops the
 # reviewer at a prompt in the repo directory.
 CMD ["/bin/bash"]
