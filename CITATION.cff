@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ReLico: A Formally Verified Translator from Timed Rebeca to Lingua Franca"
+authors:
+  - family-names: "Sarmadi"
+    given-names: "Ali"
+version: "1.0.0"
+date-released: "2026-09-24"
+license: "MIT"
+repository-code: "https://github.com/sarmadiali98/ReLico"
