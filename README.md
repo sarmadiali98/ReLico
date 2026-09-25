@@ -86,6 +86,181 @@ scripts/reproduce.sh
 Every reviewer-facing script writes only under a temporary output directory and
 changes nothing in the repository.
 
+## Artifact Reproduction
+
+This section lets an external artifact reviewer reproduce ReLico without
+guessing. The recommended path is the Docker image: it pins every tool to the
+exact version used for the reported results, so the versions **inside the
+container are authoritative**. Host tools matter only if you choose the native
+path in [Option B](#option-b--native-checkout).
+
+### Tested platforms
+
+| System | Architecture | Docker | Status |
+|---|---|---|---|
+| macOS 26.6.2 (host) | arm64 (Apple Silicon) | Docker Desktop, Engine 29.2.1 (client 29.6.1) | Verified — image builds and runs; smoke test reaches `READY` offline |
+| Ubuntu 24.04.5 LTS (Docker image) | aarch64 | Engine 29.2.1 | Verified — container toolchain captured; `verify-environment: OK` and smoke test `READY` offline |
+
+Notes:
+
+- The image base is `ubuntu:24.04` (`Dockerfile`); the built image reports
+  Ubuntu 24.04.5 LTS (Noble Numbat). On an Intel/AMD host the same build
+  produces an `x86_64` image instead of `aarch64`.
+- On a native Linux host, Docker resolves the platform automatically; a native
+  (non-Docker) toolchain install is covered by
+  [Option B](#option-b--native-checkout) and [`DEPENDENCIES.md`](DEPENDENCIES.md).
+
+### Required software
+
+- **Docker only** for the recommended path — Docker Desktop on macOS/Windows or
+  Docker Engine on Linux. You do not install Lean, Java, Maven, `lfc`, or a C++
+  compiler on the host.
+- **Internet access during `docker build` only.** The Docker build downloads
+  external dependencies during image creation and therefore requires network
+  access. Every download is SHA-256-verified and baked into the image, so the
+  reviewer commands afterward run fully offline (`docker run --network none`).
+- **Host resources:** several GB of free disk (the built image is ~6.3 GB) and
+  about 8 GB of RAM available to Docker are recommended.
+
+### Exact dependency versions
+
+Authoritative versions, as observed inside the built Docker image
+(`aarch64`; an `x86_64` host build carries the equivalent `x86_64` toolchain).
+Full sources, checksums, and licenses are in [`DEPENDENCIES.md`](DEPENDENCIES.md).
+
+| Component | Version | Notes |
+|---|---|---|
+| Ubuntu (image base) | 24.04.5 LTS (Noble Numbat) | `FROM ubuntu:24.04` |
+| Lean toolchain | 4.32.1 | pinned in `lean-toolchain` |
+| Lake | 5.0.0 (Lean 4.32.1) | ships with the Lean toolchain |
+| Lingua Franca `lfc` | 0.11.0 | pinned in `scripts/install-dependencies.sh` |
+| Apache Maven | 3.9.16 | pinned in `Dockerfile` |
+| OpenJDK (Java) | 21.0.12.1 | Ubuntu 24.04 `default-jdk` |
+| Rebeca Model Checker (RMC) | 2.14 | pinned SHA-256 in `scripts/install-dependencies.sh` |
+| Rebeca parser/compiler | 2.25 (commit `94ca579e0f2e3528d8de608a9e86316ecb78d608`) | pinned SHA-256 in `scripts/install-dependencies.sh` |
+| Python | 3.12.3 | Ubuntu 24.04 `python3`; harness needs 3.10+ |
+| CMake | 3.28.3 | Ubuntu 24.04 apt |
+| GNU Make | 4.3 | Ubuntu 24.04 apt |
+| g++ (GCC) | 13.3.0 | Ubuntu 24.04 `build-essential` |
+| git | 2.43.0 | Ubuntu 24.04 apt |
+
+RMC 2.14 and the Rebeca parser 2.25 are launched by path rather than reporting a
+`--version`; their pinned versions and checksums are enforced by
+`scripts/install-dependencies.sh` and `scripts/verify-environment.sh`.
+
+### Expected runtime
+
+Measured on the tested arm64 host (Docker Desktop, 4 CPUs, ~8 GB RAM). Times on
+native multi-core Linux are typically faster; treat the build and full-evaluation
+figures as estimates.
+
+| Step | Command | Time |
+|---|---|---|
+| Docker image build (cold) | `docker build -t relico .` | Several minutes, network-bound (estimate); image ~6.3 GB |
+| Environment verification | `scripts/verify-environment.sh` | ~2 s (measured, in container) |
+| Smoke test | `./smoke-test.sh` | ~45 s (measured, offline container, includes container start) |
+| Reproduce — quick | `scripts/reproduce.sh --profile quick` | 10+ minutes on the constrained arm64 host (measured, partial); faster on native multi-core (estimate) |
+| Reproduce — full | `scripts/reproduce.sh --profile full` | Substantially longer; runs all 65 translator fixtures and 41 benchmarks (estimate) |
+
+### macOS workflow
+
+Build and enter the image (host, with internet):
+
+```bash
+git clone https://github.com/sarmadiali98/ReLico.git
+cd ReLico
+docker build -t relico .
+docker run --rm -it relico
+```
+
+Then, at the prompt inside the container:
+
+```bash
+./smoke-test.sh
+scripts/reproduce.sh --profile quick
+```
+
+### Ubuntu workflow
+
+If your user is in the `docker` group (or Docker Desktop is used), run Docker
+without `sudo` (host, with internet):
+
+```bash
+git clone https://github.com/sarmadiali98/ReLico.git
+cd ReLico
+docker build -t relico .
+docker run --rm -it relico
+```
+
+If Docker Engine is installed system-wide and your user is not in the `docker`
+group, prefix the Docker commands with `sudo`:
+
+```bash
+git clone https://github.com/sarmadiali98/ReLico.git
+cd ReLico
+sudo docker build -t relico .
+sudo docker run --rm -it relico
+```
+
+Then, at the prompt inside the container:
+
+```bash
+./smoke-test.sh
+scripts/reproduce.sh --profile quick
+```
+
+`sudo` is required only when the invoking user cannot reach the Docker daemon
+socket; adding the user to the `docker` group (`sudo usermod -aG docker "$USER"`,
+then open a new shell) removes the need for it.
+
+### Full reproduction workflow
+
+Inside the container (all four commands run offline), from fastest to most
+complete:
+
+```bash
+scripts/verify-environment.sh
+./smoke-test.sh
+scripts/reproduce.sh --profile quick
+scripts/reproduce.sh --profile full
+```
+
+To confirm the offline guarantee, start the container with networking disabled
+and run the same commands:
+
+```bash
+docker run --rm -it --network none relico
+```
+
+### Expected output
+
+`scripts/verify-environment.sh` ends with:
+
+```text
+verify-environment: OK
+```
+
+Its earlier lines report each tool; the pinned Lingua Franca compiler check
+appears as `PASS lfc-version(0.11.0)`. Running `lfc --version` directly prints:
+
+```text
+lfc 0.11.0
+```
+
+`./smoke-test.sh` ends with the pass signal:
+
+```text
+Artifact status: READY
+```
+
+`scripts/reproduce.sh` ends with two machine-readable lines; the second is the
+pass signal:
+
+```text
+REPRODUCE_SUMMARY=/tmp/relico-reproduce.<timestamp>/summary.txt
+REPRODUCE_TEST=pass
+```
+
 ## Formal Verification
 
 For each semantic family, Lean results apply to that family's declared syntax, semantics, translation, and hypotheses; a theorem from one family is not automatically a theorem about another.
