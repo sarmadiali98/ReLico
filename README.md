@@ -61,25 +61,22 @@ including offline execution and troubleshooting, is in
 ### Option B — native checkout
 
 If you prefer to run directly on your machine, install the external toolchain
-yourself and use the same reviewer scripts:
+yourself and use the same reviewer scripts. First install Java, Maven, and a C++
+compiler system-wide. Then `scripts/install-dependencies.sh` downloads and
+SHA-checks `lfc`, the RMC jar, and the pinned parser archive into
+`~/.cache/relico` (add `--with-lfc` for `lfc`), and `scripts/verify-environment.sh`
+confirms all tools are visible. `./smoke-test.sh` is the fast end-to-end check: it
+builds Lean, then analyzes, translates, compiles, and runs a tiny bundled model,
+printing `Artifact status: READY`. `scripts/relico analyze` and `scripts/relico run`
+accept one of your own Timed Rebeca models, and `scripts/reproduce.sh` reproduces
+the reported evaluation using the quick profile by default.
 
 ```bash
-# 1. Verify the external toolchain (Java, Maven, lfc 0.11.0, a C++ compiler)
-#    Install Java, Maven, and a C++ compiler yourself (system-wide).
-#    scripts/install-dependencies.sh downloads and SHA-checks lfc, the RMC jar,
-#    and the pinned parser archive into ~/.cache/relico (add --with-lfc for lfc).
-scripts/install-dependencies.sh   # download lfc/RMC/parser archives
-scripts/verify-environment.sh     # confirm all tools are visible
-
-# 2. Fast end-to-end check: builds Lean, then analyzes, translates,
-#    compiles, and runs a tiny bundled model. Prints "Artifact status: READY".
+scripts/install-dependencies.sh
+scripts/verify-environment.sh
 ./smoke-test.sh
-
-# 3. Analyze and run one of your own Timed Rebeca models
 scripts/relico analyze path/to/model.rebeca
 scripts/relico run     path/to/model.rebeca
-
-# 4. Reproduce the reported evaluation (quick profile by default)
 scripts/reproduce.sh
 ```
 
@@ -314,14 +311,19 @@ The Lean General AST also contains an internal `trace` witness statement. It has
 
 A reviewer who does not want to learn the internal repository layout can use the
 location-independent wrappers. They discover the external tools the same way the
-benchmarks do and honour the usual `RELICO_*` overrides.
+benchmarks do and honour the usual `RELICO_*` overrides. `./smoke-test.sh` runs
+the fast six-gate end-to-end check; `scripts/relico analyze` accepts a model and
+reports its fragment and priorities; `scripts/relico run` analyzes, model-checks,
+translates, compiles, and runs a model; `scripts/reproduce.sh` reproduces the
+evaluation using the quick profile, and `--profile full` runs the complete
+evaluation.
 
 ```bash
-./smoke-test.sh                       # fast six-gate end-to-end check
-scripts/relico analyze model.rebeca   # accept model, report fragment + priorities
-scripts/relico run     model.rebeca   # analyze + model-check + translate + compile + run
-scripts/reproduce.sh                  # reproduce the evaluation (quick profile)
-scripts/reproduce.sh --profile full   # complete evaluation
+./smoke-test.sh
+scripts/relico analyze model.rebeca
+scripts/relico run     model.rebeca
+scripts/reproduce.sh
+scripts/reproduce.sh --profile full
 ```
 
 `scripts/relico analyze` parses and decodes only; `scripts/relico run` drives
