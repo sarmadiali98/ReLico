@@ -169,6 +169,12 @@ COPY --chown=relico:relico . .
 # from the build context. Initialize a minimal repository at the workdir so that
 # resolution succeeds; only the working-tree root is needed (no history/commits,
 # no remotes), so this adds no network dependency and no repo state to trust.
+USER root
+
+RUN chown -R relico:relico /home/relico/relico
+
+USER relico
+
 RUN git init -q . \
     && git config user.email relico@artifact.local \
     && git config user.name relico

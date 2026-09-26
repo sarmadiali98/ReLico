@@ -46,10 +46,10 @@ Docker once (see [Get Docker](https://docs.docker.com/get-docker/)), then run
 four commands:
 
 ```bash
-docker build -t relico .               # build the image (downloads + SHA-checks every tool)
-docker run --rm -it relico             # open a shell inside the artifact
-./smoke-test.sh                        # fast end-to-end check  -> "Artifact status: READY"
-scripts/reproduce.sh --profile quick   # reproduce the evaluation -> "REPRODUCE_TEST=pass"
+docker build -t relico .
+docker run --rm -it relico
+./smoke-test.sh
+scripts/reproduce.sh --profile quick
 ```
 
 Every dependency is downloaded and verified **while the image is built**, so the
@@ -96,19 +96,33 @@ path in [Option B](#option-b--native-checkout).
 
 ### Tested platforms
 
-| System | Architecture | Docker | Status |
-|---|---|---|---|
-| macOS 26.6.2 (host) | arm64 (Apple Silicon) | Docker Desktop, Engine 29.2.1 (client 29.6.1) | Verified — image builds and runs; smoke test reaches `READY` offline |
-| Ubuntu 24.04.5 LTS (Docker image) | aarch64 | Engine 29.2.1 | Verified — container toolchain captured; `verify-environment: OK` and smoke test `READY` offline |
+The artifact was built and exercised on two host systems. Keep the **host
+system** (where Docker runs) distinct from the **Docker container environment**
+(where the artifact actually executes): the versions inside the container are
+authoritative and are identical across hosts. The only per-host difference is
+the architecture of the produced image.
 
-Notes:
+#### Host systems
 
-- The image base is `ubuntu:24.04` (`Dockerfile`); the built image reports
-  Ubuntu 24.04.5 LTS (Noble Numbat). On an Intel/AMD host the same build
-  produces an `x86_64` image instead of `aarch64`.
-- On a native Linux host, Docker resolves the platform automatically; a native
-  (non-Docker) toolchain install is covered by
-  [Option B](#option-b--native-checkout) and [`DEPENDENCIES.md`](DEPENDENCIES.md).
+| Host OS | Hardware / CPU | CPU cores | Memory | Architecture | Docker |
+|---|---|---|---|---|---|
+| macOS 26.6.2 | MacBook Air, Apple M1 | 8 (4 performance + 4 efficiency) | 8 GB RAM | arm64 | Docker 29.6.1 |
+| Ubuntu 26.04.1 LTS (Resolute Raccoon) | Intel Core i5-8500 @ 3.00GHz | 6 | 30 GiB RAM (+ 8 GiB swap) | x86_64 | Docker 29.1.3 |
+
+On both hosts the image builds and runs, and the smoke test reaches `READY`
+offline. On the arm64 macOS host the build produces an `aarch64` image; on the
+x86_64 Ubuntu host the same build produces an `x86_64` image.
+
+#### Docker container environment
+
+Regardless of host, the artifact runs inside an `ubuntu:24.04`-based image
+(reported as Ubuntu 24.04.5 LTS, Noble Numbat). Its pinned toolchain is the
+authoritative environment for the reported results and is listed in full under
+[Exact dependency versions](#exact-dependency-versions) below.
+
+On a native Linux host, Docker resolves the image platform automatically; a
+native (non-Docker) toolchain install is covered by
+[Option B](#option-b--native-checkout) and [`DEPENDENCIES.md`](DEPENDENCIES.md).
 
 ### Required software
 
@@ -124,8 +138,9 @@ Notes:
 
 ### Exact dependency versions
 
-Authoritative versions, as observed inside the built Docker image
-(`aarch64`; an `x86_64` host build carries the equivalent `x86_64` toolchain).
+Authoritative versions of the **Docker container environment**, as observed
+inside the built image (the `aarch64` build is shown; an `x86_64` host build
+carries the equivalent `x86_64` toolchain at the same versions).
 Full sources, checksums, and licenses are in [`DEPENDENCIES.md`](DEPENDENCIES.md).
 
 | Component | Version | Notes |
@@ -150,17 +165,23 @@ RMC 2.14 and the Rebeca parser 2.25 are launched by path rather than reporting a
 
 ### Expected runtime
 
-Measured on the tested arm64 host (Docker Desktop, 4 CPUs, ~8 GB RAM). Times on
-native multi-core Linux are typically faster; treat the build and full-evaluation
-figures as estimates.
+These figures are approximate and depend on the host: available CPU cores,
+memory, storage, and — for the build — the internet connection. Treat them as
+guidance rather than guarantees.
 
-| Step | Command | Time |
+| Step | Command | Approximate time |
 |---|---|---|
-| Docker image build (cold) | `docker build -t relico .` | Several minutes, network-bound (estimate); image ~6.3 GB |
-| Environment verification | `scripts/verify-environment.sh` | ~2 s (measured, in container) |
-| Smoke test | `./smoke-test.sh` | ~45 s (measured, offline container, includes container start) |
-| Reproduce — quick | `scripts/reproduce.sh --profile quick` | 10+ minutes on the constrained arm64 host (measured, partial); faster on native multi-core (estimate) |
-| Reproduce — full | `scripts/reproduce.sh --profile full` | Substantially longer; runs all 65 translator fixtures and 41 benchmarks (estimate) |
+| Docker image build (cold) | `docker build -t relico .` | ~1 hour on the tested hosts |
+| Environment verification | `scripts/verify-environment.sh` | A few seconds (in container) |
+| Smoke test | `./smoke-test.sh` | ~1–2 minutes |
+| Reproduce — quick | `scripts/reproduce.sh --profile quick` | Several minutes, depending on hardware |
+| Reproduce — full | `scripts/reproduce.sh --profile full` | Depends on available CPU, memory, storage, and benchmark execution time |
+
+**Docker build (~1 hour).** The first (cold) build both downloads and
+SHA-256-verifies every pinned dependency and warms the Lean, Maven, and
+translation caches, so its duration depends on the hardware and the internet
+connection. Later builds can be substantially faster because Docker reuses
+cached layers whose inputs are unchanged.
 
 ### macOS workflow
 
