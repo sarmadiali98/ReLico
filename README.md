@@ -180,6 +180,43 @@ translation caches, so its duration depends on the hardware and the internet
 connection. Later builds can be substantially faster because Docker reuses
 cached layers whose inputs are unchanged.
 
+### Prerequisites
+
+The recommended reproduction workflow runs inside Docker, so the only host
+requirement is a working Docker installation. Docker must be installed before
+you run `docker build` or `docker run` in the workflows below.
+
+Check that Docker is installed:
+
+```bash
+docker --version
+```
+
+This prints the installed Docker version.
+
+Check that the Docker runtime works:
+
+```bash
+docker run hello-world
+```
+
+This runs a small test image and prints a confirmation message.
+
+If Docker is missing, install it from the official sources
+([Get Docker](https://docs.docker.com/get-docker/)): Docker Desktop on macOS and
+Docker Engine on Ubuntu.
+
+On the Docker path every artifact dependency is provided inside the container,
+so you do **not** install any of the following on the host:
+
+- Lean
+- Maven
+- Java
+- LF/Rebeca tooling
+
+Only the native path in [Option B](#option-b--native-checkout) requires
+installing those tools by hand.
+
 ### macOS workflow
 
 Build and enter the image (host, with internet):
