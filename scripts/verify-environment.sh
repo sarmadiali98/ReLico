@@ -107,5 +107,17 @@ else
   echo "FAIL parser-zip (missing: $PARSER_ZIP — run scripts/install-dependencies.sh)"; fail=1
 fi
 
+# Z3 + UCLID5: optional, used only for the LF verifier C-target path
+# (lfc --verify with target C). Not required for the existing smoke-test or
+# reproduce pipeline, which uses the Cpp target for compilation/runtime.
+check "z3" no z3 --version
+# UCLID5 requires Z3's shared libraries (libz3.so / libz3java.so) on
+# LD_LIBRARY_PATH for the JVM-based solver interface.
+if command -v uclid >/dev/null 2>&1; then
+  echo "PASS uclid"
+else
+  echo "OPTIONAL-MISSING uclid"
+fi
+
 if [ "$fail" -eq 0 ]; then echo "verify-environment: OK"; else echo "verify-environment: FAILURES PRESENT"; fi
 exit $fail

@@ -5,6 +5,9 @@
 #   - elan/Lean toolchain pinned by lean-toolchain (v4.32.1).
 #   - 7.4.2 pinned ReLico dependencies: Maven 3.9.16 + RMC 2.14 + Rebeca
 #     parser 2.25 + lfc 0.11.0 (via scripts/install-dependencies.sh --with-lfc).
+#   - 7.4.2b LF verifier toolchain: Z3 4.8.8 (with Java bindings) + UCLID5
+#     (built from the commit used by lf-verifier-benchmarks), for the lfc
+#     C-target verify path. Added to support future LF verifier experiments.
 #
 # Design principle: Docker is packaging, not a second implementation. Each
 # later layer reuses the existing artifact scripts
@@ -23,11 +26,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 #   build-essential + g++ + make + cmake  -> C/C++ toolchain (lfc-generated and
 #                                            RMC-generated C++ builds, later)
 #   default-jdk (OpenJDK 21 on 24.04)     -> runs Maven, lfc, RMC (>= 17 required)
+#   openjdk-17-jdk                        -> builds UCLID5 (sbt 1.x + UCLID5 at
+#                                            the pinned commit target Java 17;
+#                                            Java 21 removed the SecurityManager
+#                                            the sbt launcher relies on)
 #   python3                               -> test/benchmark harness (stdlib only)
 #   git                                   -> repo-root resolution in runners
 #   curl, ca-certificates                 -> fetch elan (and pinned deps later)
+#   wget                                   -> Z3 download script (get-z3-linux.sh)
 #   unzip, tar, xz-utils                  -> archive extraction (parser zip, lfc
-#                                            tarball, elan/Lean distributions)
+#                                            tarball, elan/Lean distributions,
+#                                            Z3, UCLID5)
 #   bash                                  -> artifact scripts use #!/usr/bin/env bash
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -38,10 +47,12 @@ RUN apt-get update \
         git \
         curl \
         ca-certificates \
+        wget \
         unzip \
         tar \
         xz-utils \
         default-jdk \
+        openjdk-17-jdk \
         python3 \
         bash \
     && rm -rf /var/lib/apt/lists/*
@@ -140,6 +151,118 @@ USER relico
 # lfc is symlinked into /usr/local/bin (on the default PATH). Maven is in
 # /opt/maven/bin (also on PATH). No lfc-specific cache paths needed here.
 
+# ---------------------------------------------------------------------------
+# 7.4.2b: LF verifier toolchain — Z3 + UCLID5 (for the lfc C-target verify path)
+# ---------------------------------------------------------------------------
+# The generated LF source uses `target Cpp`, which lfc 0.11.0's verify stage
+# does not support. The verifier path currently works only with the C target,
+# which uses UCLID5 as its backend and Z3 as the SMT solver. These tools are
+# needed for future LF verifier experiments (e.g., the manual C-target path
+# validated in the prior ReLico verification experiment).
+#
+# Z3 4.8.8 is the version UCLID5 pins at the target commit (get-z3-linux.sh).
+# The x64 release includes libz3java.so and com.microsoft.z3.jar (Java bindings)
+# that UCLID5 loads via the JVM, plus libz3.so and the z3 binary. SHA-256 is
+# verified against the release artifact digest.
+#
+# UCLID5 is built from source at the commit used by lf-verifier-benchmarks
+# (4fd5e566c5f87b052f92e9b23723a85e1c4d8c1c), via the sbt build tool. The build
+# uses Java 17 (openjdk-17-jdk installed above), because Java 21 removed the
+# SecurityManager the sbt launcher relies on; sbt 1.x is installed from a pinned
+# binary release.
+USER root
+
+# Z3 4.8.8 with Java bindings (libz3java.so, com.microsoft.z3.jar).
+# This is the exact Z3 version UCLID5 pins at the target commit
+# (get-z3-linux.sh -> Z3 4.8.8). The UCLID5 sources at this commit compile only
+# against this Z3 API (later Z3 made com.microsoft.z3.Expr generic, which breaks
+# the build). This image targets Linux x86_64, the platform for which the LF
+# verifier and UCLID5 ship Z3 (Z3 4.8.8 has no upstream Linux arm64 build). The
+# com.microsoft.z3.jar is pure Java (architecture-neutral) and is what UCLID5
+# compiles against; the native z3 binary and libz3*.so are x86_64 and are
+# exercised at verification time on the x86_64 target. The z3 binary is only
+# executed here when the build host is x86_64, so the image layers still build
+# on an arm64 host (e.g. Apple Silicon) for inspection while remaining fully
+# functional on the x86_64 target.
+RUN set -eux; \
+    Z3_VERSION="4.8.8"; \
+    Z3_SHA256="6534f26427ee4f02835d17c3472f5ce750f34b4898c35cdd4223459b3589664e"; \
+    Z3_ASSET="z3-${Z3_VERSION}-x64-ubuntu-16.04.zip"; \
+    Z3_URL="https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/${Z3_ASSET}"; \
+    rm -rf /tmp/z3-install; \
+    mkdir -p /tmp/z3-install; \
+    curl -sSfL -o "/tmp/${Z3_ASSET}" "$Z3_URL"; \
+    echo "${Z3_SHA256}  /tmp/${Z3_ASSET}" | sha256sum -c -; \
+    unzip -q "/tmp/${Z3_ASSET}" -d /tmp/z3-install; \
+    Z3_DIR="$(find /tmp/z3-install -maxdepth 1 -type d -name "z3-${Z3_VERSION}-*" | head -n 1)"; \
+    rm -f "/tmp/${Z3_ASSET}"; \
+    rm -rf /opt/z3; \
+    mkdir -p /opt/z3; \
+    cp -r "$Z3_DIR/bin"/* /opt/z3/; \
+    rm -rf /tmp/z3-install; \
+    ls /opt/z3/libz3.so /opt/z3/libz3java.so /opt/z3/com.microsoft.z3.jar; \
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        LD_LIBRARY_PATH=/opt/z3 /opt/z3/z3 --version; \
+    else \
+        echo "NOTE: build host $(uname -m) is not x86_64; skipping z3 binary execution (native z3 runs on the x86_64 target)"; \
+    fi
+
+# Install sbt (Scala build tool) from a pinned binary release.
+# Used to compile UCLID5 from source. sbt 1.x is required: UCLID5 at the pinned
+# commit is a sbt 1.x project, and the sbt 2.x launcher cannot build it.
+RUN set -eux; \
+    SBT_VERSION="1.10.11"; \
+    SBT_SHA256="5034a64841b8a9cfb52a341e45b01df2b8c2ffaa87d8d2b0fe33c4cdcabd8f0c"; \
+    SBT_URL="https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz"; \
+    rm -rf /tmp/sbt-install /opt/sbt; \
+    mkdir -p /tmp/sbt-install; \
+    curl -sSfL -o "/tmp/sbt-${SBT_VERSION}.tgz" "$SBT_URL"; \
+    echo "${SBT_SHA256}  /tmp/sbt-${SBT_VERSION}.tgz" | sha256sum -c -; \
+    tar -xzf "/tmp/sbt-${SBT_VERSION}.tgz" -C /tmp/sbt-install --strip-components=1; \
+    rm -f "/tmp/sbt-${SBT_VERSION}.tgz"; \
+    mkdir -p /opt/sbt; \
+    cp -r /tmp/sbt-install/* /opt/sbt/; \
+    rm -rf /tmp/sbt-install
+
+# Build UCLID5 from source at the pinned commit used by lf-verifier-benchmarks.
+# This is the verifier backend for lfc's C-target `verify` stage.
+# UCLID5's get-z3-linux.sh normally copies the Z3 Java bindings jar into the
+# project's lib/ before building; we reproduce just that step (the jar is
+# architecture-neutral Java) instead of re-downloading Z3, since Z3 is already
+# installed at /opt/z3 above. The sbt compile itself is JVM-only and therefore
+# architecture-independent.
+RUN set -eux; \
+    UCLID_COMMIT="4fd5e566c5f87b052f92e9b23723a85e1c4d8c1c"; \
+    cd /tmp; \
+    git clone https://github.com/uclid-org/uclid.git uclid-src; \
+    cd uclid-src; \
+    git checkout "$UCLID_COMMIT"; \
+    mkdir -p lib; \
+    cp /opt/z3/com.microsoft.z3.jar lib/; \
+    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-"$(dpkg --print-architecture)"; \
+    export SBT_HOME=/opt/sbt; \
+    export PATH="${JAVA_HOME}/bin:${SBT_HOME}/bin:${PATH}"; \
+    java -version; \
+    sbt update clean compile "set fork:=true"; \
+    sbt universal:packageBin; \
+    cd target/universal; \
+    unzip -q uclid-0.9.5.zip -d /opt/uclid-dist; \
+    rm -rf /tmp/uclid-src
+
+# Symlink uclid and z3 into /usr/local/bin, and set library path for Java
+# bindings. Java 21 is already on PATH from the base image.
+RUN set -eux; \
+    ln -sf /opt/uclid-dist/uclid-0.9.5/bin/uclid /usr/local/bin/uclid; \
+    ln -sf /opt/z3/z3 /usr/local/bin/z3; \
+    chown -R relico:relico /opt/uclid-dist /opt/sbt /opt/z3
+
+# Z3 shared libraries must be on LD_LIBRARY_PATH for UCLID5 (via JNI) and
+# for lfc's C-target verifier to find libz3java.so at runtime. LD_LIBRARY_PATH
+# is not otherwise set in this image, so a plain assignment is correct here.
+ENV LD_LIBRARY_PATH=/opt/z3
+ENV PATH=/usr/local/bin:${PATH}
+USER relico
+
 # Copy the full scripts directory so verify-environment.sh (and later
 # smoke-test/reproduce layers) have every artifact script available.
 COPY --chown=relico:relico scripts/ ./scripts/
@@ -153,7 +276,12 @@ RUN bash scripts/verify-environment.sh \
     && lfc --version \
     && echo "=== mvn check ===" \
     && which mvn \
-    && mvn --version
+    && mvn --version \
+    && echo "=== uclid check ===" \
+    && which uclid \
+    && echo "=== z3 check ===" \
+    && which z3 \
+    && if [ "$(uname -m)" = "x86_64" ]; then z3 --version && uclid --help 2>&1 | head -1; else echo "NOTE: skipping z3/uclid execution on $(uname -m) (native z3 runs on the x86_64 target)"; fi
 
 # ---------------------------------------------------------------------------
 # 7.4.3: build-time warmup — prepare the container so `docker run` needs no net
