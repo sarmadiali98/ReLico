@@ -1,0 +1,66 @@
+target C
+
+reactor TrafficLightCore {
+    output stateOut:int
+    output sigG:int
+
+    logical action emitGreen(1 sec)
+
+    state lightState:int = 0   // 0 = RED, 1 = GREEN
+
+    reaction(startup) -> stateOut, emitGreen {=
+        lf_set(stateOut, self->lightState);
+        lf_schedule(emitGreen, 0);
+    =}
+
+    reaction(emitGreen) -> sigG {=
+        // Bug preserved: green is emitted, but the state never changes to GREEN.
+        lf_set(sigG, 1);
+    =}
+}
+
+reactor Checker {
+    input stateIn:int
+    input sigGIn:int
+
+    state lastState:int = 0
+    state violation:int = 0
+
+    reaction(stateIn) {=
+        self->lastState = stateIn->value;
+    =}
+
+    reaction(sigGIn) {=
+        if (self->lastState != 1) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 sec, 100 sec)
+    state phase:int = 0
+
+    reaction(t) {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+    =}
+}
+
+@property(
+    name="TrafficLight_NoViolation",
+    tactic="bmc",
+    spec="G[0, 2 sec](TrafficLight_chk_violation == 0)",
+    expect=false
+)
+main reactor TrafficLight {
+    tl = new TrafficLightCore()
+    chk = new Checker()
+    ka = new KeepAlive()
+
+    tl.stateOut -> chk.stateIn
+    tl.sigG -> chk.sigGIn
+}

@@ -1,0 +1,195 @@
+target C
+
+reactor Driver {
+    input ack:int
+
+    output s1:int
+    output s2:int
+    output s3:int
+    output s4:int
+    output s5:int
+    output s6:int
+    output s7:int
+    output s8:int
+    output s9:int
+    output s10:int
+    output s11:int
+    output s12:int
+    output s13:int
+    output s14:int
+    output s15:int
+    output s16:int
+    output s17:int
+    output s18:int
+    output s19:int
+    output s20:int
+    output s21:int
+    output s22:int
+    output s23:int
+    output s24:int
+
+    state round:int = 0
+
+    reaction(startup, ack)
+        -> s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12,
+           s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24 {=
+        if (self->round < 40) {
+            self->round++;
+
+            lf_set(s1, 1);   lf_set(s2, 1);   lf_set(s3, 1);   lf_set(s4, 1);
+            lf_set(s5, 1);   lf_set(s6, 1);   lf_set(s7, 1);   lf_set(s8, 1);
+            lf_set(s9, 1);   lf_set(s10, 1);  lf_set(s11, 1);  lf_set(s12, 1);
+            lf_set(s13, 1);  lf_set(s14, 1);  lf_set(s15, 1);  lf_set(s16, 1);
+            lf_set(s17, 1);  lf_set(s18, 1);  lf_set(s19, 1);  lf_set(s20, 1);
+            lf_set(s21, 1);  lf_set(s22, 1);  lf_set(s23, 1);  lf_set(s24, 1);
+        }
+    =}
+}
+
+reactor Branch {
+    input start:int
+    output done:int
+
+    reaction(start) -> done {=
+        lf_set(done, 1);
+    =}
+}
+
+reactor Join {
+    input in1:int
+    input in2:int
+    input in3:int
+    input in4:int
+    input in5:int
+    input in6:int
+    input in7:int
+    input in8:int
+    input in9:int
+    input in10:int
+    input in11:int
+    input in12:int
+    input in13:int
+    input in14:int
+    input in15:int
+    input in16:int
+    input in17:int
+    input in18:int
+    input in19:int
+    input in20:int
+    input in21:int
+    input in22:int
+    input in23:int
+    input in24:int
+
+    output ack:int
+
+    state rounds_seen:int = 0
+    state violation:int = 0
+
+    reaction(in1, in2, in3, in4, in5, in6, in7, in8, in9, in10, in11, in12,
+             in13, in14, in15, in16, in17, in18, in19, in20, in21, in22, in23, in24) -> ack {=
+        self->rounds_seen++;
+        if (self->rounds_seen > 40) {
+            self->violation = 1;
+        }
+        lf_set(ack, self->rounds_seen);
+    =}
+}
+
+reactor KeepAlive {
+    timer t(100 sec, 100 sec)
+    state phase:int = 0
+
+    reaction(t) {=
+        self->phase = 1 - self->phase;
+    =}
+}
+
+@property(
+    name="WideBarrier24_NoViolation",
+    tactic="bmc",
+    spec="G[0, 100 msec](WideBarrier24_join_violation == 0)",
+    expect=true
+)
+main reactor WideBarrier24 {
+    d = new Driver()
+    j = new Join()
+    ka = new KeepAlive()
+
+    b1 = new Branch()
+    b2 = new Branch()
+    b3 = new Branch()
+    b4 = new Branch()
+    b5 = new Branch()
+    b6 = new Branch()
+    b7 = new Branch()
+    b8 = new Branch()
+    b9 = new Branch()
+    b10 = new Branch()
+    b11 = new Branch()
+    b12 = new Branch()
+    b13 = new Branch()
+    b14 = new Branch()
+    b15 = new Branch()
+    b16 = new Branch()
+    b17 = new Branch()
+    b18 = new Branch()
+    b19 = new Branch()
+    b20 = new Branch()
+    b21 = new Branch()
+    b22 = new Branch()
+    b23 = new Branch()
+    b24 = new Branch()
+
+    d.s1 -> b1.start after 1 msec
+    d.s2 -> b2.start after 1 msec
+    d.s3 -> b3.start after 1 msec
+    d.s4 -> b4.start after 1 msec
+    d.s5 -> b5.start after 1 msec
+    d.s6 -> b6.start after 1 msec
+    d.s7 -> b7.start after 1 msec
+    d.s8 -> b8.start after 1 msec
+    d.s9 -> b9.start after 1 msec
+    d.s10 -> b10.start after 1 msec
+    d.s11 -> b11.start after 1 msec
+    d.s12 -> b12.start after 1 msec
+    d.s13 -> b13.start after 1 msec
+    d.s14 -> b14.start after 1 msec
+    d.s15 -> b15.start after 1 msec
+    d.s16 -> b16.start after 1 msec
+    d.s17 -> b17.start after 1 msec
+    d.s18 -> b18.start after 1 msec
+    d.s19 -> b19.start after 1 msec
+    d.s20 -> b20.start after 1 msec
+    d.s21 -> b21.start after 1 msec
+    d.s22 -> b22.start after 1 msec
+    d.s23 -> b23.start after 1 msec
+    d.s24 -> b24.start after 1 msec
+
+    b1.done -> j.in1
+    b2.done -> j.in2
+    b3.done -> j.in3
+    b4.done -> j.in4
+    b5.done -> j.in5
+    b6.done -> j.in6
+    b7.done -> j.in7
+    b8.done -> j.in8
+    b9.done -> j.in9
+    b10.done -> j.in10
+    b11.done -> j.in11
+    b12.done -> j.in12
+    b13.done -> j.in13
+    b14.done -> j.in14
+    b15.done -> j.in15
+    b16.done -> j.in16
+    b17.done -> j.in17
+    b18.done -> j.in18
+    b19.done -> j.in19
+    b20.done -> j.in20
+    b21.done -> j.in21
+    b22.done -> j.in22
+    b23.done -> j.in23
+    b24.done -> j.in24
+
+    j.ack -> d.ack after 1 msec
+}
