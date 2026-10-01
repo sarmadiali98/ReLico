@@ -1,8 +1,0 @@
-property {
-  define {
-    NoViolation = (chk.violation == 0);
-  }
-  Assertion {
-    SafeSend_NoViolation : NoViolation;
-  }
-}
