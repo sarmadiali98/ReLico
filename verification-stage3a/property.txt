@@ -1,0 +1,1 @@
+@property(name="Alarm_NoStopFailure", tactic="bmc", spec="G[0, 1500 msec]((Alarm_chk_violation == 0))", CT=20, expect=false)

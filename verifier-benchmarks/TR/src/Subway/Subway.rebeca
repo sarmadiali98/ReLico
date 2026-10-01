@@ -1,0 +1,102 @@
+reactiveclass Scenario(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    Scenario() {
+    }
+
+    @priority(1)
+    msgsrv start() {
+        self.requestAfterWait() after(2);
+    }
+
+    @priority(2)
+    msgsrv requestAfterWait() {
+        self.finishPassing() after(10);
+    }
+
+    @priority(3)
+    msgsrv finishPassing() {
+        chk.doneIn();
+    }
+}
+
+reactiveclass Checker(5) {
+    statevars {
+        int gotDone;
+        int violation;
+    }
+
+    Checker() {
+        gotDone = 0;
+        violation = 0;
+    }
+
+    @priority(1)
+    msgsrv arm() {
+        self.timeout() after(11);
+    }
+
+    @priority(2)
+    msgsrv doneIn() {
+        gotDone = 1;
+    }
+
+    @priority(3)
+    msgsrv timeout() {
+        if (gotDone == 0) {
+            violation = 1;
+        }
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.kick();
+    }
+
+    @priority(1)
+    msgsrv kick() {
+        self.tick() after(100);
+    }
+
+    @priority(2)
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+reactiveclass Bootstrap(5) {
+    knownrebecs {
+        Scenario s;
+        Checker chk;
+    }
+
+    Bootstrap() {
+        self.start();
+    }
+
+    @priority(1)
+    msgsrv start() {
+        chk.arm();
+        s.start();
+    }
+}
+
+main {
+    Checker chk():();
+    Scenario s(chk):();
+    KeepAlive ka():();
+    Bootstrap boot(s, chk):();
+}

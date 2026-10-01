@@ -48,8 +48,10 @@ tools/relico_test.sh --tier integration --family general
 tools/relico_test.sh --case lean-case::core.translation.api.exact-program
 ```
 
-Generated evidence is written to `.test-results/` as `summary.json`, `cases.jsonl`, `stages.jsonl`,
-`coverage-matrix.tsv`, `environment.json`, JUnit XML, and per-case stdout/stderr.
+Generated evidence is written by default to `.test-results/` as `summary.json`, `cases.jsonl`,
+`stages.jsonl`, `coverage-matrix.tsv`, `environment.json`, JUnit XML, and per-case stdout/stderr.
+Set `RELICO_TEST_RESULTS_DIR` to write those artifacts elsewhere; `./smoke-test.sh` uses this
+override to keep test evidence under its temporary log directory.
 
 ## Paper metrics
 

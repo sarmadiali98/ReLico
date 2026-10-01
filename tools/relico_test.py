@@ -20,7 +20,12 @@ import xml.etree.ElementTree as ET
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-RESULTS_ROOT = REPOSITORY_ROOT / ".test-results"
+RESULTS_ROOT = Path(
+    os.environ.get("RELICO_TEST_RESULTS_DIR", REPOSITORY_ROOT / ".test-results")
+).expanduser()
+if not RESULTS_ROOT.is_absolute():
+    RESULTS_ROOT = REPOSITORY_ROOT / RESULTS_ROOT
+RESULTS_ROOT = RESULTS_ROOT.resolve()
 PYTHON_PATTERNS = (
     "tools/test_*.py",
     "tests/test_*.py",
@@ -574,6 +579,14 @@ def first_failure_line(*outputs: str) -> str:
     return "test process exited nonzero"
 
 
+def results_artifact_path(name: str) -> str:
+    path = RESULTS_ROOT / name
+    try:
+        return path.relative_to(REPOSITORY_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def write_reports(
     discovered: Sequence[TestCase],
     selected: Sequence[TestCase],
@@ -607,11 +620,11 @@ def write_reports(
             else "unavailable" if counts["unavailable"] else "pass"
         ),
         "artifacts": {
-            "cases": ".test-results/cases.jsonl",
-            "stages": ".test-results/stages.jsonl",
-            "coverage_matrix": ".test-results/coverage-matrix.tsv",
-            "environment": ".test-results/environment.json",
-            "junit": ".test-results/junit.xml",
+            "cases": results_artifact_path("cases.jsonl"),
+            "stages": results_artifact_path("stages.jsonl"),
+            "coverage_matrix": results_artifact_path("coverage-matrix.tsv"),
+            "environment": results_artifact_path("environment.json"),
+            "junit": results_artifact_path("junit.xml"),
         },
     }
     summary = json.dumps(payload, indent=2, sort_keys=True) + "\n"

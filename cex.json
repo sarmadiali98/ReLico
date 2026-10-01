@@ -1,0 +1,28 @@
+{
+  "property__probe_init_unsat__0" : {
+    "length" : 1,
+    "trace" : [ {
+      "start_time" : [ "0" ],
+      "trace" : [ {
+        "0" : "(let ((a!1 (_tuple_0 false false false false false false false false false)))\n  (_tuple_1 a!1\n            (_tuple_2 0 0)\n            (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0)\n            a!1\n            (_tuple_4 false)\n            (_tuple_5 97)))",
+        "1" : "(_tuple_1 (_tuple_0 true false false false false false false false false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 true)\n          (_tuple_5 0))",
+        "3" : "(_tuple_1 (_tuple_0 false false true false false false false false false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 19))",
+        "4" : "(_tuple_1 (_tuple_0 false false false false true false false false false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 20))",
+        "5" : "(_tuple_1 (_tuple_0 false true false false false false false false false)\n          (_tuple_2 0 1)\n          (_tuple_3 0 0 0 0 1 0 0 0 0 0 0 0)\n          (_tuple_0 true true false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 21))",
+        "6" : "(_tuple_1 (_tuple_0 false false false true false false false false false)\n          (_tuple_2 0 1)\n          (_tuple_3 0 0 0 0 0 1 0 1 0 0 0 0)\n          (_tuple_0 false false true false true false false false false)\n          (_tuple_4 false)\n          (_tuple_5 22))",
+        "7" : "(_tuple_1 (_tuple_0 false false false false false false true false false)\n          (_tuple_2 0 1)\n          (_tuple_3 0 1 0 0 0 0 0 0 0 1 1 0)\n          (_tuple_0 false false false false false false true true false)\n          (_tuple_4 false)\n          (_tuple_5 23))",
+        "8" : "(let ((a!1 (_tuple_0 false false false false false false false false true)))\n  (_tuple_1 a!1\n            (_tuple_2 0 1)\n            (_tuple_3 0 1 0 0 0 0 0 0 0 0 0 1)\n            a!1\n            (_tuple_4 false)\n            (_tuple_5 24)))",
+        "9" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 1237 975)\n          (_tuple_3 25 26 27 0 28 0 29 30 0 0 31 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 32))",
+        "10" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 3675 1888)\n          (_tuple_3 33 34 35 0 36 0 37 38 0 0 39 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 40))",
+        "11" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 12531 1653)\n          (_tuple_3 41 42 43 0 44 0 45 46 0 0 47 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 48))",
+        "12" : "(_tuple_1 (_tuple_0 false false false false true false false false false)\n          (_tuple_2 14328 5904)\n          (_tuple_3 49 50 51 0 52 0 53 54 0 0 55 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 56))",
+        "13" : "(_tuple_1 (_tuple_0 true false false false false false false false false)\n          (_tuple_2 22694 8456)\n          (_tuple_3 57 58 59 0 60 0 61 62 0 0 63 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 64))",
+        "14" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 24977 1323)\n          (_tuple_3 65 66 67 0 68 0 69 70 0 0 71 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 72))",
+        "15" : "(_tuple_1 (_tuple_0 false false false false true false false false false)\n          (_tuple_2 30831 8879)\n          (_tuple_3 73 74 75 0 76 0 77 78 0 0 79 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 80))",
+        "16" : "(_tuple_1 (_tuple_0 false false true false false false false false false)\n          (_tuple_2 31441 2240)\n          (_tuple_3 81 82 83 0 84 0 85 86 0 0 87 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 88))",
+        "17" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 31442 4679)\n          (_tuple_3 89 90 91 0 92 0 93 94 0 0 95 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 96))",
+        "-" : "(_tuple_1 (_tuple_0 false false false false false false false true false)\n          (_tuple_2 0 0)\n          (_tuple_3 0 0 0 0 0 0 0 0 0 0 0 0)\n          (_tuple_0 false false false false false false false false false)\n          (_tuple_4 false)\n          (_tuple_5 18))"
+      } ]
+    } ]
+  }
+}

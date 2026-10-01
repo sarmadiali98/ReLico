@@ -1,0 +1,8 @@
+{
+  "benchmark_id": "general--alarm-case-study--positive",
+  "main_reactor": "Alarm",
+  "prepared": true,
+  "property": "benchmarks/general--alarm-case-study--positive/property/alarm-shutdown-failure-witness.property",
+  "source_lf": "benchmarks/general--alarm-case-study--positive/expected/lf-source/TranslatedLFProgram.lf",
+  "verification_lf": "/tmp/stage3a-alarm/Alarm.lf"
+}
