@@ -19,6 +19,16 @@ sha256_of() {
 }
 
 CACHE_DIR="${RELICO_CACHE_DIR:-$HOME/.cache/relico}"
+VERIFIER_BIN_DIR="$CACHE_DIR/verifiers/bin"
+Z3_LIB_DIR="$CACHE_DIR/verifiers/z3/4.8.8/bin"
+if [ -d "$VERIFIER_BIN_DIR" ]; then
+  PATH="$VERIFIER_BIN_DIR:$PATH"
+  export PATH
+fi
+if [ -d "$Z3_LIB_DIR" ]; then
+  LD_LIBRARY_PATH="$Z3_LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export LD_LIBRARY_PATH
+fi
 
 PYTHON="${RELICO_PYTHON:-python3}"
 check "python3>=3.10" yes "$PYTHON" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'

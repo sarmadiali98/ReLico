@@ -1,17 +1,41 @@
 #!/usr/bin/env bash
 # Fetch external artifacts with pinned SHA-256 verification.
 # Artifacts already present with a matching digest are not re-downloaded.
-# Usage: scripts/install-dependencies.sh [--with-lfc]
+# Usage: scripts/install-dependencies.sh [--with-lfc] [--with-verifiers]
 set -euo pipefail
 
 CACHE_DIR="${RELICO_CACHE_DIR:-$HOME/.cache/relico}"
 WITH_LFC=0
+WITH_VERIFIERS=0
 for arg in "$@"; do
   case "$arg" in
     --with-lfc) WITH_LFC=1 ;;
+    --with-verifiers) WITH_VERIFIERS=1 ;;
+    --help)
+      echo "Usage: scripts/install-dependencies.sh [--with-lfc] [--with-verifiers]"
+      exit 0 ;;
     *) echo "unknown option: $arg" >&2; exit 64 ;;
   esac
 done
+
+if [ "$WITH_VERIFIERS" -eq 1 ]; then
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64|Linux-aarch64) ;;
+    *)
+      echo "UCLID5/Z3 installation supports Linux x86_64 or aarch64 build hosts; native Z3 execution requires x86_64." >&2
+      exit 1 ;;
+  esac
+  JAVA17_HOME="${JAVA17_HOME:-${JAVA_HOME:-}}"
+  if [ -z "$JAVA17_HOME" ] || [ ! -x "$JAVA17_HOME/bin/java" ]; then
+    echo "UCLID5 build requires JDK 17; set JAVA17_HOME (or JAVA_HOME) to a JDK 17 installation." >&2
+    exit 1
+  fi
+  java_version="$("$JAVA17_HOME/bin/java" -version 2>&1 | sed -n '1p')"
+  case "$java_version" in
+    *'version "17.'*|*'openjdk version "17.'*) ;;
+    *) echo "UCLID5 build requires JDK 17; $JAVA17_HOME reports: $java_version" >&2; exit 1 ;;
+  esac
+fi
 
 RMC_SHA="a39112046d99e0895cf47f890242ace21db896e609f7eef86751a0d416d477f5"
 RMC_URL="https://github.com/rebeca-lang/org.rebecalang.rmc/releases/download/2.14/rmc-2.14.jar"
@@ -51,6 +75,16 @@ case "$(uname -s)-$(uname -m)" in
     exit 1 ;;
 esac
 LFC_URL="https://github.com/lf-lang/lingua-franca/releases/download/v${LFC_VERSION}/${LFC_ASSET}"
+
+Z3_VERSION="4.8.8"
+Z3_ASSET="z3-${Z3_VERSION}-x64-ubuntu-16.04.zip"
+Z3_SHA="6534f26427ee4f02835d17c3472f5ce750f34b4898c35cdd4223459b3589664e"
+Z3_URL="https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/${Z3_ASSET}"
+SBT_VERSION="1.10.11"
+SBT_ASSET="sbt-${SBT_VERSION}.tgz"
+SBT_SHA="5034a64841b8a9cfb52a341e45b01df2b8c2ffaa87d8d2b0fe33c4cdcabd8f0c"
+SBT_URL="https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/${SBT_ASSET}"
+UCLID_COMMIT="4fd5e566c5f87b052f92e9b23723a85e1c4d8c1c"
 
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
@@ -100,6 +134,90 @@ if [ "$WITH_LFC" -eq 1 ]; then
   lfc_bin_dir="$(dirname "$lfc_bin")"
   echo "To use this lfc, add its bin directory to PATH:"
   echo "  export PATH=\"$lfc_bin_dir:\$PATH\""
+fi
+
+if [ "$WITH_VERIFIERS" -eq 1 ]; then
+  VERIFIER_DIR="$CACHE_DIR/verifiers"
+  DOWNLOAD_DIR="$VERIFIER_DIR/downloads"
+  BIN_DIR="$VERIFIER_DIR/bin"
+  Z3_ARCHIVE="$DOWNLOAD_DIR/$Z3_ASSET"
+  SBT_ARCHIVE="$DOWNLOAD_DIR/$SBT_ASSET"
+  Z3_INSTALL_DIR="$VERIFIER_DIR/z3/$Z3_VERSION"
+  SBT_INSTALL_DIR="$VERIFIER_DIR/sbt/$SBT_VERSION"
+  UCLID_SOURCE_DIR="$VERIFIER_DIR/src/uclid-$UCLID_COMMIT"
+  UCLID_INSTALL_DIR="$VERIFIER_DIR/uclid/$UCLID_COMMIT"
+  UCLID_BIN="$UCLID_INSTALL_DIR/uclid-0.9.5/bin/uclid"
+
+  mkdir -p "$DOWNLOAD_DIR" "$BIN_DIR"
+  fetch_verified "$Z3_URL" "$Z3_SHA" "$Z3_ARCHIVE"
+  fetch_verified "$SBT_URL" "$SBT_SHA" "$SBT_ARCHIVE"
+
+  z3_tmp="$(mktemp -d "${TMPDIR:-/tmp}/relico-z3.XXXXXX")"
+  unzip -q "$Z3_ARCHIVE" -d "$z3_tmp"
+  z3_source_dir="$(find "$z3_tmp" -mindepth 1 -maxdepth 1 -type d -name "z3-${Z3_VERSION}-*" | head -n 1)"
+  if [ -z "$z3_source_dir" ] || [ ! -f "$z3_source_dir/bin/libz3java.so" ] || \
+     [ ! -f "$z3_source_dir/bin/com.microsoft.z3.jar" ]; then
+    rm -rf "$z3_tmp"
+    echo "Z3 archive is missing expected 4.8.8 binaries or Java bindings." >&2
+    exit 66
+  fi
+  mkdir -p "$Z3_INSTALL_DIR"
+  rm -rf "$Z3_INSTALL_DIR/bin"
+  cp -R "$z3_source_dir/bin" "$Z3_INSTALL_DIR/bin"
+  rm -rf "$z3_tmp"
+
+  if [ ! -x "$UCLID_BIN" ]; then
+    if [ ! -d "$UCLID_SOURCE_DIR/.git" ]; then
+      mkdir -p "$(dirname "$UCLID_SOURCE_DIR")"
+      git init -q "$UCLID_SOURCE_DIR"
+      git -C "$UCLID_SOURCE_DIR" remote add origin https://github.com/uclid-org/uclid.git
+    fi
+    git -C "$UCLID_SOURCE_DIR" fetch --depth 1 origin "$UCLID_COMMIT"
+    git -C "$UCLID_SOURCE_DIR" checkout --detach FETCH_HEAD
+    actual_commit="$(git -C "$UCLID_SOURCE_DIR" rev-parse HEAD)"
+    if [ "$actual_commit" != "$UCLID_COMMIT" ]; then
+      echo "UCLID5 source commit mismatch: expected $UCLID_COMMIT observed $actual_commit" >&2
+      exit 67
+    fi
+
+    mkdir -p "$UCLID_SOURCE_DIR/lib"
+    cp "$Z3_INSTALL_DIR/bin/com.microsoft.z3.jar" "$UCLID_SOURCE_DIR/lib/"
+    mkdir -p "$SBT_INSTALL_DIR"
+    if [ ! -x "$SBT_INSTALL_DIR/bin/sbt" ]; then
+      tar -xzf "$SBT_ARCHIVE" -C "$SBT_INSTALL_DIR" --strip-components=1
+    fi
+    export JAVA_HOME="$JAVA17_HOME"
+    export SBT_HOME="$SBT_INSTALL_DIR"
+    export PATH="$JAVA17_HOME/bin:$SBT_INSTALL_DIR/bin:$PATH"
+    cd "$UCLID_SOURCE_DIR"
+    sbt update clean compile "set fork:=true"
+    sbt universal:packageBin
+    package_zip="$UCLID_SOURCE_DIR/target/universal/uclid-0.9.5.zip"
+    if [ ! -f "$package_zip" ]; then
+      echo "UCLID5 build did not produce $package_zip" >&2
+      exit 68
+    fi
+    mkdir -p "$UCLID_INSTALL_DIR"
+    unzip -qo "$package_zip" -d "$UCLID_INSTALL_DIR"
+  fi
+
+  if [ ! -x "$UCLID_BIN" ] || [ ! -x "$Z3_INSTALL_DIR/bin/z3" ]; then
+    echo "UCLID5/Z3 installation is incomplete under $VERIFIER_DIR" >&2
+    exit 69
+  fi
+  ln -sfn "$UCLID_BIN" "$BIN_DIR/uclid"
+  ln -sfn "$Z3_INSTALL_DIR/bin/z3" "$BIN_DIR/z3"
+  if [ "$(uname -m)" = "x86_64" ]; then
+    "$Z3_INSTALL_DIR/bin/z3" --version
+    PATH="$BIN_DIR:$PATH" LD_LIBRARY_PATH="$Z3_INSTALL_DIR/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+      "$UCLID_BIN" --help >/dev/null
+    echo "UCLID5/Z3 commands verified"
+  else
+    echo "Installed UCLID5 and x86_64 Z3 for an x86_64 runtime; native verifier execution was skipped on $(uname -m)."
+  fi
+  echo "To use UCLID5/Z3, add the commands and native libraries to your environment:"
+  echo "  export PATH=\"$BIN_DIR:\$PATH\""
+  echo "  export LD_LIBRARY_PATH=\"$Z3_INSTALL_DIR/bin:\${LD_LIBRARY_PATH:-}\""
 fi
 
 echo "install-dependencies: complete"

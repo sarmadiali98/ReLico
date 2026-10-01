@@ -28,9 +28,9 @@ What is acquired during the image build, and how:
 | Rebeca parser/compiler | 2.25 | `scripts/install-dependencies.sh` | SHA-256 (see below) |
 | Lingua Franca compiler (`lfc`) | 0.11.0 | `scripts/install-dependencies.sh --with-lfc` | per-platform SHA-256 (see below) |
 | Maven Central transitive deps | (unpinned class) | parser-bridge warmup (`mvn`) | upstream artifacts; cached into `~/.m2` |
-| Z3 SMT solver | 4.8.8 | pinned release zip (`Dockerfile`) | SHA-256 in `Dockerfile` |
-| UCLID5 | commit `4fd5e566` | built from source via `sbt` (`Dockerfile`) | git commit hash; sbt dependency resolution |
-| SBT (build only) | 1.10.11 | pinned tarball (`Dockerfile`) | SHA-256 in `Dockerfile` |
+| Z3 SMT solver | 4.8.8 | `scripts/install-dependencies.sh --with-verifiers` | SHA-256 in `artifact/checksums.tsv` |
+| UCLID5 | commit `4fd5e566c5f87b052f92e9b23723a85e1c4d8c1c` | built by `scripts/install-dependencies.sh --with-verifiers` | pinned git commit; sbt dependency resolution |
+| SBT (build only) | 1.10.11 | `scripts/install-dependencies.sh --with-verifiers` | SHA-256 in `artifact/checksums.tsv` |
 
 Principles this model follows:
 
@@ -42,9 +42,9 @@ Principles this model follows:
   `scripts/install-dependencies.sh` are the complete recipe; anyone can rebuild
   the same image and observe the same downloads and checksums.
 - **Downloads happen at build time, not runtime.** After `docker build`, the RMC
-  jar, parser archive, `lfc`, the Maven local repository, and the Lean build
-  cache are all present in the image, which is why `docker run --network none`
-  succeeds.
+  jar, parser archive, `lfc`, UCLID5/Z3, the Maven local repository, and the Lean
+  build cache are all present in the image, which is why
+  `docker run --network none` succeeds.
 
 The `.dockerignore` file keeps host-local and derived state (the `.git`
 directory, `.lake/` build outputs, test evidence, editor and OS cruft, and the
@@ -132,15 +132,16 @@ checkout rather than from a developer's working tree.
 - Source: https://github.com/Z3Prover/z3/releases/tag/z3-4.8.8
 - Artifact: `z3-4.8.8-x64-ubuntu-16.04.zip` (Linux x86_64)
 - Checksum (SHA-256): `6534f26427ee4f02835d17c3472f5ce750f34b4898c35cdd4223459b3589664e` — verified
-- Acquisition: baked into the Docker image at build time (downloaded and extracted
-  to `/opt/z3`); `LD_LIBRARY_PATH` is set to `/opt/z3` so `libz3.so` and
-  `libz3java.so` are discoverable by UCLID5 via JNI. `z3` is symlinked into
-  `/usr/local/bin`.
+- Acquisition: `scripts/install-dependencies.sh --with-verifiers` downloads and
+  verifies the archive into `~/.cache/relico/verifiers/`; Docker invokes the
+  same installer and exposes the cached command and native-library paths.
 - Purpose: SMT solver backend for UCLID5, which is in turn the verification backend
   for `lfc --verify` on programs using `target C`.
 - License: MIT
 - Requires: the `z3` binary on `PATH`; `libz3.so` and `libz3java.so` on
-  `LD_LIBRARY_PATH` at runtime.
+  `LD_LIBRARY_PATH` at runtime. The bundled native binary is Linux x86_64; Linux
+  aarch64 can build the JVM-based verifier distribution for an x86_64 target but
+  cannot execute this Z3 binary. macOS users must supply compatible local builds.
 
 ### UCLID5
 - Version: source at commit `4fd5e566c5f87b052f92e9b23723a85e1c4d8c1c` from
@@ -153,8 +154,11 @@ checkout rather than from a developer's working tree.
   what UCLID5's `get-z3-linux.sh` does. Build command:
   `sbt update clean compile "set fork:=true"` followed by
   `sbt universal:packageBin`, then unzip `target/universal/uclid-0.9.5.zip`.
-- Acquisition: built from source during Docker image build; the resulting
-  `uclid` binary is symlinked into `/usr/local/bin`.
+- Acquisition: `scripts/install-dependencies.sh --with-verifiers` fetches the
+  pinned source commit, stages the Z3 Java bindings, and builds into
+  `~/.cache/relico/verifiers/`. It requires Linux and a JDK 17 selected with
+  `JAVA17_HOME` or `JAVA_HOME`. Docker calls the same installer and exposes the
+  cached command in its runtime PATH.
 - Purpose: formal verification backend for `lfc --verify` on programs using
   `target C`. UCLID5 is invoked by lfc's C-target verification path to check
   `@property` annotations.
@@ -169,7 +173,9 @@ checkout rather than from a developer's working tree.
 - Source: https://github.com/sbt/sbt/releases/tag/v1.10.11
 - Artifact: `sbt-1.10.11.tgz`
 - Checksum (SHA-256): `5034a64841b8a9cfb52a341e45b01df2b8c2ffaa87d8d2b0fe33c4cdcabd8f0c` — verified
-- Acquisition: baked into the Docker image at `/opt/sbt`.
+- Acquisition: checksum-verified by
+  `scripts/install-dependencies.sh --with-verifiers` into
+  `~/.cache/relico/verifiers/sbt/1.10.11/`.
 - Purpose: builds UCLID5 from source. sbt 1.x is required — UCLID5 at the pinned
   commit is a sbt 1.x project. Not needed at runtime unless rebuilding UCLID5.
 - License: BSD-3-Clause (with bundled Scala and sbt components)

@@ -107,10 +107,12 @@ Inside the container:
 ./smoke-test.sh
 ```
 
-This is a fast, six-gate, end-to-end check (environment, Lean build, model
-analysis, DTR model checking, LF compilation, and native execution of a tiny
-bundled model). It takes a few seconds because the image is pre-warmed. A
-successful run ends with exactly:
+This is an eight-gate, end-to-end check: environment, Lean build, model
+analysis, DTR model checking, LF compilation, native execution of a tiny
+bundled model, all portable catalog/unit/formal tests, and the TR/RMC plus
+LF/UCLID5/Z3 verifier smoke tests. It does not run the translator fixture suite
+or application benchmarks. With a pre-warmed image it typically takes a few
+minutes. A successful run ends with exactly:
 
 ```text
 Artifact status: READY
@@ -138,10 +140,16 @@ REPRODUCE_TEST=pass
 
 `REPRODUCE_TEST=pass` is the pass signal. The `quick` profile runs the
 environment check, the formal build, a representative slice of the translator
-fixtures, the smallest benchmarks, and the ESP32 virtual-hardware case study.
-The `full` profile runs all 65 translator capability fixtures and all 41
-application benchmarks. See [`evaluation/README.md`](evaluation/README.md) for
-the evidence populations and counting rules, and
+fixtures, the smallest benchmarks, the ESP32 virtual-hardware case study, and
+the TR/RMC plus LF/UCLID5/Z3 verifier smoke tests. The `full` profile runs the
+same verifier smoke tests alongside all 65 translator capability fixtures and
+all 41 application benchmarks. Stage 5 can also be run alone with
+`scripts/reproduce.sh --stage 5`; its copied inputs and fresh outputs are kept
+under `$RESULTS_DIR/verifier-benchmarks/`, leaving committed sample results
+unchanged. It runs the smoke cases only, not the full verifier sweeps. See
+[`verifier-benchmarks/README.md`](verifier-benchmarks/README.md) for setup and
+standalone commands, [`evaluation/README.md`](evaluation/README.md) for the
+evidence populations and counting rules, and
 [`benchmarks/README.md`](benchmarks/README.md) for the benchmark suite.
 
 Putting the whole Docker path together:
@@ -171,8 +179,8 @@ scripts/reproduce.sh --profile quick   # -> REPRODUCE_TEST=pass
 ```
 
 Both succeed with no internet access: the RMC jar, the Rebeca parser archive,
-`lfc`, Maven and its downloaded dependencies, and the Lean build cache are all
-already present in the image.
+`lfc`, UCLID5/Z3, Maven and its downloaded dependencies, and the Lean build
+cache are all already present in the image.
 
 You can also run a single command without opening an interactive shell — for
 example, a fully offline smoke test in one line:
@@ -270,10 +278,11 @@ at it (see the environment-variable table in [`DEPENDENCIES.md`](DEPENDENCIES.md
 ./smoke-test.sh
 ```
 
-One command, six gates, a few seconds warm: environment check, Lean build,
-`scripts/relico analyze`, DTR model checking, LF compilation, and native
-execution of the bundled `examples/smoke/minimal.rebeca`. A successful run ends
-with:
+One command, eight gates: environment check, Lean build, `scripts/relico
+analyze`, DTR model checking, LF compilation, native execution of the bundled
+`examples/smoke/minimal.rebeca`, all portable catalog/unit/formal tests, and
+the TR/RMC plus LF/UCLID5/Z3 verifier smoke tests. It does not run all
+translator fixtures or application benchmarks. A successful run ends with:
 
 ```text
 Artifact status: READY

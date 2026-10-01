@@ -1,0 +1,85 @@
+target C;
+
+reactor Controller {
+    output out:int;
+
+    reaction(startup) -> out {=
+        lf_set(out, 1);
+    =}
+}
+
+reactor Vision {
+    input in:int;
+    output out:int;
+    state ramp:int = 0;
+
+    reaction(in) -> out {=
+        if (self->ramp == 1) {
+            lf_set(out, 0);
+        } else {
+            lf_set(out, 1);
+        }
+    =}
+}
+
+reactor Door {
+    input in:int;
+    output status:int;
+    state doorOpen:int = 0;
+
+    reaction(in) -> status {=
+        if (in->value == 1) {
+            self->doorOpen = 1;
+        } else if (in->value == 0) {
+            self->doorOpen = 0;
+        }
+        lf_set(status, self->doorOpen);
+    =}
+}
+
+reactor Monitor {
+    input door:int;
+    state violation:int = 0;
+
+    reaction(door) {=
+        if (door->value != 1) {
+            self->violation = 1;
+        }
+    =}
+}
+
+reactor KeepAlive {
+    logical action tick(1 sec);
+    state phase:int = 0;
+
+    reaction(startup) -> tick {=
+        lf_schedule(tick, 0);
+    =}
+
+    reaction(tick) -> tick {=
+        if (self->phase == 0) {
+            self->phase = 1;
+        } else {
+            self->phase = 0;
+        }
+        lf_schedule(tick, 0);
+    =}
+}
+
+@property(
+    name="VisionWorks_NoViolation",
+    tactic="bmc",
+    spec="G[0, 1 msec](AircraftDoor_m_violation == 0)",
+    expect=true
+)
+main reactor AircraftDoor {
+    controller = new Controller();
+    vision = new Vision();
+    door = new Door();
+    m = new Monitor();
+    ka = new KeepAlive();
+
+    controller.out -> vision.in;
+    vision.out -> door.in;
+    door.status -> m.door;
+}

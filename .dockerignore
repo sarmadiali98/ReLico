@@ -23,6 +23,7 @@ tests/translator/*/actual/
 tests/translator/*/.expected-regeneration/
 benchmarks/*/actual/
 benchmarks/*/.expected-regeneration/
+verifier-benchmarks/TR/tools/*.jar
 
 # Logs and scratch
 *.log

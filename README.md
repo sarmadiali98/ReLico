@@ -71,6 +71,12 @@ printing `Artifact status: READY`. `scripts/relico analyze` and `scripts/relico 
 accept one of your own Timed Rebeca models, and `scripts/reproduce.sh` reproduces
 the reported evaluation using the quick profile by default.
 
+For the imported verifier-benchmark suite, run
+`scripts/install-dependencies.sh --with-lfc --with-verifiers`. Building UCLID5
+requires JDK 17; native Z3 execution is supported on Linux x86_64. See
+[`verifier-benchmarks/README.md`](verifier-benchmarks/README.md) for platform
+details and smoke-test commands.
+
 ```bash
 scripts/install-dependencies.sh
 scripts/verify-environment.sh
@@ -171,6 +177,7 @@ guidance rather than guarantees.
 | Docker image build (cold) | `docker build -t relico .` | ~1 hour on the tested hosts |
 | Environment verification | `scripts/verify-environment.sh` | A few seconds (in container) |
 | Smoke test | `./smoke-test.sh` | ~1–2 minutes |
+| Verifier smoke stage | `scripts/reproduce.sh --stage 5` | About 1 minute on the tested machine |
 | Reproduce — quick | `scripts/reproduce.sh --profile quick` | Several minutes, depending on hardware |
 | Reproduce — full | `scripts/reproduce.sh --profile full` | Depends on available CPU, memory, storage, and benchmark execution time |
 
@@ -349,7 +356,8 @@ The Lean General AST also contains an internal `trace` witness statement. It has
 A reviewer who does not want to learn the internal repository layout can use the
 location-independent wrappers. They discover the external tools the same way the
 benchmarks do and honour the usual `RELICO_*` overrides. `./smoke-test.sh` runs
-the fast six-gate end-to-end check; `scripts/relico analyze` accepts a model and
+the eight-gate reviewer check, including all portable tests and verifier smokes
+but not the translator fixture suite or application benchmarks; `scripts/relico analyze` accepts a model and
 reports its fragment and priorities; `scripts/relico run` analyzes, model-checks,
 translates, compiles, and runs a model; `scripts/reproduce.sh` reproduces the
 evaluation using the quick profile, and `--profile full` runs the complete

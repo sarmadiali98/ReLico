@@ -90,7 +90,8 @@ logical actions and reactions.
 ## Relationship to the other entry points
 
 - [`../../smoke-test.sh`](../../smoke-test.sh) drives `scripts/relico` over a
-  tiny bundled model as a fast six-gate confidence check.
+  tiny bundled model, runs all portable tests, and checks both verifier smoke
+  cases as an eight-gate confidence check.
 - [`../../scripts/reproduce.sh`](../../scripts/reproduce.sh) reproduces the full
   evaluation using the same pipeline stages.
 - [`../../ARTIFACT.md`](../../ARTIFACT.md) is the top-level reviewer walkthrough.

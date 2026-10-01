@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
 # ReLico artifact smoke test.
 #
-# The first command a VMCAI/FMCAD reviewer runs. One command, six gates, a few
-# seconds warm. It is NOT the full evaluation (see scripts/reproduce.sh for
-# that); it is a fast, deterministic end-to-end proof that the artifact works
-# on this machine, driven entirely through the reviewer-facing user workflow
-# (scripts/relico) and the existing verified pipeline stages. It adds no
-# pipeline logic and changes no semantics.
+# The first command a VMCAI/FMCAD reviewer runs. One command, eight gates. It
+# is NOT the full evaluation (see scripts/reproduce.sh for that); it checks the
+# reviewer-facing workflow, all portable tests, and representative verifier
+# benchmarks without running the translator fixtures or application benchmarks.
 #
-#   [1/6] Environment        tools present, versions reported
+#   [1/8] Environment        tools present, versions reported
 #                            (scripts/verify-environment.sh)
-#   [2/6] Lean build         the formal development builds (lake build)
-#   [3/6] Translator         scripts/relico analyze <example>
+#   [2/8] Lean build         the formal development builds (lake build)
+#   [3/8] Translator         scripts/relico analyze <example>
 #                            -> supported-fragment report, priority report,
 #                               machine-readable JSON
-#   [4/6] DTR analysis       scripts/relico run <example>
+#   [4/8] DTR analysis       scripts/relico run <example>
 #                            -> DTR (RMC) model checking = satisfied
-#   [5/6] LF compilation     -> verified translation to Lingua Franca + lfc
-#   [6/6] Example execution  -> the generated native program runs to completion
+#   [5/8] LF compilation     -> verified translation to Lingua Franca + lfc
+#   [6/8] Example execution  -> the generated native program runs to completion
+#   [7/8] All portable tests tools/relico_test.sh (catalog, unit, formal)
+#   [8/8] Verifier smoke     TR/RMC and LF/UCLID5/Z3 representative benchmarks
 #
 # Example: examples/smoke/minimal.rebeca -- a single-actor periodic model that
 # is deadlock-free (so DTR model checking is satisfied) and bounded in logical
 # time (so the generated program terminates on its own). It is intentionally
 # tiny and is not part of the benchmark corpus.
 #
-# Logs land under /tmp/relico-artifact-smoke.<pid>/ (a process-id stamp, not a
-# wall-clock timestamp); nothing is written into the repository. Tool versions
-# are captured there and, with --verbose, printed inline.
+# Logs and generated test/benchmark evidence land under
+# /tmp/relico-artifact-smoke.<pid>/; nothing is written into the repository.
+# Tool versions are captured there and, with --verbose, printed inline.
 #
 # Exit codes: 0 = READY (all gates pass), 1 = a gate failed, 2 = usage error.
 set -uo pipefail
@@ -68,7 +68,7 @@ fi
 STATUS_COLUMN=26  # dotted-leader width so the PASS/FAIL column aligns
 
 print_stage() { # print_stage <index> <label> <status>
-  local left="[$1/6] $2 "
+  local left="[$1/8] $2 "
   while [ "${#left}" -lt "$STATUS_COLUMN" ]; do left="${left}."; done
   printf '%s %s\n' "$left" "$3"
 }
@@ -231,6 +231,31 @@ if [ -z "$FAILED_STAGE" ]; then
     fail_stage 6 "Example execution" \
       "the generated native program did not run to completion (status=$rt)" \
       "$RUN_OUT/logs/runtime.log"
+  fi
+fi
+
+# ---- [7/8] All portable repository tests ----------------------------------
+if [ -z "$FAILED_STAGE" ]; then
+  if RELICO_TEST_RESULTS_DIR="$LOG_DIR/all-tests" \
+      tools/relico_test.sh >"$LOG_DIR/all-tests.log" 2>&1; then
+    print_stage 7 "All tests" "PASS"
+  else
+    fail_stage 7 "All tests" \
+      "the portable catalog/unit/formal test run failed; inspect its summary" \
+      "$LOG_DIR/all-tests.log"
+  fi
+fi
+
+# ---- [8/8] Verifier benchmark smoke ---------------------------------------
+if [ -z "$FAILED_STAGE" ]; then
+  if scripts/reproduce.sh --stage 5 \
+      --results "$LOG_DIR/verifier-benchmarks" \
+      >"$LOG_DIR/verifier-benchmarks.log" 2>&1; then
+    print_stage 8 "Verifier benchmarks" "PASS"
+  else
+    fail_stage 8 "Verifier benchmarks" \
+      "TR/RMC or LF/UCLID5/Z3 smoke failed; inspect the verifier tools and versions" \
+      "$LOG_DIR/verifier-benchmarks.log"
   fi
 fi
 

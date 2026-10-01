@@ -8,6 +8,7 @@
 #   Stage 2  translator validation           tools/relico_test.sh
 #   Stage 3  benchmark reproduction          tools/relico_bench.sh
 #   Stage 4  ESP32 virtual-hardware case     lfc + run_virtual_hardware.sh
+#   Stage 5  verifier smoke tests             verifier-benchmarks/scripts/run_smoke.sh
 #
 # Profiles (affect stages 2 and 3):
 #   quick (default) — reviewer path:
@@ -27,6 +28,9 @@
 #
 # Stage 4 never requires pytest or physical hardware by default;
 # --with-esp32-tests adds the pytest suites (they re-run the scenarios).
+# Stage 5 runs both verifier smoke cases for either profile. It runs against a
+# private copy under RESULTS_DIR so generated CSV/TXT evidence cannot replace
+# the committed sample results. Full verifier sweeps remain explicit commands.
 #
 # All logs are written under --results (default /tmp/relico-reproduce.<ts>,
 # see RESULTS_DIR below); nothing is written into the repository by this
@@ -51,16 +55,25 @@ while [ "$#" -gt 0 ]; do
     --with-esp32-tests) WITH_ESP32_TESTS=1; shift ;;
     --keep-going) KEEP_GOING=1; shift ;;
     --stage) STAGES+=("$2"); shift 2 ;;
-    *) echo "reproduce.sh: unknown option: $1" >&2; exit 2 ;;
+    *)
+      echo "Usage: scripts/reproduce.sh [--profile quick|full] [--stage 0-5] [--results DIR] [--keep-going] [--with-esp32-tests]" >&2
+      echo "reproduce.sh: unknown option: $1" >&2
+      exit 2 ;;
   esac
 done
 case "$PROFILE" in
   quick|full) ;;
   *) echo "reproduce.sh: --profile must be quick or full" >&2; exit 2 ;;
 esac
-if [ "${#STAGES[@]}" -eq 0 ]; then STAGES=(0 1 2 3 4); fi
+if [ "${#STAGES[@]}" -eq 0 ]; then STAGES=(0 1 2 3 4 5); fi
+for stage in "${STAGES[@]}"; do
+  case "$stage" in
+    0|1|2|3|4|5) ;;
+    *) echo "reproduce.sh: invalid stage $stage (0-5)" >&2; exit 2 ;;
+  esac
+done
 RESULTS_DIR="${RESULTS_DIR:-/tmp/relico-reproduce.$(date +%Y%m%d-%H%M%S)}"
-mkdir -p "$RESULTS_DIR/benchmarks" "$RESULTS_DIR/esp32"
+mkdir -p "$RESULTS_DIR/benchmarks" "$RESULTS_DIR/esp32" "$RESULTS_DIR/verifier-benchmarks"
 RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"
 
 PYTHON="${RELICO_PYTHON:-python3}"
@@ -279,6 +292,44 @@ run_stage_4() {
   echo "STAGE 4 esp32: pass"
 }
 
+run_stage_5() {
+  local cache_dir="${RELICO_CACHE_DIR:-$HOME/.cache/relico}"
+  local verifier_bin_dir="$cache_dir/verifiers/bin"
+  local z3_lib_dir="$cache_dir/verifiers/z3/4.8.8/bin"
+  local stage_path="$PATH"
+  local lfc_bin=""
+  local workdir="$RESULTS_DIR/verifier-benchmarks/worktree.$$"
+  local log="$RESULTS_DIR/verifier-benchmarks/smoke.log"
+
+  if command -v lfc >/dev/null 2>&1; then
+    lfc_bin="$(command -v lfc)"
+  else
+    lfc_bin="$(find "$cache_dir/lf" -name lfc -type f 2>/dev/null | head -n 1)"
+  fi
+  if [ -n "$lfc_bin" ]; then
+    stage_path="$(dirname "$lfc_bin"):$stage_path"
+  fi
+  if [ -d "$verifier_bin_dir" ]; then
+    stage_path="$verifier_bin_dir:$stage_path"
+  fi
+
+  mkdir -p "$workdir"
+  cp -R "$REPO_ROOT/verifier-benchmarks/." "$workdir/"
+  if PATH="$stage_path" \
+      LD_LIBRARY_PATH="$z3_lib_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+      bash "$workdir/scripts/run_smoke.sh" >"$log" 2>&1; then
+    stage_record 5 pass
+    echo "STAGE 5 verifier-benchmarks: pass (TR + LF smoke; evidence in $RESULTS_DIR/verifier-benchmarks)"
+  else
+    local rc=$?
+    tail -n 25 "$log" | sed 's/^/  /' >&2
+    stage_record 5 fail
+    echo "STAGE 5 verifier-benchmarks: FAIL (exit $rc) — see $log" >&2
+    echo "  hint: install dependencies with scripts/install-dependencies.sh --with-lfc --with-verifiers, then retry" >&2
+    return 1
+  fi
+}
+
 overall=0
 for stage in "${STAGES[@]}"; do
   case "$stage" in
@@ -287,7 +338,8 @@ for stage in "${STAGES[@]}"; do
     2) run_stage_2 || overall=1 ;;
     3) run_stage_3 || overall=1 ;;
     4) run_stage_4 || overall=1 ;;
-    *) echo "reproduce.sh: invalid stage $stage (0-4)" >&2; exit 2 ;;
+    5) run_stage_5 || overall=1 ;;
+    *) echo "reproduce.sh: invalid stage $stage (0-5)" >&2; exit 2 ;;
   esac
 done
 
@@ -308,7 +360,7 @@ import json, sys
 results_dir, profile = sys.argv[1], sys.argv[2]
 lines = open(results_dir + "/summary.txt").read().splitlines()
 stages = {
-    line.split()[1]: line.split(": ")[1]
+  line.split()[1].rstrip(":"): line.split(": ")[1]
     for line in lines
     if line.startswith("stage ")
 }
