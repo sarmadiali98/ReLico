@@ -1,0 +1,102 @@
+reactiveclass Checker(5) {
+    statevars {
+        int doorClosed;
+        int violation;
+    }
+
+    Checker() {
+        doorClosed = 0;
+        violation = 0;
+    }
+
+    @priority(1)
+    msgsrv trainEvt() {
+        if (doorClosed == 0) {
+            violation = 1;
+        }
+    }
+
+    @priority(2)
+    msgsrv doorEvt() {
+        doorClosed = 1;
+    }
+}
+
+reactiveclass Train(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    Train() {
+    }
+
+    @priority(1)
+    msgsrv move() {
+        chk.trainEvt();
+    }
+}
+
+reactiveclass Door(5) {
+    knownrebecs {
+        Checker chk;
+    }
+
+    Door() {
+    }
+
+    @priority(1)
+    msgsrv close() {
+        self.finishClose() after(1);
+    }
+
+    @priority(2)
+    msgsrv finishClose() {
+        chk.doorEvt();
+    }
+}
+
+reactiveclass Controller(5) {
+    knownrebecs {
+        Train t;
+        Door d;
+    }
+
+    Controller() {
+        self.start();
+    }
+
+    @priority(1)
+    msgsrv start() {
+        t.move() after(1);
+        d.close() after(1);
+    }
+}
+
+reactiveclass KeepAlive(2) {
+    statevars {
+        int phase;
+    }
+
+    KeepAlive() {
+        phase = 0;
+        self.tick() after(100);
+    }
+
+    @priority(1)
+    msgsrv tick() {
+        if (phase == 0) {
+            phase = 1;
+        } else {
+            phase = 0;
+        }
+        self.tick() after(100);
+    }
+}
+
+main {
+    @priority(1) Train t(chk):();
+    @priority(1) Door d(chk):();
+    @priority(2) Checker chk():();
+    Controller c(t, d):();
+    KeepAlive ka():();
+}
