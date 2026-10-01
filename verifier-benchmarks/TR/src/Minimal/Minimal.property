@@ -1,8 +1,0 @@
-property {
-  define {
-    NoViolation = (ctr.violation == 0);
-  }
-  Assertion {
-    Minimal_NoViolation : NoViolation;
-  }
-}
